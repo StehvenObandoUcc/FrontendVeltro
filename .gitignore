@@ -1,11 +1,68 @@
-node_modules
-dist
+HELP.md
+target/
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+
+### Veltro ###
+*.class
+**/application-local.yml
+
+### 🔐 SECURITY: API Keys & Credentials (NEVER COMMIT) ###
 .env
 .env.local
+.env.*.local
 .env.production
-*.log
-*.local
-.DS_Store
-coverage
+.env.staging
+application-prod.yaml
+application-prod.yml
+application-production.yaml
+application-production.yml
+application-*.properties
+secrets.yaml
+secrets.yml
 
-.vercel
+### 🔐 OPENAI API KEY ###
+OPENAI_API_KEY
+**/openai.key
+**/api-keys/**
+
+### Logs that may contain sensitive data ###
+logs/
+*.log
+*.log.*
+
+### OS-specific ###
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+

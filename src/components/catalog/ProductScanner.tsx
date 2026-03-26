@@ -160,8 +160,8 @@ export const ProductScanner: React.FC<ProductScannerProps> = ({ onResult, onClos
           existsInDb: true,
           existingProductId: product.id,
           name: product.name,
-          barcode: product.barcode,
-          description: product.description,
+          barcode: product.barcode ?? undefined,
+          description: product.description ?? undefined,
           suggestedPrice: product.salePrice,
           source: 'barcode-db',
         });

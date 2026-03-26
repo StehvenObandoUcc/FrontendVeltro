@@ -18,7 +18,7 @@ type CategoryFormData = z.infer<typeof categorySchema>;
 
 export function CategoryPage() {
   const [categories, setCategories] = useState<Category[]>([]);
-  const [flatCategories, setFlatCategories] = useState<Category[]>([]);
+  const [_flatCategories, setFlatCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);

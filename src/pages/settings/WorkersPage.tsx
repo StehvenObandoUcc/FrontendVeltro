@@ -16,7 +16,7 @@ const workerSchema = z.object({
     .min(6, 'La contraseña debe tener al menos 6 caracteres')
     .max(100, 'La contraseña no puede exceder 100 caracteres'),
   role: z.enum(['WAREHOUSE', 'CASHIER'], {
-    required_error: 'Seleccione un rol',
+    message: 'Seleccione un rol',
   }),
 });
 

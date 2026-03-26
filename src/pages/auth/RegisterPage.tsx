@@ -19,7 +19,7 @@ const registerSchema = z.object({
   confirmPassword: z.string()
     .min(1, 'Confirme su contraseña'),
   role: z.enum(['ADMIN', 'WAREHOUSE', 'CASHIER'], {
-    required_error: 'Seleccione un rol',
+    message: 'Seleccione un rol',
   }),
   businessName: z.string()
     .min(2, 'El nombre del negocio debe tener al menos 2 caracteres')

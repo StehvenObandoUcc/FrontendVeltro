@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { LoginRequest, LoginResponse, RegisterRequest, User } from '../types';
+import type { LoginRequest, LoginResponse, RegisterRequest, User, Worker } from '../types';
 
 export const authApi = {
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
@@ -14,6 +14,21 @@ export const authApi = {
 
   createWorker: async (data: RegisterRequest): Promise<{ success: boolean; message: string; username: string; role: string }> => {
     const response = await apiClient.post<{ success: boolean; message: string; username: string; role: string }>('/auth/workers', data);
+    return response.data;
+  },
+
+  getWorkers: async (): Promise<Worker[]> => {
+    const response = await apiClient.get<Worker[]>('/auth/workers');
+    return response.data;
+  },
+
+  deleteWorker: async (id: number): Promise<{ success: boolean; message: string }> => {
+    const response = await apiClient.delete<{ success: boolean; message: string }>(`/auth/workers/${id}`);
+    return response.data;
+  },
+
+  updateWorkerRole: async (id: number, role: string): Promise<Worker> => {
+    const response = await apiClient.patch<Worker>(`/auth/workers/${id}/role`, { role });
     return response.data;
   },
 

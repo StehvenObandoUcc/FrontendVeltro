@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 /* Veltro Design System - Premium SaaS Edition */
 
@@ -33,6 +32,7 @@
   /* Identity Colors - Vibrant & Alive */
   --primary-base: #038E57;         /* Deep Emerald */
   --primary-light: #10A96D;        
+  --primary-lighter: #3DC08A;      /* Lighter emerald for hover states */
   --primary-dark: #027A43;         
   --primary-faint: rgba(3, 142, 87, 0.08); 
 
@@ -210,6 +210,111 @@ body {
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.01em;
     font-family: 'Inter', monospace;
+  }
+
+  /* Status Badges */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 9999px;
+    white-space: nowrap;
+  }
+  .badge-success {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: var(--success-green);
+  }
+  .badge-warning {
+    background-color: rgba(255, 172, 0, 0.1);
+    color: var(--accent-base);
+  }
+  .badge-critical {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: var(--critical-red);
+  }
+  .badge-info {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: #3B82F6;
+  }
+  .badge-neutral {
+    background-color: var(--surface-tertiary);
+    color: var(--text-secondary);
+  }
+
+  /* Table Container */
+  .table-container {
+    overflow-x: auto;
+    border-radius: var(--radius-lg);
+    border: var(--border-light);
+  }
+  .table-container::-webkit-scrollbar {
+    height: 8px;
+  }
+  .table-container::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .table-container::-webkit-scrollbar-thumb {
+    background: rgba(15, 23, 42, 0.1);
+    border-radius: 10px;
+  }
+  .table-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(15, 23, 42, 0.2);
+  }
+
+  /* KPI Card */
+  .kpi-card {
+    position: relative;
+    padding: 1.25rem;
+    border-radius: var(--radius-md);
+    background-color: var(--surface-secondary);
+    border: 1px solid rgba(31, 41, 55, 0.1);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .kpi-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+    border-color: rgba(3, 142, 87, 0.2);
+  }
+
+  /* Action Buttons in Tables */
+  .btn-action {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    border-radius: var(--radius-sm);
+    transition: all 0.2s ease;
+    font-weight: 500;
+  }
+  .btn-action-entry {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: var(--success-green);
+  }
+  .btn-action-entry:hover {
+    background-color: rgba(16, 185, 129, 0.2);
+  }
+  .btn-action-exit {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: var(--critical-red);
+  }
+  .btn-action-exit:hover {
+    background-color: rgba(239, 68, 68, 0.2);
+  }
+  .btn-action-adjust {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: #3B82F6;
+  }
+  .btn-action-adjust:hover {
+    background-color: rgba(59, 130, 246, 0.2);
+  }
+  .btn-action-history {
+    background-color: var(--surface-tertiary);
+    color: var(--text-secondary);
+  }
+  .btn-action-history:hover {
+    background-color: var(--surface-inset);
   }
 }
 

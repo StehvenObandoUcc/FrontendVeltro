@@ -148,11 +148,11 @@ function App() {
           }
         />
 
-        {/* Catalog - ADMIN only */}
+        {/* Catalog - read for all authenticated users, edits for ADMIN/WAREHOUSE */}
         <Route
           path="catalog"
           element={
-            <RoleGuard allowedRoles={['ADMIN']}>
+            <RoleGuard allowedRoles={['ADMIN', 'WAREHOUSE', 'CASHIER']}>
               <Navigate to="/catalog/products" replace />
             </RoleGuard>
           }
@@ -160,7 +160,7 @@ function App() {
         <Route
           path="catalog/products"
           element={
-            <RoleGuard allowedRoles={['ADMIN']}>
+            <RoleGuard allowedRoles={['ADMIN', 'WAREHOUSE', 'CASHIER']}>
               <Suspense fallback={<PageLoader />}>
                 <ProductListPage />
               </Suspense>
@@ -170,7 +170,7 @@ function App() {
         <Route
           path="catalog/products/new"
           element={
-            <RoleGuard allowedRoles={['ADMIN']}>
+            <RoleGuard allowedRoles={['ADMIN', 'WAREHOUSE']}>
               <Suspense fallback={<PageLoader />}>
                 <ProductFormPage />
               </Suspense>
@@ -180,7 +180,7 @@ function App() {
         <Route
           path="catalog/products/:id/edit"
           element={
-            <RoleGuard allowedRoles={['ADMIN']}>
+            <RoleGuard allowedRoles={['ADMIN', 'WAREHOUSE']}>
               <Suspense fallback={<PageLoader />}>
                 <ProductFormPage />
               </Suspense>
@@ -190,7 +190,7 @@ function App() {
         <Route
           path="catalog/categories"
           element={
-            <RoleGuard allowedRoles={['ADMIN']}>
+            <RoleGuard allowedRoles={['ADMIN', 'WAREHOUSE', 'CASHIER']}>
               <Suspense fallback={<PageLoader />}>
                 <CategoryPage />
               </Suspense>

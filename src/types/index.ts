@@ -5,12 +5,12 @@ export interface ApiResponse<T> {
   timestamp: string;
 }
 
-// Paginated response
+// Paginated response (Spring Boot sends 'number' for current page)
 export interface PageResponse<T> {
   content: T[];
   totalElements: number;
   totalPages: number;
-  currentPage: number;
+  number: number;
   size: number;
   first: boolean;
   last: boolean;
@@ -25,7 +25,7 @@ export interface User {
   username: string;
   email: string;
   role: UserRole;
-  businessId: number;
+  businessId: number | null;
 }
 
 export interface LoginRequest {
@@ -44,21 +44,25 @@ export interface RegisterRequest {
 export interface LoginResponse {
   accessToken: string;
   refreshToken: string;
-  tokenType: string;
+  tokenType: 'Bearer';
   expiresIn: number;
   username: string;
   role: UserRole;
-  businessId: number;
+  businessId: number | null;
+  id?: number;
+  email?: string;
 }
 
 export interface RefreshResponse {
   accessToken: string;
   refreshToken: string;
-  tokenType: string;
+  tokenType: 'Bearer';
   expiresIn: number;
   username: string;
   role: UserRole;
-  businessId: number;
+  businessId: number | null;
+  id?: number;
+  email?: string;
 }
 
 // Product types
@@ -122,8 +126,21 @@ export interface Inventory {
 
 // Error response
 export interface ApiError {
+  success?: boolean;
+  error?: string;
   message: string;
-  code: string;
+  code?: string;
   timestamp: string;
+  path?: string;
   details?: Record<string, string>;
+}
+
+// Worker types
+export interface Worker {
+  id: number;
+  username: string;
+  email: string;
+  role: string;
+  active: boolean;
+  createdAt: string;
 }

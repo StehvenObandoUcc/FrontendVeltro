@@ -2,10 +2,10 @@ import apiClient from './client';
 
 export interface CreateSaleRequest {
   items: {
-    productId: string;
+    productId: number;
     quantity: number;
   }[];
-  paymentMethod: 'CASH' | 'CARD' | 'YAPE' | 'PLIN';
+  paymentMethod: 'CASH' | 'CARD' | 'NEQUI' | 'DAVIPLATA';
   amountReceived?: number;
   notes?: string;
 }
@@ -19,7 +19,7 @@ export interface SaleResponse {
   total: string;
   amountReceived: string | null;
   change: string | null;
-  paymentMethod: 'CASH' | 'CARD' | 'YAPE' | 'PLIN' | null;
+  paymentMethod: 'CASH' | 'CARD' | 'NEQUI' | 'DAVIPLATA' | 'YAPE' | 'PLIN' | null;
   completedAt: string | null;
   details: {
     id: number;
@@ -50,11 +50,16 @@ export interface Product {
   minStockInfo: number;
   minStockWarning: number;
   minStockCritical: number;
+  currentStock?: number;
 }
 
 /**
  * AI suggestion from backend — matches ProductSuggestionResponse.SuggestedProduct
  * confidence is 0.0–1.0 (NOT 0–100)
+ *
+ * When AI matches a catalog product: productId/productName/barcode come from the DB match.
+ * When AI identifies a NEW product (no catalog match): productId=null, barcode=null,
+ * and the AI's raw suggestions are in suggestedName/suggestedBarcode/suggestedPrice.
  */
 export interface SuggestedProduct {
   productId: number | null;
@@ -62,6 +67,10 @@ export interface SuggestedProduct {
   confidence: number;        // 0.0–1.0
   suggestedPrice: string | null;
   barcode: string | null;
+  /** AI-suggested product name (always present, even when matched to catalog) */
+  suggestedName: string | null;
+  /** AI-suggested barcode (if visible in image; null if AI couldn't read it) */
+  suggestedBarcode: string | null;
 }
 
 export interface ProductSuggestionResponse {
@@ -79,16 +88,21 @@ export const getProductByBarcode = (barcode: string) => {
 };
 
 /**
- * Search products — fetches paginated list from GET /products.
- * Client-side filtering by name/barcode/sku for now.
+ * Search products — passes query to GET /products with search param.
+ * Falls back to client-side filtering if backend doesn't support search param.
  */
 export const searchProducts = async (query: string): Promise<Product[]> => {
+  const params: Record<string, string | number> = { page: 0, size: 100 };
+  if (query.trim()) {
+    params.search = query.trim();
+  }
   const response = await apiClient.get<{
     content: Product[];
     totalElements: number;
-  }>('/products', { params: { page: 0, size: 100 } });
+  }>('/products', { params });
   const all = response.data.content;
-  if (!query.trim()) return all;
+  if (!query.trim()) return all.filter((p) => p.active);
+  // Client-side fallback filter in case backend ignores search param
   const q = query.toLowerCase();
   return all.filter(
     (p) =>
@@ -111,7 +125,7 @@ export const confirmSale = (saleData: CreateSaleRequest) => {
  * Void a completed sale
  * POST /api/v1/sales/{saleId}/void
  */
-export const voidSale = (saleId: string, reason?: string) => {
+export const voidSale = (saleId: number, reason?: string) => {
   return apiClient.post<SaleResponse>(`/sales/${saleId}/void`, { reason });
 };
 
@@ -128,9 +142,29 @@ export const aiScanProduct = (imageBlob: Blob, filename: string) => {
   // Do NOT set Content-Type manually — Axios auto-detects FormData and sets
   // the correct multipart/form-data boundary. Setting it manually strips the boundary.
   return apiClient.post<ProductSuggestionResponse>('/scanner/ai', formData, {
+    headers: {
+      'Content-Type': undefined,
+    },
     timeout: 60000, // 60s for AI processing
   });
 };
+
+/**
+ * AI Fast Detection via CLIP vector search.
+ * POST /api/v1/scanner/detect
+ */
+export const aiDetectFrame = (imageBlob: Blob, filename: string) => {
+  const formData = new FormData();
+  formData.append('image', imageBlob, filename);
+  return apiClient.post<any>('/scanner/detect', formData, {
+    headers: {
+      'Content-Type': undefined,
+    },
+    timeout: 15000,
+  });
+};
+
+
 
 /**
  * Check AI scanner availability

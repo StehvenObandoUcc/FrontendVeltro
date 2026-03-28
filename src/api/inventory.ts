@@ -1,4 +1,7 @@
 import apiClient from './client';
+import type { PageResponse } from '../types';
+
+export type { PageResponse };
 
 export type AlertSeverity = 'CRITICAL' | 'WARNING' | 'INFO';
 export type AlertType = 'OUT_OF_STOCK' | 'LOW_STOCK' | 'OVERSTOCK';
@@ -13,6 +16,10 @@ export interface Alert {
   read: boolean;
   resolved: boolean;
   createdAt: string;
+}
+
+export interface UnreadAlertCountResponse {
+  count: number;
 }
 
 export interface AlertConfig {
@@ -65,21 +72,13 @@ export interface UpdateStockLimitsRequest {
   maxStock: number;
 }
 
-export interface PageResponse<T> {
-  content: T[];
-  totalElements: number;
-  totalPages: number;
-  number: number;    // current page (0-indexed)
-  size: number;      // page size
-}
-
 /**
  * Get all inventory items with pagination
  * GET /api/v1/inventory
  */
-export const getInventory = (page: number = 0, size: number = 20) => {
+export const getInventory = (page: number = 0, size: number = 20, search?: string) => {
   return apiClient.get<PageResponse<InventoryItem>>('/inventory', {
-    params: { page, size },
+    params: { page, size, search: search || undefined },
   });
 };
 
@@ -149,11 +148,34 @@ export const getAlerts = (page: number = 0, severity?: string) => {
 };
 
 /**
+ * Mark alert as read
+ * PUT /api/v1/alerts/{alertId}/read
+ */
+export const markAlertAsRead = (alertId: number) => {
+  return apiClient.put<Alert>(`/alerts/${alertId}/read`);
+};
+
+/**
  * Resolve an alert
  * PUT /api/v1/alerts/{alertId}/resolve
  */
+export const resolveAlert = (alertId: number) => {
+  return apiClient.put<Alert>(`/alerts/${alertId}/resolve`);
+};
+
+/**
+ * Backward-compatible alias for resolve
+ */
 export const dismissAlert = (alertId: number) => {
-  return apiClient.put(`/alerts/${alertId}/resolve`);
+  return resolveAlert(alertId);
+};
+
+/**
+ * Get unread alerts count
+ * GET /api/v1/alerts/unread/count
+ */
+export const getUnreadAlertCount = () => {
+  return apiClient.get<UnreadAlertCountResponse>('/alerts/unread/count');
 };
 
 /**

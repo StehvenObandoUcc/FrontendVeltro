@@ -1,35 +1,30 @@
 import apiClient from './client';
+import type { PageResponse } from '../types';
+
+export type { PageResponse };
 
 export interface DashboardResponse {
   todaySales: string; // BigDecimal as string
   todaySalesCount: number;
   averageTicket: string; // BigDecimal as string
   outOfStockProducts: number;
-  outOfStockProductList: string[];
+  outOfStockProductList: OutOfStockProductRow[];
   estimatedMonthlyProfit: string; // BigDecimal as string
   lowStockAlertCount: number;
   recentSales: SaleRow[];
 }
 
+export interface OutOfStockProductRow {
+  productName: string;
+}
+
 export interface SaleRow {
   saleId: number;
   saleNumber: string;
-  total: number;
+  total: number | string;
   itemCount: number;
   cashierId: number;
   completedAt: string;
-}
-
-/**
- * Spring Page<T> serialization format.
- * Spring uses `number` for current page (0-indexed) and `size` for page size.
- */
-export interface PageResponse<T> {
-  content: T[];
-  totalElements: number;
-  totalPages: number;
-  number: number;    // current page (0-indexed) — Spring's field name
-  size: number;      // page size — Spring's field name
 }
 
 /**

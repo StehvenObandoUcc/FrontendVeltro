@@ -1,4 +1,5 @@
 import apiClient from './client';
+import type { AxiosError } from 'axios';
 
 export type POStatus = 'PENDING' | 'PARTIAL' | 'RECEIVED' | 'VOIDED';
 
@@ -63,6 +64,7 @@ export interface PurchaseOrder {
 export interface CreatePORequest {
   supplierId: number;
   notes?: string;
+  // Backend expects OffsetDateTime (full date-time with offset)
   expectedDeliveryDate?: string;
   receiptImageUrl?: string;
   items: {
@@ -78,7 +80,31 @@ export interface AddOrderItemRequest {
   unitCost: string;
 }
 
+export type PurchaseOrderCreationStage = 'create-order' | 'add-item';
+
+export class PurchaseOrderCreationError extends Error {
+  stage: PurchaseOrderCreationStage;
+  itemIndex?: number;
+
+  constructor(message: string, stage: PurchaseOrderCreationStage, itemIndex?: number) {
+    super(message);
+    this.name = 'PurchaseOrderCreationError';
+    this.stage = stage;
+    this.itemIndex = itemIndex;
+  }
+}
+
 export interface PurchaseOrderResponse extends PurchaseOrder {}
+
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  const axiosError = error as AxiosError<{ message?: string; error?: string }>;
+  return (
+    axiosError.response?.data?.message ||
+    axiosError.response?.data?.error ||
+    axiosError.message ||
+    fallback
+  );
+};
 
 /**
  * Get list of suppliers
@@ -119,28 +145,46 @@ export const deleteSupplier = (id: number) => {
  * POST /api/v1/purchase-orders
  */
 export const createPurchaseOrder = async (data: CreatePORequest): Promise<PurchaseOrderResponse> => {
+  let createResponse: { data: PurchaseOrderResponse };
+
   // Step 1: Create the PO (without items — backend DTO doesn't accept items)
-  const createResponse = await apiClient.post<PurchaseOrderResponse>('/purchase-orders', {
-    supplierId: data.supplierId,
-    notes: data.notes,
-    expectedDeliveryDate: data.expectedDeliveryDate,
-    receiptImageUrl: data.receiptImageUrl,
-  });
+  try {
+    createResponse = await apiClient.post<PurchaseOrderResponse>('/purchase-orders', {
+      supplierId: data.supplierId,
+      notes: data.notes,
+      expectedDeliveryDate: data.expectedDeliveryDate,
+      receiptImageUrl: data.receiptImageUrl,
+    });
+  } catch (error) {
+    throw new PurchaseOrderCreationError(
+      getErrorMessage(error, 'No se pudo crear la orden de compra.'),
+      'create-order'
+    );
+  }
 
   const orderId = createResponse.data.id;
 
   // Step 2: Add each item
   let latestOrder = createResponse.data;
-  for (const item of data.items) {
-    const itemResponse = await apiClient.post<PurchaseOrderResponse>(
-      `/purchase-orders/${orderId}/items`,
-      {
-        productId: item.productId,
-        requestedQuantity: item.quantity,
-        unitCost: item.unitCost,
-      } as AddOrderItemRequest
-    );
-    latestOrder = itemResponse.data;
+  for (let index = 0; index < data.items.length; index += 1) {
+    const item = data.items[index];
+    try {
+      const itemResponse = await apiClient.post<PurchaseOrderResponse>(
+        `/purchase-orders/${orderId}/items`,
+        {
+          productId: item.productId,
+          requestedQuantity: item.quantity,
+          unitCost: item.unitCost,
+        } as AddOrderItemRequest
+      );
+      latestOrder = itemResponse.data;
+    } catch (error) {
+      throw new PurchaseOrderCreationError(
+        getErrorMessage(error, 'No se pudo agregar un item a la orden de compra.'),
+        'add-item',
+        index
+      );
+    }
   }
 
   return latestOrder;

@@ -10,11 +10,11 @@ export const useCart = () => {
     }
   }, [store]);
 
-  const remove = useCallback((productId: string) => {
+  const remove = useCallback((productId: number) => {
     store.remove(productId);
   }, [store]);
 
-  const updateQuantity = useCallback((productId: string, quantity: number) => {
+  const updateQuantity = useCallback((productId: number, quantity: number) => {
     if (quantity > 0) {
       store.updateQty(productId, quantity);
     } else {

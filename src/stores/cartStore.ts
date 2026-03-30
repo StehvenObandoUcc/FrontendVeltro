@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { Product } from '../api/pos';
 
 export interface CartItem {
-  productId: string;
+  productId: number;
   product: Product;
   quantity: number;
 }
@@ -10,8 +10,8 @@ export interface CartItem {
 interface CartStore {
   items: CartItem[];
   add: (product: Product, quantity: number) => void;
-  remove: (productId: string) => void;
-  updateQty: (productId: string, quantity: number) => void;
+  remove: (productId: number) => void;
+  updateQty: (productId: number, quantity: number) => void;
   clear: () => void;
   getTotal: () => string;
   getItemCount: () => number;
@@ -23,17 +23,40 @@ export const useCartStore = create<CartStore>((set, get) => ({
 
   add: (product, quantity) => {
     set((state) => {
-      const pid = String(product.id);
+      const requestedQty = Number.isFinite(quantity) ? Math.max(0, Math.floor(quantity)) : 0;
+      if (requestedQty <= 0) {
+        return state;
+      }
+
+      const pid = product.id;
       const existingItem = state.items.find((item) => item.productId === pid);
+      const hasStockInfo = typeof product.currentStock === 'number';
+      const availableStock = hasStockInfo ? Math.max(0, Math.floor(product.currentStock as number)) : null;
 
       if (existingItem) {
+        const nextQuantity = hasStockInfo
+          ? Math.min(existingItem.quantity + requestedQty, availableStock as number)
+          : existingItem.quantity + requestedQty;
+
+        if (nextQuantity <= existingItem.quantity) {
+          return state;
+        }
+
         return {
           items: state.items.map((item) =>
             item.productId === pid
-              ? { ...item, quantity: item.quantity + quantity }
+              ? { ...item, quantity: nextQuantity }
               : item
           ),
         };
+      }
+
+      const initialQuantity = hasStockInfo
+        ? Math.min(requestedQty, availableStock as number)
+        : requestedQty;
+
+      if (initialQuantity <= 0) {
+        return state;
       }
 
       return {
@@ -42,7 +65,7 @@ export const useCartStore = create<CartStore>((set, get) => ({
           {
             productId: pid,
             product,
-            quantity,
+            quantity: initialQuantity,
           },
         ],
       };
@@ -61,11 +84,28 @@ export const useCartStore = create<CartStore>((set, get) => ({
       return;
     }
 
-    set((state) => ({
-      items: state.items.map((item) =>
-        item.productId === productId ? { ...item, quantity } : item
-      ),
-    }));
+    set((state) => {
+      const updatedItems = state.items
+        .map((item) => {
+          if (item.productId !== productId) {
+            return item;
+          }
+
+          const parsedQty = Math.max(1, Math.floor(quantity));
+          if (typeof item.product.currentStock === 'number') {
+            const available = Math.max(0, Math.floor(item.product.currentStock));
+            if (available <= 0) {
+              return null;
+            }
+            return { ...item, quantity: Math.min(parsedQty, available) };
+          }
+
+          return { ...item, quantity: parsedQty };
+        })
+        .filter((item): item is CartItem => item !== null);
+
+      return { items: updatedItems };
+    });
   },
 
   clear: () => {
@@ -75,7 +115,7 @@ export const useCartStore = create<CartStore>((set, get) => ({
   getSubtotal: (item) => {
     const price = parseFloat(item.product.salePrice);
     const subtotal = price * item.quantity;
-    return subtotal.toFixed(4);
+    return subtotal.toFixed(2);
   },
 
   getTotal: () => {
@@ -86,7 +126,7 @@ export const useCartStore = create<CartStore>((set, get) => ({
       return sum + subtotal;
     }, 0);
 
-    return total.toFixed(4);
+    return total.toFixed(2);
   },
 
   getItemCount: () => {

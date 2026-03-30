@@ -1,36 +1,51 @@
 import { useEffect, useRef } from 'react';
 import { useAlertStore } from '../stores/alertStore';
-import { getAlerts, type Alert } from '../api/inventory';
+import { useAuthStore } from '../stores/authStore';
+import { getAlerts, getUnreadAlertCount, type Alert } from '../api/inventory';
 
 export const useAlerts = (pollInterval: number = 30000) => {
-  const { setAlerts, addAlert } = useAlertStore();
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const { setActiveAlerts, setUnreadCount, addAlert } = useAlertStore();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const previousCountRef = useRef<number>(0);
 
   useEffect(() => {
+    // Don't poll if user is not authenticated
+    if (!isAuthenticated) {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+      return;
+    }
+
     const fetchAlerts = async () => {
       try {
-        const response = await getAlerts(0);
-        const currentAlerts = response.data.content;
+        const [alertsResponse, unreadResponse] = await Promise.all([
+          getAlerts(0),
+          getUnreadAlertCount(),
+        ]);
+
+        const currentAlerts = alertsResponse.data.content.filter((a: Alert) => !a.resolved);
+        const unreadCount = unreadResponse.data.count;
 
         // Check if new critical alert appeared
-        const unreadCount = currentAlerts.filter((a: Alert) => !a.resolved).length;
         const criticalCount = currentAlerts.filter(
-          (a: Alert) => a.severity === 'CRITICAL' && !a.resolved
+          (a: Alert) => a.severity === 'CRITICAL' && !a.read
         ).length;
 
         if (criticalCount > 0 && unreadCount > previousCountRef.current) {
           const newAlerts = currentAlerts.filter(
-            (a: Alert) => a.severity === 'CRITICAL' && !a.resolved
+            (a: Alert) => a.severity === 'CRITICAL' && !a.read
           );
           newAlerts.forEach((alert: Alert) => {
-            // Trigger notification (can be toast or browser notification)
-            console.log('🚨 Critical Alert:', alert.message);
+            console.log('Critical Alert:', alert.message);
           });
         }
 
         previousCountRef.current = unreadCount;
-        setAlerts(currentAlerts);
+        setActiveAlerts(currentAlerts);
+        setUnreadCount(unreadCount);
       } catch (error) {
         console.error('Error fetching alerts:', error);
       }
@@ -45,9 +60,10 @@ export const useAlerts = (pollInterval: number = 30000) => {
     return () => {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
       }
     };
-  }, [pollInterval, setAlerts]);
+  }, [pollInterval, setActiveAlerts, setUnreadCount, isAuthenticated]);
 
   return { addAlert };
 };

@@ -1,8 +1,34 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { useZxing } from 'react-zxing';
-import { DecodeHintType, BarcodeFormat } from '@zxing/library';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import { Camera, X } from 'lucide-react';
 import { productApi } from '../../api/catalog';
 import { aiScanProduct, checkAiAvailable, type SuggestedProduct } from '../../api/pos';
+
+type CameraFeedbackState =
+  | 'idle'
+  | 'starting'
+  | 'scanning'
+  | 'product-added'
+  | 'not-found'
+  | 'camera-error';
+
+const CAMERA_START_CONFIG = { facingMode: 'environment' };
+const BARCODE_SCANNER_CONFIG = {
+  fps: 10,
+  qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+    const width = Math.floor(Math.min(viewfinderWidth * 0.8, viewfinderHeight * 0.8));
+    const height = Math.floor(viewfinderHeight * 0.6);
+    return {
+      width: Math.max(50, width),
+      height: Math.max(50, height),
+    };
+  },
+  videoConstraints: {
+    width: { ideal: 1280 },
+    height: { ideal: 720 },
+    facingMode: 'environment',
+  },
+};
 
 export interface ScannedProductData {
   /** If product already exists in DB */
@@ -38,84 +64,267 @@ export const ProductScanner: React.FC<ProductScannerProps> = ({ onResult, onClos
   const [lastBarcode, setLastBarcode] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [cameraFeedback, setCameraFeedback] = useState<CameraFeedbackState>('idle');
 
   // AI modal state
   const [aiLoading, setAiLoading] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<SuggestedProduct[] | null>(null);
 
-  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const lastScannedTimeRef = useRef<number>(0);
+  const lastScannedCodeRef = useRef<string | null>(null);
+  const isMountedRef = useRef(false);
+  const isStartingRef = useRef(false);
+  const isStoppingRef = useRef(false);
+  const stopPromiseRef = useRef<Promise<void> | null>(null);
+  const startTokenRef = useRef(0);
+  const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isHandlingScanRef = useRef(false);
 
-  // ----- ZXing decode hints: restrict to retail barcode formats + TRY_HARDER -----
-  const hints = useMemo(() => {
-    const map = new Map<DecodeHintType, any>();
-    map.set(DecodeHintType.POSSIBLE_FORMATS, [
-      BarcodeFormat.EAN_13,
-      BarcodeFormat.EAN_8,
-      BarcodeFormat.UPC_A,
-      BarcodeFormat.UPC_E,
-      BarcodeFormat.CODE_128,
-      BarcodeFormat.CODE_39,
-      BarcodeFormat.ITF,
-      BarcodeFormat.CODABAR,
-    ]);
-    map.set(DecodeHintType.TRY_HARDER, true);
-    return map;
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (feedbackTimerRef.current) {
+        clearTimeout(feedbackTimerRef.current);
+      }
+    };
   }, []);
 
-  const { ref: zxingRef } = useZxing({
-    paused: scanning || aiLoading,
-    hints,
-    timeBetweenDecodingAttempts: 150,
-    constraints: {
-      audio: false,
-      video: {
-        facingMode: 'environment',
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
-      },
-    },
-    onResult(result) {
-      const text = result.getText();
-      if (text && text !== lastBarcode) {
-        setLastBarcode(text);
-        handleBarcodeScan(text);
-      }
-    },
-    onError(err) {
-      // Ignore NotFound (no barcode in frame) — only log real errors
-      if (err?.name !== 'NotFoundException') {
-        console.warn('Catalog scanner error:', err?.message);
-      }
-    },
-  });
+  const setTransientFeedback = useCallback((value: CameraFeedbackState) => {
+    if (feedbackTimerRef.current) {
+      clearTimeout(feedbackTimerRef.current);
+      feedbackTimerRef.current = null;
+    }
 
-  // Combine refs
-  const setVideoRef = useCallback(
-    (el: HTMLVideoElement | null) => {
-      videoRef.current = el;
-      // react-zxing ref
-      (zxingRef as React.MutableRefObject<HTMLVideoElement | null>).current = el;
+    setCameraFeedback(value);
+    if (value === 'product-added' || value === 'not-found') {
+      feedbackTimerRef.current = setTimeout(() => {
+        if (isMountedRef.current) {
+          setCameraFeedback('scanning');
+        }
+      }, 1600);
+    }
+  }, []);
+
+  // ----- Handle Handlers First -----
+  const handleBarcodeScan = useCallback(
+    async (barcode: string) => {
+      const code = barcode.trim();
+      console.log('[Scanner] handleBarcodeScan llamado con:', code);
+      if (!code) return;
+
+      setScanning(true);
+      setStatus('Comprobando base de datos...');
+      setError(null);
+
+      try {
+        const product = await productApi.getByBarcode(code);
+        onResult({
+          existsInDb: true,
+          existingProductId: product.id,
+          name: product.name,
+          barcode: product.barcode || undefined,
+          description: product.description || undefined,
+          suggestedPrice: product.salePrice,
+          source: 'barcode-db',
+        });
+        setStatus('¡Producto encontrado en DB!');
+        setTransientFeedback('product-added');
+      } catch (err: any) {
+        if (err?.response?.status === 404 || err?.status === 404) {
+          onResult({
+            existsInDb: false,
+            barcode: code,
+            source: 'barcode-new',
+          });
+          setStatus('Nuevo código detectado.');
+          setTransientFeedback('not-found');
+        } else {
+          console.error(err);
+          onResult({
+            existsInDb: false,
+            barcode: code,
+            source: 'barcode-new',
+          });
+          setStatus('Nuevo código detectado.');
+          setTransientFeedback('not-found');
+        }
+      } finally {
+        setScanning(false);
+      }
     },
-    [zxingRef]
+    [onResult, setTransientFeedback]
   );
 
-  // Robust camera readiness: poll video readyState (onPlaying may not fire reliably)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const video = videoRef.current;
-      if (video && video.readyState >= 2 && video.videoWidth > 0) {
-        setCameraReady(true);
-        clearInterval(interval);
+  // ----- Html5Qrcode implementation -----
+  const stopScanner = useCallback(async () => {
+    if (isStoppingRef.current) {
+      return stopPromiseRef.current ?? Promise.resolve();
+    }
+
+    const currentScanner = scannerRef.current;
+    if (!currentScanner) {
+      if (isMountedRef.current) {
+        setCameraReady(false);
       }
-    }, 200);
-    return () => clearInterval(interval);
+      return;
+    }
+
+    isStoppingRef.current = true;
+    const stopTask = (async () => {
+      try {
+        if (currentScanner.isScanning) {
+          await currentScanner.stop();
+        }
+      } catch {
+        // noop
+      }
+
+      try {
+        await currentScanner.clear();
+      } catch {
+        // noop
+      }
+
+      if (scannerRef.current === currentScanner) {
+        scannerRef.current = null;
+      }
+
+      if (isMountedRef.current) {
+        setCameraReady(false);
+      }
+    })().finally(() => {
+      isStoppingRef.current = false;
+      stopPromiseRef.current = null;
+    });
+
+    stopPromiseRef.current = stopTask;
+    return stopTask;
   }, []);
+
+  const startScanner = useCallback(async () => {
+    const readerEl = document.getElementById('catalog-reader');
+    if (!readerEl) return;
+    if (isStartingRef.current || isStoppingRef.current || scannerRef.current) return;
+
+    if (stopPromiseRef.current) {
+      await stopPromiseRef.current;
+    }
+
+    isStartingRef.current = true;
+    const currentToken = ++startTokenRef.current;
+
+    setCameraReady(false);
+    setCameraFeedback('starting');
+    setError(null);
+
+    readerEl.innerHTML = '';
+
+    const scanner = new Html5Qrcode('catalog-reader', {
+      verbose: true,
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E,
+      ],
+    });
+    scannerRef.current = scanner;
+
+    const onSuccess = async (decodedText: string) => {
+      console.log('[Scanner] onSuccess llamado con:', decodedText);
+      console.log('[Scanner] Estado actual:', {
+        scanning,
+        aiLoading,
+        lastScannedCode: lastScannedCodeRef.current,
+      });
+      const now = Date.now();
+      if (
+        decodedText &&
+        (decodedText !== lastScannedCodeRef.current ||
+          now - lastScannedTimeRef.current > 3000)
+      ) {
+        if (isHandlingScanRef.current) {
+          return;
+        }
+
+        isHandlingScanRef.current = true;
+        lastScannedCodeRef.current = decodedText;
+        lastScannedTimeRef.current = now;
+        setLastBarcode(decodedText);
+
+        try {
+          await stopScanner();
+          await handleBarcodeScan(decodedText);
+        } finally {
+          isHandlingScanRef.current = false;
+        }
+      }
+    };
+
+    try {
+      await scanner.start(
+        CAMERA_START_CONFIG,
+        BARCODE_SCANNER_CONFIG,
+        onSuccess,
+        () => {
+          // noop
+        }
+      );
+
+      if (!isMountedRef.current || startTokenRef.current !== currentToken) {
+        await stopScanner();
+        return;
+      }
+
+      setCameraReady(true);
+      setCameraFeedback('scanning');
+    } catch {
+      if (!isMountedRef.current || startTokenRef.current !== currentToken) {
+        await stopScanner();
+        return;
+      }
+
+      setCameraReady(false);
+      setCameraFeedback('camera-error');
+      setError('No se pudo iniciar la cámara. Verifica permisos del navegador.');
+      await stopScanner();
+    } finally {
+      isStartingRef.current = false;
+    }
+  }, [aiLoading, handleBarcodeScan, scanning, stopScanner]);
+
+  useEffect(() => {
+    if (aiLoading) {
+      setCameraFeedback('idle');
+      void stopScanner();
+      return;
+    }
+
+  const t = setTimeout(() => {
+    void startScanner();
+  }, 200);
+
+    return () => {
+      clearTimeout(t);
+      void stopScanner();
+    };
+  }, [aiLoading, startScanner, stopScanner]);
 
   // Check AI on mount
   useEffect(() => {
     checkAiAvailable()
-      .then((res) => setAiAvailable(res.data.available))
-      .catch(() => setAiAvailable(false));
+      .then((res) => {
+        console.log('[Catalog Scanner] AI available:', res.data.available);
+        setAiAvailable(res.data.available);
+      })
+      .catch((err) => {
+        console.warn('[Catalog Scanner] AI availability check failed:', err?.message || err);
+        setAiAvailable(false);
+      });
   }, []);
 
   // 3s AI fallback timer
@@ -144,45 +353,9 @@ export const ProductScanner: React.FC<ProductScannerProps> = ({ onResult, onClos
     }
   }, [error]);
 
-  /** Barcode detected — check if product exists in DB */
-  const handleBarcodeScan = useCallback(
-    async (barcode: string) => {
-      setScanning(true);
-      setError(null);
-      setStatus(`Código detectado: ${barcode}`);
-      setAiSuggestions(null);
-
-      try {
-        const product = await productApi.getByBarcode(barcode);
-        // Product already exists!
-        setStatus(`Producto encontrado: ${product.name}`);
-        onResult({
-          existsInDb: true,
-          existingProductId: product.id,
-          name: product.name,
-          barcode: product.barcode ?? undefined,
-          description: product.description ?? undefined,
-          suggestedPrice: product.salePrice,
-          source: 'barcode-db',
-        });
-      } catch {
-        // Product not in DB — just fill the barcode
-        setStatus(`Código ${barcode} no registrado. Se llenará el campo.`);
-        onResult({
-          existsInDb: false,
-          barcode,
-          source: 'barcode-new',
-        });
-      } finally {
-        setScanning(false);
-      }
-    },
-    [onResult]
-  );
-
   /** Capture frame and send to AI */
   const handleAiCapture = useCallback(() => {
-    const video = videoRef.current;
+    const video = document.querySelector('#catalog-reader video') as HTMLVideoElement;
     if (!video) return;
 
     const canvas = document.createElement('canvas');
@@ -227,13 +400,18 @@ export const ProductScanner: React.FC<ProductScannerProps> = ({ onResult, onClos
   /** User selects an AI suggestion */
   const handleSelectSuggestion = useCallback(
     async (suggestion: SuggestedProduct) => {
+      // Use best available barcode: catalog match first, then AI-suggested
+      const effectiveBarcode = suggestion.barcode || suggestion.suggestedBarcode;
+      // Use best available name: catalog match first, then AI-suggested
+      const effectiveName = suggestion.productName || suggestion.suggestedName || '';
+
       // Check if this product already exists by barcode
       let existsInDb = false;
       let existingId: number | undefined;
 
-      if (suggestion.barcode) {
+      if (effectiveBarcode) {
         try {
-          const product = await productApi.getByBarcode(suggestion.barcode);
+          const product = await productApi.getByBarcode(effectiveBarcode);
           existsInDb = true;
           existingId = product.id;
         } catch {
@@ -244,15 +422,15 @@ export const ProductScanner: React.FC<ProductScannerProps> = ({ onResult, onClos
       onResult({
         existsInDb,
         existingProductId: existingId,
-        name: suggestion.productName,
-        barcode: suggestion.barcode || undefined,
+        name: effectiveName,
+        barcode: effectiveBarcode || undefined,
         suggestedPrice: suggestion.suggestedPrice || undefined,
         confidence: suggestion.confidence,
         source: 'ai',
       });
 
       setAiSuggestions(null);
-      setStatus(`Campos llenados con: ${suggestion.productName}`);
+      setStatus(`Campos llenados con: ${effectiveName}`);
     },
     [onResult]
   );
@@ -269,7 +447,7 @@ export const ProductScanner: React.FC<ProductScannerProps> = ({ onResult, onClos
       {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
-          <span className="text-[var(--primary-base)]">📷</span>
+          <Camera className="w-4 h-4 text-[var(--primary-base)]" />
           Escáner de Producto
         </h3>
         {onClose && (
@@ -278,18 +456,17 @@ export const ProductScanner: React.FC<ProductScannerProps> = ({ onResult, onClos
             onClick={onClose}
             className="text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
           >
-            Cerrar ✕
+            Cerrar <X className="w-3 h-3 inline" />
           </button>
         )}
       </div>
 
       {/* Camera feed */}
       <div className="relative rounded-xl overflow-hidden border border-[var(--border-default)] bg-black">
-        <video
-          ref={setVideoRef}
-          className="w-full h-44 sm:h-52 object-cover"
-          muted
-          playsInline
+        <div
+          id="catalog-reader"
+          className="w-full h-44 sm:h-52 flex items-center justify-center bg-black overflow-hidden [&_video]:object-cover"
+          style={{ width: '100%', height: '100%' }}
         />
         {/* Scanning guide overlay */}
         {cameraReady && !aiLoading && (
@@ -347,6 +524,8 @@ export const ProductScanner: React.FC<ProductScannerProps> = ({ onResult, onClos
           <p className="text-xs font-medium text-[var(--text-secondary)]">Sugerencias de IA:</p>
           {aiSuggestions.map((s, idx) => {
             const { pct, color } = getConfidenceStyle(s.confidence);
+            const displayBarcode = s.barcode || s.suggestedBarcode;
+            const displayName = s.productName || s.suggestedName || 'Producto';
             return (
               <div
                 key={s.productId ?? `ai-${idx}`}
@@ -354,11 +533,12 @@ export const ProductScanner: React.FC<ProductScannerProps> = ({ onResult, onClos
               >
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-[var(--text-primary)] truncate">
-                    {s.productName}
+                    {displayName}
                   </p>
                   <div className="flex gap-2 text-xs text-[var(--text-muted)]">
-                    {s.barcode && <span>Cód: {s.barcode}</span>}
-                    {s.suggestedPrice && <span>~S/ {parseFloat(s.suggestedPrice).toFixed(2)}</span>}
+                    {displayBarcode && <span>Cód: {displayBarcode}</span>}
+                    {s.suggestedPrice && <span>~$ {parseFloat(s.suggestedPrice).toFixed(2)}</span>}
+                    {!s.productId && <span className="text-amber-600">Nuevo</span>}
                   </div>
                 </div>
                 <div className="flex items-center gap-3 shrink-0 ml-3">
@@ -385,6 +565,28 @@ export const ProductScanner: React.FC<ProductScannerProps> = ({ onResult, onClos
       )}
 
       {/* Status / Error */}
+      {cameraFeedback !== 'idle' && (
+        <div
+          className={`rounded-lg border px-3 py-2 text-xs font-medium ${
+            cameraFeedback === 'starting'
+              ? 'border-blue-200 bg-blue-50 text-blue-700'
+              : cameraFeedback === 'scanning'
+                ? 'border-green-200 bg-green-50 text-green-700'
+                : cameraFeedback === 'product-added'
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                  : cameraFeedback === 'not-found'
+                    ? 'border-amber-200 bg-amber-50 text-amber-700'
+                    : 'border-red-200 bg-red-50 text-red-700'
+          }`}
+        >
+          {cameraFeedback === 'starting' && 'Iniciando cámara...'}
+          {cameraFeedback === 'scanning' && 'Escaneando código de barras...'}
+          {cameraFeedback === 'product-added' && 'Producto encontrado en la base de datos.'}
+          {cameraFeedback === 'not-found' && 'Código nuevo detectado. Puedes crear el producto.'}
+          {cameraFeedback === 'camera-error' && 'Error de cámara. Verifica permisos e intenta de nuevo.'}
+        </div>
+      )}
+
       {status && !error && (
         <p className="text-xs text-[var(--primary-base)] font-medium">{status}</p>
       )}

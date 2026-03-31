@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { FileText, FileSpreadsheet } from 'lucide-react';
 import {
   exportProfitabilityReportPdf,
   exportProfitabilityReportExcel,
@@ -88,7 +89,7 @@ export const ExportButtons: React.FC = () => {
           aria-label="Export dashboard profitability report as PDF file"
           title="Download PDF report"
         >
-          📄
+          <FileText size={16} />
           {exportingPdf ? 'Exporting...' : 'Export PDF'}
         </button>
 
@@ -116,7 +117,7 @@ export const ExportButtons: React.FC = () => {
           aria-label="Export dashboard profitability report as Excel spreadsheet"
           title="Download Excel report"
         >
-          📊
+          <FileSpreadsheet size={16} />
           {exportingExcel ? 'Exporting...' : 'Export Excel'}
         </button>
       </div>

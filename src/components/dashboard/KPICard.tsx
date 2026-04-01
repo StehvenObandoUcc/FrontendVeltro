@@ -3,7 +3,7 @@ import React from 'react';
 interface KPICardProps {
   title: string;
   value: string | number;
-  icon: string;
+  icon: React.ReactNode;
   trend?: 'up' | 'down' | 'neutral';
   trendValue?: string;
   variant?: 'default' | 'success' | 'warning' | 'critical';
@@ -11,8 +11,7 @@ interface KPICardProps {
 
 /**
  * KPICard - Displays a key performance indicator with value and optional trend
- * Uses Veltro design system: Emerald green (#038E57), Orange accent (#FFAC00), Red critical (#FF2E21)
- * "Precision Ledger" style: crisp 1px borders, tabular-nums, embedded look
+ * Uses Veltro design system CSS variables for consistent theming
  */
 export const KPICard: React.FC<KPICardProps> = ({
   title,
@@ -26,64 +25,35 @@ export const KPICard: React.FC<KPICardProps> = ({
     switch (v) {
       case 'success':
         return {
-          barColor: '#10B981',
-          bgColor: '#FFFFFF',
+          barColor: 'var(--success-green)',
           iconBg: 'rgba(16, 185, 129, 0.1)',
-          iconColor: '#10B981',
+          iconColor: 'var(--success-green)',
         };
       case 'warning':
         return {
-          barColor: '#FFAC00',
-          bgColor: '#FFFFFF',
+          barColor: 'var(--accent-base)',
           iconBg: 'rgba(255, 172, 0, 0.1)',
           iconColor: '#FF9500',
         };
       case 'critical':
         return {
-          barColor: '#FF2E21',
-          bgColor: '#FFFFFF',
-          iconBg: 'rgba(255, 46, 33, 0.1)',
-          iconColor: '#FF2E21',
+          barColor: 'var(--critical-red)',
+          iconBg: 'rgba(239, 68, 68, 0.1)',
+          iconColor: 'var(--critical-red)',
         };
       default:
         return {
-          barColor: '#038E57',
-          bgColor: '#FFFFFF',
+          barColor: 'var(--primary-base)',
           iconBg: 'rgba(3, 142, 87, 0.08)',
-          iconColor: '#038E57',
+          iconColor: 'var(--primary-base)',
         };
     }
-  };
-
-  const trendColors = {
-    up: '#10B981',
-    down: '#FF2E21',
-    neutral: '#6B7280',
   };
 
   const styles = getVariantStyles(variant);
 
   return (
-    <div
-      className="relative p-5 rounded-md transition-all duration-200"
-      style={{
-        backgroundColor: styles.bgColor,
-        border: '1px solid rgba(31, 41, 55, 0.1)',
-        boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
-        overflow: 'hidden'
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)';
-        e.currentTarget.style.transform = 'translateY(-1px)';
-        e.currentTarget.style.borderColor = 'rgba(31, 41, 55, 0.2)';
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.02)';
-        e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.borderColor = 'rgba(31, 41, 55, 0.1)';
-      }}
-    >
-      {/* Precision Ledger Indicator Line */}
+    <div className="kpi-card">
       <div 
         className="absolute top-0 left-0 bottom-0 w-1"
         style={{ backgroundColor: styles.barColor }}
@@ -91,15 +61,13 @@ export const KPICard: React.FC<KPICardProps> = ({
       
       <div className="flex items-start justify-between pl-2">
         <div className="flex-1">
-          <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: '#6B7280' }}>
+          <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-tertiary)' }}>
             {title}
           </p>
           <p
-            className="text-3xl font-bold tracking-tight mt-1"
+            className="text-3xl font-bold tracking-tight tabular-data"
             style={{
-              color: '#111827',
-              fontVariantNumeric: 'tabular-nums',
-              letterSpacing: '-0.02em'
+              color: 'var(--text-primary)',
             }}
           >
             {value}
@@ -109,11 +77,10 @@ export const KPICard: React.FC<KPICardProps> = ({
               <span 
                 className="inline-flex items-center px-1.5 py-0.5 rounded"
                 style={{ 
-                  backgroundColor: `rgba(${
-                    trend === 'up' ? '16, 185, 129' : 
-                    trend === 'down' ? '255, 46, 33' : '107, 114, 128'
-                  }, 0.1)`,
-                  color: trendColors[trend] 
+                  backgroundColor: trend === 'up' ? 'rgba(16, 185, 129, 0.1)' : 
+                                   trend === 'down' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(107, 114, 128, 0.1)',
+                  color: trend === 'up' ? 'var(--success-green)' : 
+                        trend === 'down' ? 'var(--critical-red)' : 'var(--text-tertiary)'
                 }}
               >
                 {trend === 'up' && '↑ '}
@@ -121,7 +88,7 @@ export const KPICard: React.FC<KPICardProps> = ({
                 {trend === 'neutral' && '→ '}
                 {trendValue}
               </span>
-              <span className="ml-2 text-gray-500">vs mes anterior</span>
+              <span className="ml-2" style={{ color: 'var(--text-tertiary)' }}>vs mes anterior</span>
             </div>
           )}
         </div>

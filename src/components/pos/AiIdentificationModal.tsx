@@ -153,6 +153,9 @@ export const AiIdentificationModal: React.FC<AiIdentificationModalProps> = ({
             <div className="space-y-3">
               {suggestions.map((s, idx) => {
                 const { pct, color, bg, border } = getConfidenceStyle(s.confidence);
+                // Use best available barcode/name: catalog match first, then AI suggestion
+                const displayBarcode = s.barcode || s.suggestedBarcode;
+                const displayName = s.productName || s.suggestedName || 'Producto';
                 return (
                   <div
                     key={s.productId ?? `suggestion-${idx}`}
@@ -161,12 +164,13 @@ export const AiIdentificationModal: React.FC<AiIdentificationModalProps> = ({
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-[var(--text-primary)] truncate">
-                          {s.productName}
+                          {displayName}
                         </h3>
                         <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-xs text-[var(--text-muted)]">
-                          {s.barcode && <span>Código: {s.barcode}</span>}
-                          {s.suggestedPrice && <span>Precio: S/ {parseFloat(s.suggestedPrice).toFixed(2)}</span>}
+                          {displayBarcode && <span>Código: {displayBarcode}</span>}
+                          {s.suggestedPrice && <span>Precio: $ {parseFloat(s.suggestedPrice).toFixed(2)}</span>}
                           {s.productId && <span>ID: {s.productId}</span>}
+                          {!s.productId && <span className="text-amber-600">No registrado</span>}
                         </div>
                       </div>
 
@@ -177,7 +181,7 @@ export const AiIdentificationModal: React.FC<AiIdentificationModalProps> = ({
                         <button
                           onClick={() => onProductSelected(s)}
                           className="px-4 py-1.5 bg-[var(--primary-base)] text-white text-sm font-medium rounded-lg hover:bg-[var(--primary-hover)] transition-colors"
-                          aria-label={`Seleccionar ${s.productName}`}
+                          aria-label={`Seleccionar ${displayName}`}
                         >
                           Seleccionar
                         </button>

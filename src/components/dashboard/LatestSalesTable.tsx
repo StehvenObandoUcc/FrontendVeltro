@@ -116,9 +116,9 @@ export const LatestSalesTable: React.FC<LatestSalesTableProps> = ({
                   color: '#038E57',
                   fontVariantNumeric: 'tabular-nums',
                 }}
-                aria-label={`Total: $${sale.total}`}
+                aria-label={`Total: $ ${sale.total}`}
               >
-                ${typeof sale.total === 'number' ? sale.total.toFixed(2) : sale.total}
+                $ {typeof sale.total === 'number' ? sale.total.toFixed(2) : sale.total}
               </td>
               <td
                 className="px-4 py-3 text-sm"

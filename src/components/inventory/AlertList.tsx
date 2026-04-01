@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { Alert } from '../../api/inventory';
-import { dismissAlert } from '../../api/inventory';
+import { markAlertAsRead, resolveAlert } from '../../api/inventory';
 import { useAlertStore } from '../../stores/alertStore';
 import { SeverityBadge } from './SeverityBadge';
 
@@ -10,6 +10,7 @@ interface AlertListProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  onRefresh?: () => Promise<void>;
 }
 
 /**
@@ -21,21 +22,40 @@ export const AlertList: React.FC<AlertListProps> = ({
   currentPage,
   totalPages,
   onPageChange,
+  onRefresh,
 }) => {
-  const [dismissing, setDismissing] = useState<number | null>(null);
-  const markAsRead = useAlertStore((state) => state.markAsRead);
-  const removeAlert = useAlertStore((state) => state.removeAlert);
+  const [updatingRead, setUpdatingRead] = useState<number | null>(null);
+  const [resolving, setResolving] = useState<number | null>(null);
+  const markAsReadLocal = useAlertStore((state) => state.markAsReadLocal);
+  const resolveAlertLocal = useAlertStore((state) => state.resolveAlertLocal);
 
-  const handleDismiss = async (alertId: number) => {
-    setDismissing(alertId);
+  const handleMarkAsRead = async (alertId: number) => {
+    setUpdatingRead(alertId);
     try {
-      await dismissAlert(alertId);
-      markAsRead(alertId);
-      removeAlert(alertId);
+      await markAlertAsRead(alertId);
+      markAsReadLocal(alertId);
+      if (onRefresh) {
+        await onRefresh();
+      }
     } catch (error) {
-      console.error('Failed to dismiss alert:', error);
+      console.error('Failed to mark alert as read:', error);
     } finally {
-      setDismissing(null);
+      setUpdatingRead(null);
+    }
+  };
+
+  const handleResolve = async (alertId: number) => {
+    setResolving(alertId);
+    try {
+      await resolveAlert(alertId);
+      resolveAlertLocal(alertId);
+      if (onRefresh) {
+        await onRefresh();
+      }
+    } catch (error) {
+      console.error('Failed to resolve alert:', error);
+    } finally {
+      setResolving(null);
     }
   };
 
@@ -128,27 +148,59 @@ export const AlertList: React.FC<AlertListProps> = ({
                   {new Date(alert.createdAt).toLocaleString()}
                 </p>
               </div>
-              <button
-                onClick={() => handleDismiss(alert.id)}
-                disabled={dismissing === alert.id}
-                className="ml-4 px-3 py-1 text-sm font-medium rounded transition"
-                style={{
-                  color: '#038E57',
-                  backgroundColor: 'transparent',
-                  opacity: dismissing === alert.id ? 0.5 : 1,
-                  cursor: dismissing === alert.id ? 'not-allowed' : 'pointer',
-                }}
-                onMouseEnter={(e) => {
-                  if (dismissing !== alert.id) {
-                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#E8F4F0';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
-                }}
-              >
-                {dismissing === alert.id ? 'Dismissing...' : 'Dismiss'}
-              </button>
+              <div className="ml-4 flex items-center gap-2">
+                {!alert.read && (
+                  <button
+                    onClick={() => handleMarkAsRead(alert.id)}
+                    disabled={updatingRead === alert.id || resolving === alert.id}
+                    className="px-3 py-1 text-sm font-medium rounded transition"
+                    style={{
+                      color: '#1F2937',
+                      backgroundColor: 'transparent',
+                      opacity: updatingRead === alert.id ? 0.5 : 1,
+                      cursor:
+                        updatingRead === alert.id || resolving === alert.id
+                          ? 'not-allowed'
+                          : 'pointer',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (updatingRead !== alert.id && resolving !== alert.id) {
+                        (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#F3F4F6';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
+                    }}
+                  >
+                    {updatingRead === alert.id ? 'Marcando...' : 'Marcar leída'}
+                  </button>
+                )}
+
+                <button
+                  onClick={() => handleResolve(alert.id)}
+                  disabled={resolving === alert.id || updatingRead === alert.id}
+                  className="px-3 py-1 text-sm font-medium rounded transition"
+                  style={{
+                    color: '#038E57',
+                    backgroundColor: 'transparent',
+                    opacity: resolving === alert.id ? 0.5 : 1,
+                    cursor:
+                      resolving === alert.id || updatingRead === alert.id
+                        ? 'not-allowed'
+                        : 'pointer',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (resolving !== alert.id && updatingRead !== alert.id) {
+                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#E8F4F0';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
+                  }}
+                >
+                  {resolving === alert.id ? 'Resolviendo...' : 'Resolver'}
+                </button>
+              </div>
             </div>
           </div>
         ))}

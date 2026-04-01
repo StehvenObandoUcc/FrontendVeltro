@@ -1,17 +1,31 @@
 import { Link, useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { useState } from 'react';
-import { useAuthStore } from '../../stores/authStore';
+import { useAuth } from '../../hooks/useAuth';
 import { AlertBadge } from '../inventory';
+import {
+  LayoutDashboard,
+  CreditCard,
+  Package,
+  FolderOpen,
+  ClipboardList,
+  AlertTriangle,
+  ShoppingCart,
+  Building2,
+  Users,
+  Menu,
+  X,
+  LogOut,
+} from 'lucide-react';
 
 export function MainLayout() {
-  const { user, logout } = useAuthStore();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login', { replace: true });
   };
 
   const getRoleLabel = (role: string): string => {
@@ -23,32 +37,33 @@ export function MainLayout() {
     }
   };
 
-  const getNavLinks = () => {
+  const getNavLinks = (): { to: string; label: string; icon: React.ReactNode }[] => {
+    const iconSize = 18;
     switch (user?.role) {
       case 'ADMIN':
         return [
-          { to: '/dashboard', label: 'Panel Principal', icon: '📊' },
-          { to: '/pos', label: 'Terminal POS', icon: '💳' },
-          { to: '/catalog/products', label: 'Productos', icon: '📦' },
-          { to: '/catalog/categories', label: 'Categorías', icon: '📁' },
-          { to: '/inventory', label: 'Inventario', icon: '📋' },
-          { to: '/alerts', label: 'Alertas', icon: '⚠️' },
-          { to: '/purchasing', label: 'Compras', icon: '🛒' },
-          { to: '/purchasing/suppliers', label: 'Proveedores', icon: '🏢' },
-          { to: '/settings/workers', label: 'Empleados', icon: '👥' },
+          { to: '/dashboard', label: 'Panel Principal', icon: <LayoutDashboard size={iconSize} /> },
+          { to: '/pos', label: 'Terminal POS', icon: <CreditCard size={iconSize} /> },
+          { to: '/catalog/products', label: 'Productos', icon: <Package size={iconSize} /> },
+          { to: '/catalog/categories', label: 'Categorías', icon: <FolderOpen size={iconSize} /> },
+          { to: '/inventory', label: 'Inventario', icon: <ClipboardList size={iconSize} /> },
+          { to: '/alerts', label: 'Alertas', icon: <AlertTriangle size={iconSize} /> },
+          { to: '/purchasing', label: 'Compras', icon: <ShoppingCart size={iconSize} /> },
+          { to: '/purchasing/suppliers', label: 'Proveedores', icon: <Building2 size={iconSize} /> },
+          { to: '/settings/workers', label: 'Empleados', icon: <Users size={iconSize} /> },
         ];
       case 'WAREHOUSE':
         return [
-          { to: '/catalog/products', label: 'Productos', icon: '📦' },
-          { to: '/catalog/categories', label: 'Categorías', icon: '📁' },
-          { to: '/inventory', label: 'Inventario', icon: '📋' },
-          { to: '/alerts', label: 'Alertas', icon: '⚠️' },
-          { to: '/purchasing', label: 'Órdenes de Compra', icon: '🛒' },
+          { to: '/catalog/products', label: 'Productos', icon: <Package size={iconSize} /> },
+          { to: '/catalog/categories', label: 'Categorías', icon: <FolderOpen size={iconSize} /> },
+          { to: '/inventory', label: 'Inventario', icon: <ClipboardList size={iconSize} /> },
+          { to: '/alerts', label: 'Alertas', icon: <AlertTriangle size={iconSize} /> },
+          { to: '/purchasing', label: 'Órdenes de Compra', icon: <ShoppingCart size={iconSize} /> },
         ];
       case 'CASHIER':
         return [
-          { to: '/pos', label: 'Terminal POS', icon: '💳' },
-          { to: '/catalog/products', label: 'Productos', icon: '📦' },
+          { to: '/pos', label: 'Terminal POS', icon: <CreditCard size={iconSize} /> },
+          { to: '/catalog/products', label: 'Productos', icon: <Package size={iconSize} /> },
         ];
       default:
         return [];
@@ -56,6 +71,20 @@ export function MainLayout() {
   };
 
   const navLinks = getNavLinks();
+
+  const isLinkActive = (to: string): boolean => {
+    if (to === '/purchasing') {
+      return location.pathname === '/purchasing' || location.pathname.startsWith('/purchasing/po');
+    }
+
+    if (to === '/purchasing/suppliers') {
+      return location.pathname === '/purchasing/suppliers' || location.pathname.startsWith('/purchasing/suppliers/');
+    }
+
+    return location.pathname === to || location.pathname.startsWith(`${to}/`);
+  };
+
+  const activeNavLink = navLinks.find((link) => isLinkActive(link.to));
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row" style={{ backgroundColor: 'var(--surface-primary)' }}>
@@ -67,9 +96,7 @@ export function MainLayout() {
           className="p-2 rounded-md hover:bg-gray-100 transition"
           style={{ color: 'var(--primary-base)' }}
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
+          <Menu className="w-6 h-6" />
         </button>
         <div className="ml-4 font-bold text-lg" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
           Veltro <span style={{ color: 'var(--primary-base)' }}>POS</span>
@@ -89,9 +116,7 @@ export function MainLayout() {
           onClick={() => setSidebarOpen(false)}
           className="lg:hidden absolute top-4 right-4 text-gray-400 hover:text-white"
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <X className="w-6 h-6" />
         </button>
 
         {/* Logo Area */}
@@ -109,7 +134,7 @@ export function MainLayout() {
             Módulos
           </div>
           {navLinks.map((link) => {
-            const isActive = location.pathname.startsWith(link.to);
+            const isActive = isLinkActive(link.to);
             return (
               <Link
                 key={link.to}
@@ -134,7 +159,7 @@ export function MainLayout() {
                   }
                 }}
               >
-                <span className="mr-3 text-base opacity-80">{link.icon}</span>
+                <span className="mr-3 opacity-80 flex items-center">{link.icon}</span>
                 {link.label}
               </Link>
             );
@@ -165,6 +190,7 @@ export function MainLayout() {
               e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
             }}
           >
+            <LogOut size={14} className="inline mr-1.5" />
             Cerrar Sesión
           </button>
         </div>
@@ -184,7 +210,7 @@ export function MainLayout() {
             <span className="opacity-60">Veltro</span>
             <span className="mx-2 opacity-40">/</span>
             <span style={{ color: 'var(--text-primary)' }}>
-              {navLinks.find(l => location.pathname.startsWith(l.to))?.label || 'Panel'}
+              {activeNavLink?.label || 'Panel'}
             </span>
           </div>
           

@@ -228,21 +228,7 @@ export const AlertConfigForm: React.FC<AlertConfigFormProps> = ({
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full px-4 py-2 font-medium rounded-md transition"
-        style={{
-          backgroundColor: '#038E57',
-          color: '#FFFFFF',
-          opacity: isSubmitting ? 0.6 : 1,
-          cursor: isSubmitting ? 'not-allowed' : 'pointer',
-        }}
-        onMouseEnter={(e) => {
-          if (!isSubmitting) {
-            (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#10A96D';
-          }
-        }}
-        onMouseLeave={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#038E57';
-        }}
+        className="btn-primary w-full"
       >
         {isSubmitting ? 'Saving...' : 'Save Configuration'}
       </button>

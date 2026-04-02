@@ -1,4 +1,5 @@
 import React from 'react';
+import { CircleCheck } from 'lucide-react';
 import type { SaleResponse } from '../../api/pos';
 
 interface SaleReceiptProps {
@@ -29,8 +30,8 @@ export const SaleReceipt: React.FC<SaleReceiptProps> = ({
   const paymentMethodLabel: Record<string, string> = {
     CASH: 'Efectivo',
     CARD: 'Tarjeta',
-    YAPE: 'Yape',
-    PLIN: 'Plin',
+    NEQUI: 'Nequi',
+    DAVIPLATA: 'Daviplata',
   };
 
   const itemCount = saleData.details?.reduce((sum, d) => sum + d.quantity, 0) ?? 0;
@@ -40,7 +41,7 @@ export const SaleReceipt: React.FC<SaleReceiptProps> = ({
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 overflow-y-auto max-h-96">
         {/* Header */}
         <div className="bg-green-600 text-white px-6 py-4 text-center">
-          <div className="text-3xl mb-2">&#10003;</div>
+          <CircleCheck className="w-8 h-8 mx-auto mb-2" />
           <h2 className="text-xl font-bold">Venta Confirmada!</h2>
         </div>
 
@@ -64,11 +65,11 @@ export const SaleReceipt: React.FC<SaleReceiptProps> = ({
                 <div>
                   <p className="font-medium">{item.productName}</p>
                   <p className="text-gray-500">
-                    {item.quantity}x ${parseFloat(item.unitPrice).toFixed(2)}
+                    {item.quantity}x $ {parseFloat(item.unitPrice).toFixed(2)}
                   </p>
                 </div>
                 <p className="font-semibold">
-                  ${parseFloat(item.subtotal).toFixed(2)}
+                  $ {parseFloat(item.subtotal).toFixed(2)}
                 </p>
               </div>
             ))}
@@ -82,18 +83,18 @@ export const SaleReceipt: React.FC<SaleReceiptProps> = ({
             </div>
             <div className="flex justify-between text-base font-bold text-green-600 border-t pt-2">
               <span>Total:</span>
-              <span>${parseFloat(saleData.total).toFixed(2)}</span>
+              <span>$ {parseFloat(saleData.total).toFixed(2)}</span>
             </div>
             {saleData.amountReceived && (
               <>
                 <div className="flex justify-between text-xs">
                   <span className="text-gray-600">Recibido:</span>
-                  <span>${parseFloat(saleData.amountReceived).toFixed(2)}</span>
+                  <span>$ {parseFloat(saleData.amountReceived).toFixed(2)}</span>
                 </div>
                 {saleData.change && (
                   <div className="flex justify-between text-xs">
                     <span className="text-gray-600">Cambio:</span>
-                    <span>${parseFloat(saleData.change).toFixed(2)}</span>
+                    <span>$ {parseFloat(saleData.change).toFixed(2)}</span>
                   </div>
                 )}
               </>

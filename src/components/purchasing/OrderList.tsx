@@ -161,7 +161,7 @@ export const OrderList: React.FC<OrderListProps> = ({
                     fontVariantNumeric: 'tabular-nums',
                   }}
                 >
-                  ${order.total}
+                  $ {order.total}
                 </p>
                 <p className="text-xs" style={{ color: '#9CA3AF' }}>
                   {order.auditInfo?.createdAt
@@ -203,21 +203,7 @@ export const OrderList: React.FC<OrderListProps> = ({
                     <button
                       onClick={() => setReceivingOrder(order.id)}
                       disabled={operatingOrderId === order.id}
-                      className="text-sm px-3 py-1 rounded transition"
-                      style={{
-                        backgroundColor: '#038E57',
-                        color: '#FFFFFF',
-                        opacity: operatingOrderId === order.id ? 0.6 : 1,
-                        cursor: operatingOrderId === order.id ? 'not-allowed' : 'pointer',
-                      }}
-                      onMouseEnter={(e) => {
-                        if (operatingOrderId !== order.id) {
-                          (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#10A96D';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#038E57';
-                      }}
+                      className="btn-primary text-sm px-3 py-1"
                     >
                       Receive
                     </button>
@@ -225,21 +211,7 @@ export const OrderList: React.FC<OrderListProps> = ({
                   <button
                     onClick={() => handleClone(order.id)}
                     disabled={operatingOrderId === order.id}
-                    className="text-sm px-3 py-1 rounded transition"
-                    style={{
-                      backgroundColor: '#038E57',
-                      color: '#FFFFFF',
-                      opacity: operatingOrderId === order.id ? 0.6 : 1,
-                      cursor: operatingOrderId === order.id ? 'not-allowed' : 'pointer',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (operatingOrderId !== order.id) {
-                        (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#10A96D';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#038E57';
-                    }}
+                    className="btn-primary text-sm px-3 py-1"
                   >
                     Clone
                   </button>
@@ -335,7 +307,7 @@ export const OrderList: React.FC<OrderListProps> = ({
                             fontVariantNumeric: 'tabular-nums',
                           }}
                         >
-                          ${detail.unitCost}
+                          $ {detail.unitCost}
                         </td>
                         <td
                           className="px-3 py-2 text-right"
@@ -361,7 +333,7 @@ export const OrderList: React.FC<OrderListProps> = ({
                             fontVariantNumeric: 'tabular-nums',
                           }}
                         >
-                          ${detail.subtotal}
+                          $ {detail.subtotal}
                         </td>
                       </tr>
                     ))}

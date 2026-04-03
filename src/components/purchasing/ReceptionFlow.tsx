@@ -85,18 +85,7 @@ export const ReceptionFlow: React.FC<ReceptionFlowProps> = ({
           <button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="px-4 py-2 rounded-md font-medium text-white transition-opacity"
-            style={{
-              backgroundColor: '#038E57',
-              opacity: isSubmitting ? 0.5 : 1,
-              cursor: isSubmitting ? 'not-allowed' : 'pointer',
-            }}
-            onMouseEnter={(e) => {
-              if (!isSubmitting) e.currentTarget.style.opacity = '0.9';
-            }}
-            onMouseLeave={(e) => {
-              if (!isSubmitting) e.currentTarget.style.opacity = '1';
-            }}
+            className="btn-primary px-4 py-2"
           >
             {isSubmitting ? 'Receiving...' : 'Confirm Receipt'}
           </button>

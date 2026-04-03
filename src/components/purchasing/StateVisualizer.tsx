@@ -1,4 +1,5 @@
 import React from 'react';
+import { Clock, TruckIcon, CircleCheck, Ban } from 'lucide-react';
 import type { POStatus } from '../../api/purchasing';
 
 interface StateVisualizerProps {
@@ -8,10 +9,7 @@ interface StateVisualizerProps {
 
 /**
  * StateVisualizer - Visual indicator for purchase order status
- * - PENDING: Blue (🔵)
- * - PARTIAL: Yellow (🟡)
- * - RECEIVED: Green (🟢)
- * - VOIDED: Gray (⚫)
+ * Uses Lucide icons with semantic colors from the Veltro palette.
  */
 export const StateVisualizer: React.FC<StateVisualizerProps> = ({
   status,
@@ -19,33 +17,33 @@ export const StateVisualizer: React.FC<StateVisualizerProps> = ({
 }) => {
   const statusConfig: Record<
     POStatus,
-    { bg: string; text: string; icon: string; label: string; dotColor: string }
+    { bg: string; text: string; icon: React.ReactNode; label: string; dotColor: string }
   > = {
     PENDING: {
       bg: '#FFF9E6',
       text: '#FF9500',
-      icon: '🔵',
+      icon: <Clock size={14} />,
       label: 'Pending',
       dotColor: '#FFAC00',
     },
     PARTIAL: {
       bg: '#FFF4E6',
       text: '#FF9500',
-      icon: '🟡',
+      icon: <TruckIcon size={14} />,
       label: 'Partial',
       dotColor: '#FF9500',
     },
     RECEIVED: {
       bg: '#E8F4F0',
       text: '#038E57',
-      icon: '🟢',
+      icon: <CircleCheck size={14} />,
       label: 'Received',
       dotColor: '#038E57',
     },
     VOIDED: {
       bg: '#F3F4F6',
       text: '#6B7280',
-      icon: '⚫',
+      icon: <Ban size={14} />,
       label: 'Voided',
       dotColor: '#6B7280',
     },
@@ -76,7 +74,7 @@ export const StateVisualizer: React.FC<StateVisualizerProps> = ({
           backgroundColor: config.dotColor,
         }}
       ></span>
-      <span>{config.icon}</span>
+      <span className="flex items-center">{config.icon}</span>
       {config.label}
     </span>
   );

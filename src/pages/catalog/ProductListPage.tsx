@@ -11,6 +11,9 @@ export function ProductListPage() {
   const [totalElements, setTotalElements] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{ id: number; name: string; mode: 'deactivate' | 'activate' } | null>(null);
+  const [isConfirmLoading, setIsConfirmLoading] = useState(false);
   const { hasRole } = useAuthStore();
 
   const canEdit = hasRole(['ADMIN', 'WAREHOUSE']);
@@ -35,23 +38,40 @@ export function ProductListPage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!window.confirm('¿Está seguro de desactivar este producto?')) {
-      return;
-    }
+  const handleStatusChange = async () => {
+    if (!confirmAction) return;
+
+    setIsConfirmLoading(true);
+    setError(null);
+
     try {
-      await productApi.delete(id);
-      loadProducts();
+      if (confirmAction.mode === 'deactivate') {
+        await productApi.delete(confirmAction.id);
+        setSuccessMsg('Producto desactivado correctamente');
+      } else {
+        await productApi.activate(confirmAction.id);
+        setSuccessMsg('Producto reactivado correctamente');
+      }
+
+      setConfirmAction(null);
+      setTimeout(() => setSuccessMsg(null), 3000);
+      await loadProducts();
     } catch (err) {
-      setError('Error al desactivar el producto');
+      setError(
+        confirmAction.mode === 'deactivate'
+          ? 'Error al desactivar el producto'
+          : 'Error al reactivar el producto'
+      );
       console.error(err);
+    } finally {
+      setIsConfirmLoading(false);
     }
   };
 
   const formatPrice = (price: string): string => {
-    return new Intl.NumberFormat('es-PE', {
+    return new Intl.NumberFormat('es-CO', {
       style: 'currency',
-      currency: 'PEN',
+      currency: 'COP',
     }).format(parseFloat(price));
   };
 
@@ -85,6 +105,12 @@ export function ProductListPage() {
       {error && (
         <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-600 shadow-sm">
           {error}
+        </div>
+      )}
+
+      {successMsg && (
+        <div className="p-4 rounded-xl bg-green-50 border border-green-200 text-green-700 shadow-sm font-medium text-sm">
+          {successMsg}
         </div>
       )}
 
@@ -146,11 +172,21 @@ export function ProductListPage() {
                       Editar
                     </Link>
                     <button
-                       onClick={() => handleDelete(product.id)}
-                       className="text-red-500 hover:text-red-700 transition-colors"
-                     >
-                       Desactivar
-                     </button>
+                       onClick={() =>
+                         setConfirmAction({
+                           id: product.id,
+                           name: product.name,
+                           mode: product.active ? 'deactivate' : 'activate',
+                         })
+                       }
+                       className={`transition-colors ${
+                         product.active
+                           ? 'text-red-500 hover:text-red-700'
+                           : 'text-[var(--primary-base)] hover:text-[var(--primary-dark)]'
+                       }`}
+                      >
+                        {product.active ? 'Desactivar' : 'Reactivar'}
+                      </button>
                   </td>
                 )}
               </tr>
@@ -187,6 +223,44 @@ export function ProductListPage() {
              >
                Siguiente
              </button>
+          </div>
+        </div>
+      )}
+
+      {confirmAction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-xl border border-gray-200 max-w-sm w-full p-6">
+            <h3 className="text-base font-semibold text-gray-900">
+              {confirmAction.mode === 'deactivate' ? 'Desactivar producto' : 'Reactivar producto'}
+            </h3>
+            <p className="text-sm text-gray-600 mt-2">
+              {confirmAction.mode === 'deactivate'
+                ? `Se desactivará "${confirmAction.name}" y no aparecerá en operaciones activas.`
+                : `Se reactivará "${confirmAction.name}" y volverá a estar disponible.`}
+            </p>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setConfirmAction(null)}
+                disabled={isConfirmLoading}
+                className="btn-secondary text-sm disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleStatusChange}
+                disabled={isConfirmLoading}
+                className={`${confirmAction.mode === 'deactivate' ? 'btn-danger' : 'btn-primary'} text-sm disabled:opacity-60`}
+              >
+                {isConfirmLoading
+                  ? confirmAction.mode === 'deactivate'
+                    ? 'Desactivando...'
+                    : 'Reactivando...'
+                  : confirmAction.mode === 'deactivate'
+                    ? 'Desactivar'
+                    : 'Reactivar'}
+              </button>
+            </div>
           </div>
         </div>
       )}

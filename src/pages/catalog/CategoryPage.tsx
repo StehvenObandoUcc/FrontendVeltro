@@ -11,17 +11,16 @@ import type { AxiosError } from 'axios';
 const categorySchema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
   description: z.string().optional(),
-  parentCategoryId: z.string().optional(),
 });
 
 type CategoryFormData = z.infer<typeof categorySchema>;
 
 export function CategoryPage() {
   const [categories, setCategories] = useState<Category[]>([]);
-  const [_flatCategories, setFlatCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [showForm, setShowForm] = useState(false);
   const { hasRole } = useAuthStore();
@@ -44,12 +43,8 @@ export function CategoryPage() {
   const loadCategories = async () => {
     setIsLoading(true);
     try {
-      const [tree, flat] = await Promise.all([
-        categoryApi.getTree(),
-        categoryApi.getAll(),
-      ]);
+      const tree = await categoryApi.getTree();
       setCategories(tree);
-      setFlatCategories(flat);
     } catch (err) {
       setError('Error al cargar las categorías');
       console.error(err);
@@ -60,7 +55,7 @@ export function CategoryPage() {
 
   const handleNew = () => {
     setEditingCategory(null);
-    reset({ name: '', description: '', parentCategoryId: '' });
+    reset({ name: '', description: '' });
     setShowForm(true);
   };
 
@@ -69,7 +64,6 @@ export function CategoryPage() {
     reset({
       name: category.name,
       description: category.description || '',
-      parentCategoryId: category.parentCategoryId?.toString() || '',
     });
     setShowForm(true);
   };
@@ -80,7 +74,9 @@ export function CategoryPage() {
     }
     try {
       await categoryApi.delete(category.id);
-      loadCategories();
+      setSuccessMsg(`Categoría "${category.name}" desactivada correctamente`);
+      setTimeout(() => setSuccessMsg(null), 3000);
+      await loadCategories();
     } catch (err) {
       setError('Error al desactivar la categoría');
       console.error(err);
@@ -100,7 +96,6 @@ export function CategoryPage() {
     const categoryData = {
       name: data.name,
       description: data.description || undefined,
-      parentCategoryId: data.parentCategoryId ? parseInt(data.parentCategoryId) : undefined,
     };
 
     try {
@@ -130,102 +125,122 @@ export function CategoryPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
-      {/* Category Tree */}
-      <div>
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">Categorías</h1>
-          {canEdit && (
-            <button
-               onClick={handleNew}
-               className="btn-primary"
-             >
-               Nueva Categoría
-             </button>
-          )}
+    <div className="p-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Categorías</h1>
+          <p className="text-sm text-gray-500 mt-1">Gestione la jerarquía de categorías para sus productos</p>
         </div>
-
-        {error && !showForm && (
-          <div className="p-4 rounded-xl mb-6 bg-red-50 border border-red-200 text-red-600 shadow-sm">
-            {error}
-          </div>
+        {canEdit && (
+          <button
+            onClick={handleNew}
+            className="bg-[var(--primary-base)] text-white px-4 py-2 rounded-lg font-medium hover:bg-[var(--primary-dark)] transition-colors shadow-sm"
+          >
+            + Nueva Categoría
+          </button>
         )}
-
-        <div className="card p-6">
-          <CategoryTree
-            categories={categories}
-            onEdit={canEdit ? handleEdit : undefined}
-            onDelete={canEdit ? handleDelete : undefined}
-          />
-        </div>
       </div>
 
-      {/* Category Form */}
-      {showForm && canEdit && (
-        <div className="lg:sticky lg:top-6">
-          <h2 className="text-xl font-bold text-[var(--text-primary)] tracking-tight mb-6">
-            {editingCategory ? 'Editar Categoría' : 'Nueva Categoría'}
-          </h2>
+      {error && !showForm && (
+        <div className="p-4 rounded-xl mb-6 bg-red-50 border border-red-200 text-red-600 shadow-sm">
+          {error}
+        </div>
+      )}
 
-          {error && (
-            <div className="p-4 rounded-xl mb-6 bg-red-50 border border-red-200 text-red-600 shadow-sm">
-              {error}
-            </div>
-          )}
+      {successMsg && (
+        <div className="p-4 rounded-xl mb-6 bg-green-50 border border-green-200 text-green-700 shadow-sm font-medium text-sm">
+          {successMsg}
+        </div>
+      )}
 
-          <form onSubmit={handleSubmit(onSubmit)} className="card p-8 space-y-6">
-            <div>
-              <label htmlFor="name" className="block text-sm font-semibold text-[var(--text-primary)] mb-1.5">
-                Nombre *
-              </label>
-              <input
-                 id="name"
-                 type="text"
-                 {...register('name')}
-                 className="input-base"
-                 placeholder="Ej. Accesorios"
-               />
-              {errors.name && (
-                <p className="mt-1.5 text-sm font-medium text-red-500">{errors.name.message}</p>
+      <div className={showForm ? "grid grid-cols-1 lg:grid-cols-3 gap-8" : "block"}>
+        {/* Category Tree */}
+        <div className={showForm ? "lg:col-span-2" : "w-full"}>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <CategoryTree
+              categories={categories}
+              onEdit={canEdit ? handleEdit : undefined}
+              onDelete={canEdit ? handleDelete : undefined}
+            />
+          </div>
+        </div>
+
+        {/* Category Form */}
+        {showForm && canEdit && (
+          <div className="lg:col-span-1">
+            <div className="sticky top-6 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                <h2 className="text-lg font-bold text-gray-900">
+                  {editingCategory ? 'Editar Categoría' : 'Nueva Categoría'}
+                </h2>
+                <button 
+                  onClick={handleCancel}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+              </div>
+
+              {error && (
+                <div className="mx-6 mt-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">
+                  {error}
+                </div>
               )}
-            </div>
+
+              <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-5">
+                <div>
+                  <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-1">
+                    Nombre *
+                  </label>
+                  <input
+                    id="name"
+                    type="text"
+                    {...register('name')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary-base)] focus:border-transparent outline-none transition-all"
+                    placeholder="Ej. Accesorios"
+                  />
+                  {errors.name && (
+                    <p className="mt-1.5 text-sm font-medium text-red-500">{errors.name.message}</p>
+                  )}
+                </div>
 
             <div>
-              <label htmlFor="description" className="block text-sm font-semibold text-[var(--text-primary)] mb-1.5">
+              <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-1">
                 Descripción
               </label>
               <textarea
                 id="description"
                 rows={3}
                 {...register('description')}
-                className="input-base resize-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary-base)] focus:border-transparent outline-none transition-all resize-none"
                 placeholder="Descripción de la categoría"
               />
             </div>
 
-            {/* Categoría Padre - Oculto para evitar errores de FK
-                Las categorías se crean como raíz por defecto */}
-            <input type="hidden" {...register('parentCategoryId')} value="" />
-
-             <div className="flex justify-end space-x-3 pt-6 mt-6 border-t border-[var(--border-light)]">
+             <div className="flex gap-3 pt-4 mt-6 border-t border-gray-100">
                <button
                  type="button"
                  onClick={handleCancel}
-                 className="btn-secondary"
+                 className="flex-1 px-4 py-2 border border-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
                >
                  Cancelar
                </button>
                <button
                  type="submit"
                  disabled={isSaving}
-                 className="btn-primary"
+                 className="flex-1 px-4 py-2 bg-[var(--primary-base)] text-white rounded-lg font-medium hover:bg-[var(--primary-dark)] transition-colors shadow-sm disabled:opacity-70 flex justify-center items-center"
                >
-                 {isSaving ? 'Guardando...' : editingCategory ? 'Actualizar' : 'Crear'}
+                 {isSaving ? (
+                   <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                 ) : editingCategory ? 'Actualizar' : 'Crear'}
                </button>
              </div>
           </form>
-        </div>
-      )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

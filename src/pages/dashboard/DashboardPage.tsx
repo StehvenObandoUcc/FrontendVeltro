@@ -1,11 +1,22 @@
 import React, { useState, useEffect } from 'react';
+import type { AxiosError } from 'axios';
 import { getDashboard } from '../../api/dashboard';
 import type { DashboardResponse } from '../../api/dashboard';
+import type { ApiError } from '../../types';
 import {
   KPICard,
   LatestSalesTable,
   ExportButtons,
 } from '../../components/dashboard';
+import {
+  DollarSign,
+  Ticket,
+  TrendingUp,
+  ClipboardList,
+  PackageX,
+  AlertTriangle,
+  BarChart3,
+} from 'lucide-react';
 
 /**
  * DashboardPage - Main dashboard displaying KPIs and sales overview
@@ -25,10 +36,10 @@ export const DashboardPage: React.FC = () => {
         const response = await getDashboard();
         setData(response.data);
       } catch (err) {
+        const axiosError = err as AxiosError<ApiError>;
         setError(
-          err instanceof Error
-            ? err.message
-            : 'Failed to load dashboard data'
+          axiosError.response?.data?.message
+            || (err instanceof Error ? err.message : 'Error al cargar el panel')
         );
       } finally {
         setIsLoading(false);
@@ -64,7 +75,7 @@ export const DashboardPage: React.FC = () => {
           }}
         >
           <div className="flex items-center gap-2">
-            <span className="text-red-500">⚠</span>
+            <span className="text-red-500 flex items-center"><AlertTriangle size={16} /></span>
             <p style={{ color: '#FF2E21', fontSize: '0.875rem', fontWeight: 500 }}>{error}</p>
           </div>
         </div>
@@ -95,26 +106,26 @@ export const DashboardPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <KPICard
                 title="Ventas de Hoy"
-                value={`$${parseFloat(data.todaySales).toFixed(2)}`}
-                icon="💰"
+                value={`$ ${parseFloat(data.todaySales).toFixed(2)}`}
+                icon={<DollarSign size={20} />}
                 variant="success"
               />
               <KPICard
                 title="Ticket Promedio"
-                value={`$${parseFloat(data.averageTicket).toFixed(2)}`}
-                icon="🎫"
+                value={`$ ${parseFloat(data.averageTicket).toFixed(2)}`}
+                icon={<Ticket size={20} />}
                 variant="default"
               />
               <KPICard
                 title="Ganancia Est. Mensual"
-                value={`$${parseFloat(data.estimatedMonthlyProfit).toFixed(2)}`}
-                icon="📈"
+                value={`$ ${parseFloat(data.estimatedMonthlyProfit).toFixed(2)}`}
+                icon={<TrendingUp size={20} />}
                 variant="default"
               />
               <KPICard
                 title="Ventas del Dia"
                 value={data.todaySalesCount}
-                icon="📋"
+                icon={<ClipboardList size={20} />}
                 variant="default"
               />
             </div>
@@ -127,13 +138,13 @@ export const DashboardPage: React.FC = () => {
               <KPICard
                 title="Productos Sin Stock"
                 value={data.outOfStockProducts}
-                icon="📦"
+                icon={<PackageX size={20} />}
                 variant="critical"
               />
               <KPICard
                 title="Productos Stock Bajo"
                 value={data.lowStockAlertCount}
-                icon="⚠️"
+                icon={<AlertTriangle size={20} />}
                 variant="warning"
               />
             </div>
@@ -156,7 +167,7 @@ export const DashboardPage: React.FC = () => {
               <h2 className="text-xs font-bold uppercase tracking-widest text-gray-400">Reportes</h2>
               <div className="card p-6">
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-4" style={{ backgroundColor: 'rgba(3,142,87,0.1)' }}>
-                  <span className="text-xl" style={{ color: '#038E57' }}>📊</span>
+                  <span className="text-xl flex items-center" style={{ color: '#038E57' }}><BarChart3 size={22} /></span>
                 </div>
                 <h3 className="text-base font-bold text-gray-900 mb-1">Exportar Datos</h3>
                 <p className="text-sm text-gray-500 mb-6">

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ShieldCheck, Download, Info } from 'lucide-react';
 import { getAuditRecords, exportAuditCsv } from '../../api/audit';
 import type { AuditRecord, AuditFilters } from '../../api/audit';
 import {
@@ -97,8 +98,8 @@ export const AuditListPage: React.FC = () => {
       {/* Header and Export */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">
-            Audit Trail 🔐
+          <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight flex items-center gap-2">
+            Audit Trail <ShieldCheck size={22} className="text-[var(--primary-base)]" />
           </h1>
           <p className="mt-1 text-[var(--text-secondary)] text-sm">
             Complete forensic audit log of all system changes
@@ -109,7 +110,7 @@ export const AuditListPage: React.FC = () => {
           disabled={isExporting || records.length === 0}
           className="btn-secondary flex items-center gap-2"
         >
-          <span>📥</span>
+          <span><Download size={16} /></span>
           {isExporting ? 'Exportando...' : 'Exportar a CSV'}
         </button>
       </div>
@@ -154,7 +155,7 @@ export const AuditListPage: React.FC = () => {
       {/* Info Footer */}
       <div className="mt-8 p-4 bg-slate-50 border border-slate-200 rounded-xl">
         <p className="text-sm text-slate-600 flex items-center gap-2">
-          <span>ℹ️</span> This audit trail records all create, update, delete, and void operations.
+          <span className="flex items-center"><Info size={16} /></span> This audit trail records all create, update, delete, and void operations.
           Changes are compared before/after for full forensic tracking.
         </p>
       </div>

@@ -119,7 +119,7 @@ export const handlers = [
         content: [generateMockProduct(1), generateMockProduct(2), generateMockProduct(3)],
         totalElements: 100,
         totalPages: 10,
-        currentPage: parseInt(page),
+        number: parseInt(page),
         pageSize: 10,
       },
       { status: 200 }
@@ -166,7 +166,7 @@ export const handlers = [
         content: [generateMockSale(1), generateMockSale(2)],
         totalElements: 50,
         totalPages: 5,
-        currentPage: parseInt(page),
+        number: parseInt(page),
         pageSize: 10,
       },
       { status: 200 }
@@ -198,36 +198,41 @@ export const handlers = [
   }),
 
   // ========== AI SCANNER ==========
-  http.post(`${API_BASE}/scanner/ai-scan`, async ({ request }) => {
-    const body = await request.json() as any;
+  http.post(`${API_BASE}/scanner/ai`, async () => {
     return HttpResponse.json(
       {
         suggestions: [
           {
-            productId: '1',
-            name: 'Product 1',
-            category: 'Electronics',
-            estimatedPrice: '29.99',
-            confidence: 95,
+            productId: 1,
+            productName: 'Producto Mock 1',
+            barcode: '7701234567890',
+            suggestedPrice: '29.99',
+            confidence: 0.95,
           },
           {
-            productId: '2',
-            name: 'Product 2',
-            category: 'Electronics',
-            estimatedPrice: '19.99',
-            confidence: 87,
+            productId: 2,
+            productName: 'Producto Mock 2',
+            barcode: '7701234567891',
+            suggestedPrice: '19.99',
+            confidence: 0.87,
           },
           {
-            productId: '3',
-            name: 'Product 3',
-            category: 'Electronics',
-            estimatedPrice: '49.99',
-            confidence: 78,
+            productId: null,
+            productName: 'Producto Mock 3',
+            barcode: null,
+            suggestedPrice: '49.99',
+            confidence: 0.78,
           },
         ],
+        processingTimeMs: 1234,
+        strategyUsed: 'mock',
       },
       { status: 200 }
     );
+  }),
+
+  http.get(`${API_BASE}/scanner/ai/available`, () => {
+    return HttpResponse.json({ available: true }, { status: 200 });
   }),
 
   // ========== INVENTORY / ALERTS ==========
@@ -242,7 +247,7 @@ export const handlers = [
         ],
         totalElements: 50,
         totalPages: 5,
-        currentPage: parseInt(page),
+        number: parseInt(page),
         pageSize: 10,
       },
       { status: 200 }
@@ -269,7 +274,7 @@ export const handlers = [
         content: [generateMockPurchaseOrder(1), generateMockPurchaseOrder(2)],
         totalElements: 25,
         totalPages: 3,
-        currentPage: parseInt(page),
+        number: parseInt(page),
         pageSize: 10,
       },
       { status: 200 }
@@ -348,7 +353,7 @@ export const handlers = [
         ],
         totalElements: 100,
         totalPages: 10,
-        currentPage: parseInt(page),
+        number: parseInt(page),
         pageSize: 10,
       },
       { status: 200 }

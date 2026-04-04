@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getAlerts } from '../../api/inventory';
+import { getAlerts, getUnreadAlertCount } from '../../api/inventory';
 import type { Alert } from '../../api/inventory';
 import { AlertList } from '../../components/inventory';
 import { useAlertStore } from '../../stores/alertStore';
@@ -9,30 +9,37 @@ import { useAlertStore } from '../../stores/alertStore';
  * Allows viewing alerts with pagination and dismissing them
  */
 export const AlertListPage: React.FC = () => {
-  const [alerts, setAlerts] = useState<Alert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [selectedSeverity, setSelectedSeverity] = useState<string | undefined>(undefined);
-  const setAllerts = useAlertStore((state) => state.setAlerts);
+  const activeAlerts = useAlertStore((state) => state.activeAlerts);
+  const unreadCount = useAlertStore((state) => state.unreadCount);
+  const setActiveAlerts = useAlertStore((state) => state.setActiveAlerts);
+  const setUnreadCount = useAlertStore((state) => state.setUnreadCount);
+
+  const fetchAlerts = React.useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [alertsResponse, unreadResponse] = await Promise.all([
+        getAlerts(currentPage, selectedSeverity),
+        getUnreadAlertCount(),
+      ]);
+
+      const alerts = alertsResponse.data.content.filter((alert: Alert) => !alert.resolved);
+      setTotalPages(alertsResponse.data.totalPages);
+      setActiveAlerts(alerts);
+      setUnreadCount(unreadResponse.data.count);
+    } catch (error) {
+      console.error('Failed to fetch alerts:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentPage, selectedSeverity, setActiveAlerts, setUnreadCount]);
 
   useEffect(() => {
-    const fetchAlerts = async () => {
-      setIsLoading(true);
-      try {
-        const response = await getAlerts(currentPage, selectedSeverity);
-        setAlerts(response.data.content);
-        setTotalPages(response.data.totalPages);
-        setAllerts(response.data.content);
-      } catch (error) {
-        console.error('Failed to fetch alerts:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchAlerts();
-  }, [currentPage, selectedSeverity, setAllerts]);
+    void fetchAlerts();
+  }, [fetchAlerts]);
 
   const handleSeverityChange = (severity: string | undefined) => {
     setSelectedSeverity(severity);
@@ -46,6 +53,9 @@ export const AlertListPage: React.FC = () => {
         <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">Alertas de Inventario</h1>
         <p className="mt-1 text-[var(--text-secondary)] text-sm">
           Monitorea y gestiona las alertas de stock
+        </p>
+        <p className="mt-1 text-xs text-[var(--text-muted)]">
+          No leídas: {unreadCount}
         </p>
       </div>
 
@@ -101,11 +111,12 @@ export const AlertListPage: React.FC = () => {
       {/* Alert List */}
       <div className="card overflow-hidden">
         <AlertList
-          alerts={alerts}
+          alerts={activeAlerts}
           isLoading={isLoading}
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={setCurrentPage}
+          onRefresh={fetchAlerts}
         />
       </div>
     </div>

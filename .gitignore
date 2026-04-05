@@ -3,6 +3,10 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+### Testing & Demos ###
+images_test/
+/public/images_test/
+
 ### STS ###
 .apt_generated
 .classpath
@@ -31,9 +35,16 @@ build/
 ### VS Code ###
 .vscode/
 
-### Veltro ###
+### Veltro Specific ###
 *.class
 **/application-local.yml
+.agents/
+tsconfig.tsbuildinfo
+
+### Build output ###
+dist/
+dist-ssr/
+build/
 
 ### 🔐 SECURITY: API Keys & Credentials (NEVER COMMIT) ###
 .env
@@ -54,10 +65,14 @@ OPENAI_API_KEY
 **/openai.key
 **/api-keys/**
 
-### Logs that may contain sensitive data ###
+### Logs ###
 logs/
 *.log
 *.log.*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
 ### OS-specific ###
 .DS_Store
@@ -66,3 +81,6 @@ Thumbs.db
 *.swo
 *~
 
+### Dependencies ###
+node_modules/
+.pnpm-store/

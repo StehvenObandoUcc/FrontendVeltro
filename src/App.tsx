@@ -4,6 +4,7 @@ import { AuthGuard, RoleGuard } from './components/auth';
 import { MainLayout } from './components/layout';
 import { LoginPage, RegisterPage } from './pages/auth';
 import { UnauthorizedPage, NotFoundPage } from './pages/ErrorPages';
+import { LandingPage } from './pages/landing';
 
 // Lazy load page components for code splitting
 const ProductListPage = lazy(() =>
@@ -64,13 +65,14 @@ function App() {
   return (
     <Routes>
       {/* Public routes */}
+      <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
       {/* Protected routes */}
       <Route
-        path="/"
+        path="/app"
         element={
           <AuthGuard>
             <MainLayout />
@@ -78,7 +80,7 @@ function App() {
         }
       >
         {/* Default redirect based on role handled by LoginPage */}
-        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route index element={<Navigate to="/app/dashboard" replace />} />
 
         {/* Dashboard - All authenticated users */}
         <Route

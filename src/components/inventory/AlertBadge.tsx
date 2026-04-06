@@ -12,7 +12,7 @@ export const AlertBadge: React.FC = () => {
   const navigate = useNavigate();
 
   const handleClick = () => {
-    navigate('/alerts');
+    navigate('/app/alerts');
   };
 
   return (

@@ -42,28 +42,28 @@ export function MainLayout() {
     switch (user?.role) {
       case 'ADMIN':
         return [
-          { to: '/dashboard', label: 'Panel Principal', icon: <LayoutDashboard size={iconSize} /> },
-          { to: '/pos', label: 'Terminal POS', icon: <CreditCard size={iconSize} /> },
-          { to: '/catalog/products', label: 'Productos', icon: <Package size={iconSize} /> },
-          { to: '/catalog/categories', label: 'Categorías', icon: <FolderOpen size={iconSize} /> },
-          { to: '/inventory', label: 'Inventario', icon: <ClipboardList size={iconSize} /> },
-          { to: '/alerts', label: 'Alertas', icon: <AlertTriangle size={iconSize} /> },
-          { to: '/purchasing', label: 'Compras', icon: <ShoppingCart size={iconSize} /> },
-          { to: '/purchasing/suppliers', label: 'Proveedores', icon: <Building2 size={iconSize} /> },
-          { to: '/settings/workers', label: 'Empleados', icon: <Users size={iconSize} /> },
+          { to: '/app/dashboard', label: 'Panel Principal', icon: <LayoutDashboard size={iconSize} /> },
+          { to: '/app/pos', label: 'Terminal POS', icon: <CreditCard size={iconSize} /> },
+          { to: '/app/catalog/products', label: 'Productos', icon: <Package size={iconSize} /> },
+          { to: '/app/catalog/categories', label: 'Categorías', icon: <FolderOpen size={iconSize} /> },
+          { to: '/app/inventory', label: 'Inventario', icon: <ClipboardList size={iconSize} /> },
+          { to: '/app/alerts', label: 'Alertas', icon: <AlertTriangle size={iconSize} /> },
+          { to: '/app/purchasing', label: 'Compras', icon: <ShoppingCart size={iconSize} /> },
+          { to: '/app/purchasing/suppliers', label: 'Proveedores', icon: <Building2 size={iconSize} /> },
+          { to: '/app/settings/workers', label: 'Empleados', icon: <Users size={iconSize} /> },
         ];
       case 'WAREHOUSE':
         return [
-          { to: '/catalog/products', label: 'Productos', icon: <Package size={iconSize} /> },
-          { to: '/catalog/categories', label: 'Categorías', icon: <FolderOpen size={iconSize} /> },
-          { to: '/inventory', label: 'Inventario', icon: <ClipboardList size={iconSize} /> },
-          { to: '/alerts', label: 'Alertas', icon: <AlertTriangle size={iconSize} /> },
-          { to: '/purchasing', label: 'Órdenes de Compra', icon: <ShoppingCart size={iconSize} /> },
+          { to: '/app/catalog/products', label: 'Productos', icon: <Package size={iconSize} /> },
+          { to: '/app/catalog/categories', label: 'Categorías', icon: <FolderOpen size={iconSize} /> },
+          { to: '/app/inventory', label: 'Inventario', icon: <ClipboardList size={iconSize} /> },
+          { to: '/app/alerts', label: 'Alertas', icon: <AlertTriangle size={iconSize} /> },
+          { to: '/app/purchasing', label: 'Órdenes de Compra', icon: <ShoppingCart size={iconSize} /> },
         ];
       case 'CASHIER':
         return [
-          { to: '/pos', label: 'Terminal POS', icon: <CreditCard size={iconSize} /> },
-          { to: '/catalog/products', label: 'Productos', icon: <Package size={iconSize} /> },
+          { to: '/app/pos', label: 'Terminal POS', icon: <CreditCard size={iconSize} /> },
+          { to: '/app/catalog/products', label: 'Productos', icon: <Package size={iconSize} /> },
         ];
       default:
         return [];
@@ -73,12 +73,12 @@ export function MainLayout() {
   const navLinks = getNavLinks();
 
   const isLinkActive = (to: string): boolean => {
-    if (to === '/purchasing') {
-      return location.pathname === '/purchasing' || location.pathname.startsWith('/purchasing/po');
+    if (to === '/app/purchasing') {
+      return location.pathname === '/app/purchasing' || location.pathname.startsWith('/app/purchasing/po');
     }
 
-    if (to === '/purchasing/suppliers') {
-      return location.pathname === '/purchasing/suppliers' || location.pathname.startsWith('/purchasing/suppliers/');
+    if (to === '/app/purchasing/suppliers') {
+      return location.pathname === '/app/purchasing/suppliers' || location.pathname.startsWith('/app/purchasing/suppliers/');
     }
 
     return location.pathname === to || location.pathname.startsWith(`${to}/`);

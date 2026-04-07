@@ -68,6 +68,11 @@ body {
   background-attachment: fixed;
 }
 
+/* Landing Page Dark Mode Override */
+.bg-slate-900 {
+  background-color: #0f172a !important;
+}
+
 @layer components {
   /* Premium Cards */
   .card {

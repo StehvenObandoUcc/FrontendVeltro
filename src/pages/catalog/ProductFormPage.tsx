@@ -257,7 +257,7 @@ export function ProductFormPage() {
         }
       }
 
-      navigate('/catalog/products');
+      navigate('/app/catalog/products');
     } catch (err) {
       const axiosError = err as AxiosError<{ message: string; existingId?: number; existingProductId?: number }>;
       const status = axiosError.response?.status;
@@ -632,7 +632,7 @@ export function ProductFormPage() {
                    {conflictError.existingProductId && (
                      <button
                        type="button"
-                       onClick={() => navigate(`/catalog/products/${conflictError.existingProductId}/edit`)}
+                       onClick={() => navigate(`/app/catalog/products/${conflictError.existingProductId}/edit`)}
                        className="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold transition-colors"
                      >
                        Ver producto existente
@@ -659,7 +659,7 @@ export function ProductFormPage() {
          <div className="flex justify-end space-x-3 pt-6 mt-6 border-t border-[var(--border-light)]">
            <button
              type="button"
-             onClick={() => navigate('/catalog/products')}
+             onClick={() => navigate('/app/catalog/products')}
              className="btn-secondary"
            >
              Cancelar

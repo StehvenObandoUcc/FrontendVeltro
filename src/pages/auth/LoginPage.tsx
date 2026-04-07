@@ -75,11 +75,11 @@ export function LoginPage() {
   const getRedirectPathByRole = (role: string): string => {
     switch (role) {
       case 'ADMIN':
-        return '/dashboard';
+        return '/app/dashboard';
       case 'CASHIER':
-        return '/pos';
+        return '/app/pos';
       case 'WAREHOUSE':
-        return '/inventory';
+        return '/app/inventory';
       default:
         return '/';
     }

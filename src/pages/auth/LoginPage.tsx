@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
+
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -86,7 +88,16 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FEFAF1] p-4">
+    <div className="min-h-screen flex items-center justify-center bg-[#FEFAF1] p-4 relative">
+      <Link
+        to="/"
+        className="absolute top-8 left-8 flex items-center gap-2 text-gray-500 hover:text-[#038E57] transition-colors group"
+      >
+        <div className="p-2 rounded-full bg-white shadow-sm border border-gray-100 group-hover:border-[#038E57]/30 transition-all">
+          <ArrowLeft className="w-5 h-5" />
+        </div>
+        <span className="font-medium hidden sm:block">Volver al inicio</span>
+      </Link>
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-100 p-8 sm:p-10">
         <div className="mb-8 flex flex-col items-center gap-2">
           <div className="w-12 h-12 bg-[#038E57] rounded-xl flex items-center justify-center shadow-md mb-2">

@@ -83,7 +83,7 @@ export const FunctionalitiesExposition = () => {
             >
               <div className="relative aspect-video bg-[#FEFAF1] rounded-3xl border border-slate-200 overflow-hidden shadow-2xl flex items-center justify-center">
                 <img 
-                  src="/images_test/alerta.PNG" 
+                  src="/images_test/alerta.jpeg" 
                   alt="Gestión de Alertas de Inventario" 
                   className="w-full h-full object-cover object-[24%_0%]"
                 />
@@ -101,7 +101,7 @@ export const FunctionalitiesExposition = () => {
             >
               <div className="relative aspect-video bg-[#FEFAF1] rounded-3xl border border-slate-200 overflow-hidden shadow-2xl flex items-center justify-center">
                 <img 
-                  src="/images_test/reporte.PNG" 
+                  src="/images_test/reporte.jpeg" 
                   alt="Dashboard Financiero" 
                   className="w-full h-full object-cover object-[23.5%_0%] scale-[1.05]"
                 />

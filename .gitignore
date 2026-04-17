@@ -4,8 +4,6 @@ target/
 !**/src/test/**/target/
 
 ### Testing & Demos ###
-images_test/
-/public/images_test/
 
 ### STS ###
 .apt_generated

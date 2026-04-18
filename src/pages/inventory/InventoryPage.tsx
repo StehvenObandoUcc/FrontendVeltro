@@ -12,7 +12,7 @@ import {
   type PageResponse
 } from '../../api/inventory';
 import { useAiScanStore } from '../../stores/aiScanStore';
-import type { MatchedProduct } from '../../api/pos';
+import type { MatchedProduct } from '../../modules/types/ai.types';
 
 type ModalType = 'entry' | 'exit' | 'adjustment' | 'history' | null;
 

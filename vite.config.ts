@@ -41,33 +41,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
-        // Separate vendor chunks
-        manualChunks: (id: string) => {
-          if (id.includes('node_modules')) {
-            if (id.includes('react')) {
-              return 'react-vendor';
-            }
-            if (id.includes('tailwindcss') || id.includes('@tailwindcss')) {
-              return 'ui-vendor';
-            }
-            if (id.includes('react-hook-form') || id.includes('zod')) {
-              return 'form-vendor';
-            }
-            if (id.includes('axios')) {
-              return 'api-vendor';
-            }
-            if (id.includes('zustand')) {
-              return 'state-vendor';
-            }
-            if (id.includes('zxing') || id.includes('react-zxing')) {
-              return 'scanner-vendor';
-            }
-            if (id.includes('tanstack') || id.includes('react-query')) {
-              return 'query-vendor';
-            }
-            return 'vendors';
-          }
-        },
+
         // Chunk file names for better caching
         chunkFileNames: 'js/[name].[hash].js',
         entryFileNames: 'js/[name].[hash].js',

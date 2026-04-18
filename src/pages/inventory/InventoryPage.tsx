@@ -11,6 +11,8 @@ import {
   type InventoryMovement,
   type PageResponse
 } from '../../api/inventory';
+import { useAiScanStore } from '../../stores/aiScanStore';
+import type { MatchedProduct } from '../../api/pos';
 
 type ModalType = 'entry' | 'exit' | 'adjustment' | 'history' | null;
 
@@ -34,6 +36,43 @@ export function InventoryPage() {
   const [quantity, setQuantity] = useState('');
   const [reason, setReason] = useState('');
   const [newStock, setNewStock] = useState('');
+
+  // AI Count state
+  const { detections, updateDetectionStatus } = useAiScanStore();
+  const addedIds = useRef<Set<string>>(new Set());
+  const [countedItems, setCountedItems] = useState<Record<number, { product: MatchedProduct, count: number }>>({});
+
+  // Auto-accumulate AI detections for inventory count
+  useEffect(() => {
+    if (!showAiScanner) return;
+
+    let updated = false;
+    const newCounts = { ...countedItems };
+
+    detections
+      .filter((d) => d.status === 'SUCCESS' && d.matches.length > 0 && !addedIds.current.has(d.id))
+      .forEach((det) => {
+        addedIds.current.add(det.id);
+        const match = det.matches[0] as MatchedProduct;
+        
+        if (newCounts[match.id]) {
+          newCounts[match.id].count += 1;
+        } else {
+          newCounts[match.id] = { product: match, count: 1 };
+        }
+        
+        updateDetectionStatus(det.id, 'ADDED');
+        updated = true;
+      });
+
+    // Prune tracking set
+    const live = new Set(detections.map((d) => d.id));
+    addedIds.current = new Set([...addedIds.current].filter((id) => live.has(id)));
+
+    if (updated) {
+      setCountedItems(newCounts);
+    }
+  }, [detections, showAiScanner, countedItems, updateDetectionStatus]);
 
   // Debounce search term
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -68,12 +107,12 @@ export function InventoryPage() {
     }
   };
 
-  const openModal = async (type: ModalType, item: InventoryItem) => {
+  const openModal = async (type: ModalType, item: InventoryItem, initialQuantity?: number) => {
     setSelectedItem(item);
     setModalType(type);
-    setQuantity('');
+    setQuantity(initialQuantity ? initialQuantity.toString() : '');
     setReason('');
-    setNewStock(item.currentStock.toString());
+    setNewStock(initialQuantity ? initialQuantity.toString() : item.currentStock.toString());
     
     if (type === 'history') {
       try {
@@ -124,8 +163,8 @@ export function InventoryPage() {
       await loadInventory();
       closeModal();
     } catch (err: any) {
-      if (err.response?.status === 422) {
-        setError('Stock insuficiente para esta salida');
+      if (err.response?.status === 409 || err.response?.status === 422) {
+        setError(err.response?.data?.message || 'Stock insuficiente para esta salida');
       } else {
         setError('Error al registrar salida');
       }
@@ -258,9 +297,77 @@ export function InventoryPage() {
           </div>
         </div>
       ) : showAiScanner ? (
-        <div className="card p-6 max-w-4xl mx-auto">
-          <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Conteo de Inventario por IA</h2>
-          <AiScannerContainer useCase="inventory-count" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 card p-6">
+            <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Escáner IA</h2>
+            <AiScannerContainer useCase="inventory-count" />
+          </div>
+          
+          <div className="card p-6 flex flex-col h-[600px]">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Conteo Acumulado</h2>
+              <span className="text-xs font-medium px-2 py-1 rounded bg-emerald-100 text-emerald-700">
+                {Object.values(countedItems).reduce((sum, item) => sum + item.count, 0)} items
+              </span>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+               {Object.values(countedItems).map(item => {
+                 const invItem = inventory.find(i => i.productId === item.product.id);
+                 return (
+                   <div key={item.product.id} className="p-3 border rounded-lg bg-gray-50 flex flex-col gap-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="font-medium text-sm text-gray-900">{item.product.name}</div>
+                          <div className="text-xs text-gray-500 mt-0.5">Stock DB: <span className="font-bold">{invItem?.currentStock ?? 0}</span></div>
+                        </div>
+                        <div className="text-lg font-bold text-emerald-600 bg-emerald-50 px-2 rounded">
+                          +{item.count}
+                        </div>
+                      </div>
+                      
+                      {invItem ? (
+                        <div className="grid grid-cols-2 gap-2 mt-1">
+                          <button 
+                            onClick={() => openModal('entry', invItem, item.count)} 
+                            className="btn-action btn-action-entry text-xs px-2 py-1.5 flex justify-center w-full"
+                          >
+                            + Entrada
+                          </button>
+                          <button 
+                            onClick={() => openModal('adjustment', invItem, item.count)} 
+                            className="btn-action btn-action-adjust text-xs px-2 py-1.5 flex justify-center w-full"
+                          >
+                            Ajustar a {item.count}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-amber-600 mt-1">Producto no inicializado en inventario</div>
+                      )}
+                   </div>
+                 );
+               })}
+               
+               {Object.keys(countedItems).length === 0 && (
+                 <div className="flex flex-col items-center justify-center h-full text-center p-6 space-y-3">
+                    <Camera className="w-12 h-12 text-gray-300" />
+                    <p className="text-sm text-gray-500">
+                      Apunta la cámara a los productos para iniciar el conteo automático.
+                    </p>
+                 </div>
+               )}
+            </div>
+            
+            <div className="mt-4 pt-4 border-t">
+               <button 
+                 onClick={() => setCountedItems({})} 
+                 disabled={Object.keys(countedItems).length === 0}
+                 className="btn-secondary w-full text-sm py-2"
+               >
+                 Reiniciar Conteo
+               </button>
+            </div>
+          </div>
         </div>
       ) : (
         <>

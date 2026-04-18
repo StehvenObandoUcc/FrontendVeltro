@@ -94,7 +94,7 @@ export function ProductListPage() {
         </div>
         {canEdit && (
           <Link
-            to="/catalog/products/new"
+            to="/app/catalog/products/new"
             className="btn-primary"
           >
             Nuevo Producto
@@ -166,7 +166,7 @@ export function ProductListPage() {
                 {canEdit && (
                   <td className="text-right text-sm font-medium space-x-3">
                     <Link
-                      to={`/catalog/products/${product.id}/edit`}
+                      to={`/app/catalog/products/${product.id}/edit`}
                       className="text-[var(--primary-base)] hover:text-[var(--primary-dark)] transition-colors"
                     >
                       Editar

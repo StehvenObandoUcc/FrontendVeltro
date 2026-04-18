@@ -155,7 +155,7 @@ function App() {
           path="catalog"
           element={
             <RoleGuard allowedRoles={['ADMIN', 'WAREHOUSE', 'CASHIER']}>
-              <Navigate to="/catalog/products" replace />
+              <Navigate to="/app/catalog/products" replace />
             </RoleGuard>
           }
         />

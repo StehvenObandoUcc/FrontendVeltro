@@ -17,8 +17,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as ort from 'onnxruntime-web';
 import { useAiScanStore } from '../stores/aiScanStore';
-import type { TrackedBox } from '../stores/aiScanStore';
-import type { YoloBox } from '../modules/types/ai.types';
+import type { TrackedBox, YoloBox } from '../modules/types/ai.types';
 
 // ── Tuning constants ───────────────────────────────────────────────────────────
 const MODEL_PATH         = '/model/yolov8n.onnx';

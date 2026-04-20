@@ -6,21 +6,23 @@ import App from './App';
 import { GlobalErrorBoundary } from './GlobalErrorBoundary';
 import './index.css';
 
-// Create a QueryClient instance with default options
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      refetchOnWindowFocus: false,
+// Create a QueryClient instance factory
+function buildQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: 1,
+        staleTime: 5 * 60 * 1000, // 5 minutes
+        refetchOnWindowFocus: false,
+      },
     },
-  },
-});
+  });
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <GlobalErrorBoundary>
-      <QueryClientProvider client={queryClient}>
+      <QueryClientProvider client={buildQueryClient()}>
         <BrowserRouter>
           <App />
         </BrowserRouter>

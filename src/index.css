@@ -321,6 +321,68 @@ body {
   .btn-action-history:hover {
     background-color: var(--surface-inset);
   }
+
+  /* Error Boundary Screen */
+  .error-boundary-screen {
+    padding: 2rem;
+    text-align: center;
+    font-family: var(--font-family-base);
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #fef2f2;
+  }
+  .error-boundary-title {
+    color: var(--critical-red);
+    font-size: 2rem;
+    margin-bottom: 1rem;
+  }
+  .error-boundary-description {
+    color: #7f1d1d;
+    margin-bottom: 1rem;
+    max-width: 600px;
+  }
+  .error-boundary-message {
+    text-align: left;
+    background: var(--surface-secondary);
+    padding: 1rem;
+    overflow-x: auto;
+    border-radius: var(--border-radius-md);
+    border: 1px solid #fca5a5;
+    max-width: 80%;
+    color: var(--critical-red);
+    font-weight: bold;
+  }
+  .error-boundary-stack {
+    text-align: left;
+    background: var(--surface-secondary);
+    padding: 1rem;
+    overflow-x: auto;
+    border-radius: var(--border-radius-md);
+    border: 1px solid #fca5a5;
+    max-width: 80%;
+    font-size: 0.8rem;
+    color: #dc2626;
+    margin-top: 1rem;
+  }
+  .error-boundary-reload {
+    margin-top: 2rem;
+    padding: 0.75rem 1.5rem;
+    cursor: pointer;
+    background-color: var(--critical-red);
+    color: #FFFFFF;
+    border: none;
+    border-radius: var(--border-radius-sm);
+    font-size: 1rem;
+    font-weight: bold;
+    transition: all 0.2s ease;
+  }
+  .error-boundary-reload:hover {
+    background-color: #dc2626;
+  }
 }
 
 /* Base animations */

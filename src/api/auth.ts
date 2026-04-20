@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { LoginRequest, LoginResponse, RegisterRequest, User, Worker } from '../types';
+import type { LoginRequest, LoginResponse, RegisterRequest, Worker } from '../types';
 
 export const authApi = {
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
@@ -34,13 +34,6 @@ export const authApi = {
 
   logout: async (): Promise<void> => {
     await apiClient.post('/auth/logout');
-  },
-
-  getCurrentUser: async (): Promise<User> => {
-    // Backend has no GET /auth/me endpoint.
-    // User info is extracted from the JWT token at login time.
-    // This method is kept for interface compatibility but should not be called.
-    throw new Error('GET /auth/me is not implemented on the backend. Use login response data instead.');
   },
 
   changePassword: async (currentPassword: string, newPassword: string): Promise<void> => {

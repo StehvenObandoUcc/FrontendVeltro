@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { Camera, X } from 'lucide-react';
 import { productApi } from '../../api/catalog';
-import { aiScanProduct, checkAiAvailable, type SuggestedProduct } from '../../api/pos';
+import { posApi, type SuggestedProduct } from '../../api/pos';
 
 type CameraFeedbackState =
   | 'idle'
@@ -316,10 +316,10 @@ export const ProductScanner: React.FC<ProductScannerProps> = ({ onResult, onClos
 
   // Check AI on mount
   useEffect(() => {
-    checkAiAvailable()
+    posApi.checkAiAvailable()
       .then((res) => {
-        console.log('[Catalog Scanner] AI available:', res.data.available);
-        setAiAvailable(res.data.available);
+        console.log('[Catalog Scanner] AI available:', res.available);
+        setAiAvailable(res.available);
       })
       .catch((err) => {
         console.warn('[Catalog Scanner] AI availability check failed:', err?.message || err);
@@ -375,8 +375,8 @@ export const ProductScanner: React.FC<ProductScannerProps> = ({ onResult, onClos
         setAiSuggestions(null);
 
         try {
-          const res = await aiScanProduct(blob, `product-scan-${Date.now()}.jpg`);
-          const suggestions = res.data.suggestions;
+          const res = await posApi.aiScanProduct(blob, `product-scan-${Date.now()}.jpg`);
+          const suggestions = res.suggestions;
 
           if (suggestions.length === 0) {
             setError('La IA no pudo identificar el producto. Intenta con otra imagen.');

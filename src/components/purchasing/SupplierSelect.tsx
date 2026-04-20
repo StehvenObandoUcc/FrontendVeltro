@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { purchasingApi } from '../../api/purchasing';
 import type { Supplier } from '../../api/purchasing';
-import { getSuppliers } from '../../api/purchasing';
 import { Search, ChevronDown } from 'lucide-react';
 
 interface SupplierSelectProps {
@@ -30,8 +30,8 @@ export const SupplierSelect: React.FC<SupplierSelectProps> = ({
       setIsLoading(true);
       setFetchError(null);
       try {
-        const response = await getSuppliers();
-        setSuppliers(response.data);
+        const response = await purchasingApi.getSuppliers();
+        setSuppliers(response);
       } catch (err) {
         setFetchError('Failed to load suppliers');
         console.error('Error loading suppliers:', err);

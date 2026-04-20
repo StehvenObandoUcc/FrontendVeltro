@@ -2,7 +2,7 @@ import { Package, Plus } from 'lucide-react';
 import { useAiScanStore } from '../../stores/aiScanStore';
 import { useCartStore } from '../../stores/cartStore';
 import type { MatchedProduct } from '../../modules/types/ai.types';
-import type { Product } from '../../api/pos';
+import type { Product } from '../../types';
 
 interface AiResultsPanelProps {
   mode: 'pos-sell' | 'inventory-count';

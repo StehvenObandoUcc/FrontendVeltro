@@ -7,7 +7,7 @@ import { ScanModeToggle } from '../../components/pos/ScanModeToggle';
 import { AiScannerContainer } from '../../components/pos/AiScannerContainer';
 import { useCartStore } from '../../stores/cartStore';
 import { useAiScanStore } from '../../stores/aiScanStore';
-import { confirmSale, type SaleResponse, type CreateSaleRequest } from '../../api/pos';
+import { posApi, type SaleResponse, type CreateSaleRequest } from '../../api/pos';
 import type { ApiError } from '../../types';
 
 export const POSPage: React.FC = () => {
@@ -26,8 +26,8 @@ export const POSPage: React.FC = () => {
       setIsProcessing(true);
       setError(null);
 
-      const response = await confirmSale(saleData);
-      setSaleResponse(response.data);
+      const response = await posApi.confirmSale(saleData);
+      setSaleResponse(response);
       setShowReceipt(true);
       setShowConfirmModal(false);
       clear();

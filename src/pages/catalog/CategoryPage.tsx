@@ -43,7 +43,7 @@ export function CategoryPage() {
   const loadCategories = async () => {
     setIsLoading(true);
     try {
-      const tree = await categoryApi.getTree();
+      const tree = await categoryApi.getAll();
       setCategories(tree);
     } catch (err) {
       setError('Error al cargar las categorías');

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useAlertStore } from '../stores/alertStore';
 import { useAuthStore } from '../stores/authStore';
-import { getAlerts, getUnreadAlertCount, type Alert } from '../api/inventory';
+import { inventoryApi, type Alert } from '../api/inventory';
 
 export const useAlerts = (pollInterval: number = 30000) => {
   const { setActiveAlerts, setUnreadCount, addAlert } = useAlertStore();
@@ -22,12 +22,12 @@ export const useAlerts = (pollInterval: number = 30000) => {
     const fetchAlerts = async () => {
       try {
         const [alertsResponse, unreadResponse] = await Promise.all([
-          getAlerts(0),
-          getUnreadAlertCount(),
+          inventoryApi.getAlerts(0),
+          inventoryApi.getUnreadAlertCount(),
         ]);
 
-        const currentAlerts = alertsResponse.data.content.filter((a: Alert) => !a.resolved);
-        const unreadCount = unreadResponse.data.count;
+        const currentAlerts = alertsResponse.content.filter((a: Alert) => !a.resolved);
+        const unreadCount = unreadResponse.count;
 
         // Check if new critical alert appeared
         const criticalCount = currentAlerts.filter(

@@ -1,9 +1,5 @@
 import React, { useState } from 'react';
-import type { PurchaseOrder } from '../../api/purchasing';
-import {
-  clonePurchaseOrder,
-  voidPurchaseOrder,
-} from '../../api/purchasing';
+import { purchasingApi, type PurchaseOrder } from '../../api/purchasing';
 import { StateVisualizer } from './StateVisualizer';
 import { ReceptionFlow } from './ReceptionFlow';
 
@@ -32,7 +28,7 @@ export const OrderList: React.FC<OrderListProps> = ({
     setOperatingOrderId(orderId);
     setError(null);
     try {
-      await clonePurchaseOrder(orderId);
+      await purchasingApi.clonePurchaseOrder(orderId);
       onOrderUpdated?.();
     } catch (err: unknown) {
       const msg =
@@ -49,7 +45,7 @@ export const OrderList: React.FC<OrderListProps> = ({
     setError(null);
     try {
       // Backend voidOrder accepts no request body
-      await voidPurchaseOrder(orderId);
+      await purchasingApi.voidPurchaseOrder(orderId);
       setVoidingOrder(null);
       onOrderUpdated?.();
     } catch (err: unknown) {

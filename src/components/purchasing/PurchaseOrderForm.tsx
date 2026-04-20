@@ -4,7 +4,7 @@ import type { SubmitHandler } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { CreatePORequest } from '../../api/purchasing';
-import { createPurchaseOrder, PurchaseOrderCreationError } from '../../api/purchasing';
+import { purchasingApi, PurchaseOrderCreationError } from '../../api/purchasing';
 import { productApi } from '../../api/catalog';
 import type { Product } from '../../types';
 import { SupplierSelect } from './SupplierSelect';
@@ -136,7 +136,7 @@ export const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
         })),
       };
 
-      await createPurchaseOrder(poData);
+      await purchasingApi.createPurchaseOrder(poData);
 
       setSubmitSuccess(true);
       onCreated?.();

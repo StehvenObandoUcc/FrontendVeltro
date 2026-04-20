@@ -3,8 +3,7 @@ import { useForm } from 'react-hook-form';
 import type { SubmitHandler } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { AlertConfig } from '../../api/inventory';
-import { updateAlertConfig } from '../../api/inventory';
+import { inventoryApi, type AlertConfig } from '../../api/inventory';
 
 interface AlertConfigFormProps {
   productId: number;
@@ -70,7 +69,7 @@ export const AlertConfigForm: React.FC<AlertConfigFormProps> = ({
         overstockThreshold: data.overstockThreshold,
       };
 
-      await updateAlertConfig(productId, config);
+      await inventoryApi.updateAlertConfig(productId, config);
 
       setSubmitSuccess(true);
       onSaved?.();

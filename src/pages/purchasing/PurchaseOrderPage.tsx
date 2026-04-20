@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getPurchaseOrders } from '../../api/purchasing';
-import type { PurchaseOrder } from '../../api/purchasing';
+import { purchasingApi, type PurchaseOrder } from '../../api/purchasing';
 import { OrderList, PurchaseOrderForm } from '../../components/purchasing';
 
 /**
@@ -16,8 +15,8 @@ export const PurchaseOrderPage: React.FC = () => {
     setIsLoading(true);
     try {
       // Backend returns List<PurchaseOrderResponse> (not paginated)
-      const response = await getPurchaseOrders();
-      setOrders(response.data);
+      const response = await purchasingApi.getPurchaseOrders();
+      setOrders(response);
     } catch (error) {
       console.error('Failed to fetch purchase orders:', error);
     } finally {

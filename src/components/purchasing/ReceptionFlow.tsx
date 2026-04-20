@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { markAsReceived } from '../../api/purchasing';
+import { purchasingApi } from '../../api/purchasing';
 
 interface ReceptionFlowProps {
   orderId: number;
@@ -25,7 +25,7 @@ export const ReceptionFlow: React.FC<ReceptionFlowProps> = ({
 
     try {
       // Backend markAsReceived accepts no body — marks entire order
-      await markAsReceived(orderId);
+      await purchasingApi.markAsReceived(orderId);
       onReceived?.();
       onClose?.();
     } catch (err) {

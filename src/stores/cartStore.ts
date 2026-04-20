@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Product } from '../api/pos';
+import type { Product } from '../types';
 
 export interface CartItem {
   productId: number;
@@ -30,17 +30,8 @@ export const useCartStore = create<CartStore>((set, get) => ({
 
       const pid = product.id;
       const existingItem = state.items.find((item) => item.productId === pid);
-      const hasStockInfo = typeof product.currentStock === 'number';
-      const availableStock = hasStockInfo ? Math.max(0, Math.floor(product.currentStock as number)) : null;
-
       if (existingItem) {
-        const nextQuantity = hasStockInfo
-          ? Math.min(existingItem.quantity + requestedQty, availableStock as number)
-          : existingItem.quantity + requestedQty;
-
-        if (nextQuantity <= existingItem.quantity) {
-          return state;
-        }
+        const nextQuantity = existingItem.quantity + requestedQty;
 
         return {
           items: state.items.map((item) =>
@@ -51,9 +42,7 @@ export const useCartStore = create<CartStore>((set, get) => ({
         };
       }
 
-      const initialQuantity = hasStockInfo
-        ? Math.min(requestedQty, availableStock as number)
-        : requestedQty;
+      const initialQuantity = requestedQty;
 
       if (initialQuantity <= 0) {
         return state;
@@ -92,14 +81,6 @@ export const useCartStore = create<CartStore>((set, get) => ({
           }
 
           const parsedQty = Math.max(1, Math.floor(quantity));
-          if (typeof item.product.currentStock === 'number') {
-            const available = Math.max(0, Math.floor(item.product.currentStock));
-            if (available <= 0) {
-              return null;
-            }
-            return { ...item, quantity: Math.min(parsedQty, available) };
-          }
-
           return { ...item, quantity: parsedQty };
         })
         .filter((item): item is CartItem => item !== null);

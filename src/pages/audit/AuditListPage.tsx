@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldCheck, Download, Info } from 'lucide-react';
-import { getAuditRecords, exportAuditCsv } from '../../api/audit';
+import { auditApi } from '../../api/audit';
 import type { AuditRecord, AuditFilters } from '../../api/audit';
 import {
   AuditTable,
@@ -36,11 +36,11 @@ export const AuditListPage: React.FC = () => {
     setError(null);
 
     try {
-      const response = await getAuditRecords(filters);
-      setRecords(response.data.content);
+      const response = await auditApi.getAuditRecords(filters);
+      setRecords(response.content);
       setPagination({
-        totalPages: response.data.totalPages,
-        currentPage: response.data.number,
+        totalPages: response.totalPages,
+        currentPage: response.number,
       });
     } catch (err) {
       setError(
@@ -70,16 +70,12 @@ export const AuditListPage: React.FC = () => {
     });
   };
 
-  const handleExportCsv = async () => {
+  const handleExportCsv = () => {
     setIsExporting(true);
-    try {
-      await exportAuditCsv(filters);
-    } catch (err) {
+    setTimeout(() => {
       setError('Audit CSV export is not yet available.');
-      console.error('CSV export error:', err);
-    } finally {
       setIsExporting(false);
-    }
+    }, 500);
   };
 
   const handleRecordClick = (record: AuditRecord) => {

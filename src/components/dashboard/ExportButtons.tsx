@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
 import { FileText, FileSpreadsheet } from 'lucide-react';
-import {
-  exportProfitabilityReportPdf,
-  exportProfitabilityReportExcel,
-} from '../../api/dashboard';
+import { dashboardApi } from '../../api/dashboard';
 
 /**
  * ExportButtons - Download reports in PDF or Excel format
@@ -18,8 +15,8 @@ export const ExportButtons: React.FC = () => {
     setError(null);
 
     try {
-      const response = await exportProfitabilityReportPdf();
-      const url = window.URL.createObjectURL(response.data);
+      const response = await dashboardApi.exportProfitabilityReportPdf();
+      const url = window.URL.createObjectURL(response);
       const link = document.createElement('a');
       link.href = url;
       link.download = `profitability-report-${new Date().toISOString().split('T')[0]}.pdf`;
@@ -38,8 +35,8 @@ export const ExportButtons: React.FC = () => {
     setError(null);
 
     try {
-      const response = await exportProfitabilityReportExcel();
-      const url = window.URL.createObjectURL(response.data);
+      const response = await dashboardApi.exportProfitabilityReportExcel();
+      const url = window.URL.createObjectURL(response);
       const link = document.createElement('a');
       link.href = url;
       link.download = `profitability-report-${new Date().toISOString().split('T')[0]}.xlsx`;

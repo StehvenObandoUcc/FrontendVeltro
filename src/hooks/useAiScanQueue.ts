@@ -9,7 +9,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useAiScanStore } from '../stores/aiScanStore';
-import { aiDetectFrame } from '../api/pos';
+import { posApi } from '../api/pos';
 import type { MatchedProduct } from '../modules/types/ai.types';
 
 const API_COOLDOWN_MS    = 1000;  // 1s between backend calls
@@ -86,7 +86,7 @@ export const useAiScanQueue = (
         console.log(`[Queue] Crop: original=${w}×${h}px → sent=${cropW}×${cropH}px | blob=${blob.size} bytes`);
 
         // ── Send to backend POST /api/v1/scanner/ai ──────────────────────────
-        const { data } = await aiDetectFrame(blob, `crop_${candidate.id.slice(0, 8)}.jpg`);
+        const data = await posApi.aiDetectFrame(blob, `crop_${candidate.id.slice(0, 8)}.jpg`);
 
         if (data?.length && data[0].matches?.length) {
           const matches: MatchedProduct[] = data[0].matches.map((p: any) => ({

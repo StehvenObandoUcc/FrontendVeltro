@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { PageResponse } from './dashboard';
+import type { PageResponse } from '../types';
 
 export type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'VOID';
 export type AuditEntity = 'SALE' | 'INVENTORY' | 'ORDER' | 'PRODUCT' | 'SUPPLIER';
@@ -31,26 +31,26 @@ export interface AuditFilters {
  * Get audit records with optional filters
  * GET /api/v1/audit
  */
-export const getAuditRecords = (filters: AuditFilters = {}) => {
-  const params = {
-    page: filters.page || 0,
-    size: filters.pageSize || 20,
-    ...(filters.entityType && { entityType: filters.entityType }),
-    ...(filters.action && { action: filters.action }),
-    ...(filters.startDate && { startDate: filters.startDate }),
-    ...(filters.endDate && { endDate: filters.endDate }),
-    ...(filters.entityId && { entityId: filters.entityId }),
-  };
+export const auditApi = {
+  getAuditRecords: async (filters: AuditFilters = {}) => {
+    const params = {
+      page: filters.page || 0,
+      size: filters.pageSize || 20,
+      ...(filters.entityType && { entityType: filters.entityType }),
+      ...(filters.action && { action: filters.action }),
+      ...(filters.startDate && { startDate: filters.startDate }),
+      ...(filters.endDate && { endDate: filters.endDate }),
+      ...(filters.entityId && { entityId: filters.entityId }),
+    };
 
-  return apiClient.get<PageResponse<AuditRecord>>('/audit', { params });
-};
+    const response = await apiClient.get<PageResponse<AuditRecord>>('/audit', { params });
+    return response.data;
+  },
 
-/**
- * Get single audit record detail
- * GET /api/v1/audit/{auditId}
- */
-export const getAuditRecordDetail = (auditId: string) => {
-  return apiClient.get<AuditRecord>(`/audit/${auditId}`);
+  getAuditRecordDetail: async (auditId: string) => {
+    const response = await apiClient.get<AuditRecord>(`/audit/${auditId}`);
+    return response.data;
+  }
 };
 
 /**
@@ -59,6 +59,3 @@ export const getAuditRecordDetail = (auditId: string) => {
  * This is a client-side stub that will fail if called.
  * TODO: Implement CSV export on backend or remove this.
  */
-export const exportAuditCsv = async (_filters: AuditFilters = {}) => {
-  throw new Error('Audit CSV export is not yet implemented on the backend.');
-};

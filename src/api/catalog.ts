@@ -59,10 +59,7 @@ export const categoryApi = {
     return response.data;
   },
 
-  getTree: async (): Promise<Category[]> => {
-    const response = await apiClient.get<Category[]>('/categories');
-    return response.data;
-  },
+
 
   getById: async (id: number): Promise<Category> => {
     const response = await apiClient.get<Category>(`/categories/${id}`);

@@ -3,11 +3,8 @@ import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { Camera, Keyboard, X } from 'lucide-react';
 import { useCartStore } from '../../stores/cartStore';
 import { CameraErrorBoundary } from './CameraErrorBoundary';
-import {
-  getProductByBarcode,
-  searchProducts,
-  type Product,
-} from '../../api/pos';
+import { posApi } from '../../api/pos';
+import type { Product } from '../../types';
 import type { AxiosError } from 'axios';
 
 type ScannerMode = 'camera' | 'manual';
@@ -111,14 +108,9 @@ export const ScannerContainer: React.FC = () => {
       setError(null);
       setLoading(true);
       try {
-        const response = await getProductByBarcode(code);
-        const product = response.data;
+        const response = await posApi.getProductByBarcode(code);
+        const product = response;
 
-        if (typeof product.currentStock === 'number' && product.currentStock <= 0) {
-          setError(`Sin stock disponible: ${product.name}`);
-          setTransientFeedback('not-found');
-          return;
-        }
 
         addToCart(product, 1);
         setSuccessMsg(`+ ${product.name}`);
@@ -366,7 +358,7 @@ export const ScannerContainer: React.FC = () => {
     searchTimeoutRef.current = setTimeout(async () => {
       setSearchLoading(true);
       try {
-        const results = await searchProducts(value);
+        const results = await posApi.searchProducts(value);
         setSearchResults(results);
         setShowResults(results.length > 0);
       } catch {
@@ -379,11 +371,6 @@ export const ScannerContainer: React.FC = () => {
 
   /** Select product from name search dropdown */
   const handleSelectProduct = (product: Product) => {
-    if (typeof product.currentStock === 'number' && product.currentStock <= 0) {
-      setError(`Sin stock disponible: ${product.name}`);
-      setTransientFeedback('not-found');
-      return;
-    }
 
     addToCart(product, 1);
     setSuccessMsg(`+ ${product.name}`);

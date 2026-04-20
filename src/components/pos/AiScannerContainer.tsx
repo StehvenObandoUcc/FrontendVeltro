@@ -12,7 +12,7 @@ import { useCartStore } from '../../stores/cartStore';
 import { useYoloDetection } from '../../hooks/useYoloDetection';
 import { useAiScanQueue } from '../../hooks/useAiScanQueue';
 import { DetectionOverlay } from './DetectionOverlay';
-import type { Product } from '../../api/pos';
+import type { Product } from '../../types';
 
 interface Props {
   useCase?: 'pos-sell' | 'inventory-count';
@@ -61,14 +61,7 @@ export const AiScannerContainer: React.FC<Props> = ({ useCase = 'pos-sell' }) =>
         const match = det.matches[0];
         console.log('[Cart] Auto-adding product:', match);
 
-        // Build a Product-compatible object.
-        // Force currentStock to undefined so the cart doesn't reject it on stock=0.
-        const productForCart = {
-          ...match,
-          currentStock: undefined,  // let cart ignore stock check
-        } as unknown as Product;
-
-        addToCart(productForCart, 1);
+        addToCart(match as unknown as Product, 1);
         updateDetectionStatus(det.id, 'ADDED');
         setToast(match.name);
         setTimeout(() => setToast(null), 3000);

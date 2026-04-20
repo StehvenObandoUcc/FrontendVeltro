@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getAlerts, getUnreadAlertCount } from '../../api/inventory';
-import type { Alert } from '../../api/inventory';
+import { inventoryApi, type Alert } from '../../api/inventory';
 import { AlertList } from '../../components/inventory';
 import { useAlertStore } from '../../stores/alertStore';
 
@@ -22,14 +21,14 @@ export const AlertListPage: React.FC = () => {
     setIsLoading(true);
     try {
       const [alertsResponse, unreadResponse] = await Promise.all([
-        getAlerts(currentPage, selectedSeverity),
-        getUnreadAlertCount(),
+        inventoryApi.getAlerts(currentPage, selectedSeverity),
+        inventoryApi.getUnreadAlertCount(),
       ]);
 
-      const alerts = alertsResponse.data.content.filter((alert: Alert) => !alert.resolved);
-      setTotalPages(alertsResponse.data.totalPages);
+      const alerts = alertsResponse.content.filter((alert: Alert) => !alert.resolved);
+      setTotalPages(alertsResponse.totalPages);
       setActiveAlerts(alerts);
-      setUnreadCount(unreadResponse.data.count);
+      setUnreadCount(unreadResponse.count);
     } catch (error) {
       console.error('Failed to fetch alerts:', error);
     } finally {

@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import type { SuggestedProduct } from '../../api/pos';
-import { aiScanProduct } from '../../api/pos';
+import { posApi } from '../../api/pos';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 interface AiIdentificationModalProps {
@@ -41,10 +41,10 @@ export const AiIdentificationModal: React.FC<AiIdentificationModalProps> = ({
       setError(null);
 
       try {
-        const response = await aiScanProduct(imageBlob, `ai-scan-${Date.now()}.jpg`);
+        const response = await posApi.aiScanProduct(imageBlob, `ai-scan-${Date.now()}.jpg`);
         if (cancelled) return;
 
-        const data = response.data;
+        const data = response;
         setSuggestions(data.suggestions);
         setProcessingTime(data.processingTimeMs);
         setStrategyUsed(data.strategyUsed);

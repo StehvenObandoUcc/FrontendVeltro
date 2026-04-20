@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import type { Alert } from '../../api/inventory';
-import { markAlertAsRead, resolveAlert } from '../../api/inventory';
+import { inventoryApi, type Alert } from '../../api/inventory';
 import { useAlertStore } from '../../stores/alertStore';
 import { SeverityBadge } from './SeverityBadge';
 
@@ -32,7 +31,7 @@ export const AlertList: React.FC<AlertListProps> = ({
   const handleMarkAsRead = async (alertId: number) => {
     setUpdatingRead(alertId);
     try {
-      await markAlertAsRead(alertId);
+      await inventoryApi.markAlertAsRead(alertId);
       markAsReadLocal(alertId);
       if (onRefresh) {
         await onRefresh();
@@ -47,7 +46,7 @@ export const AlertList: React.FC<AlertListProps> = ({
   const handleResolve = async (alertId: number) => {
     setResolving(alertId);
     try {
-      await resolveAlert(alertId);
+      await inventoryApi.resolveAlert(alertId);
       resolveAlertLocal(alertId);
       if (onRefresh) {
         await onRefresh();

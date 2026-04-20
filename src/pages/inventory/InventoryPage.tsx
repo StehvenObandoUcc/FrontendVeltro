@@ -2,11 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Camera, ArrowLeft } from 'lucide-react';
 import { AiScannerContainer } from '../../components/pos/AiScannerContainer';
 import { 
-  getInventory, 
-  recordStockEntry, 
-  recordStockExit, 
-  recordStockAdjustment,
-  getInventoryMovements,
+  inventoryApi,
   type InventoryItem,
   type InventoryMovement,
   type PageResponse
@@ -55,8 +51,8 @@ export function InventoryPage() {
   const loadInventory = async () => {
     try {
       setLoading(true);
-      const response = await getInventory(page, 20, debouncedSearch || undefined);
-      const data = response.data as PageResponse<InventoryItem>;
+      const response = await inventoryApi.getInventory(page, 20, debouncedSearch || undefined);
+      const data = response as PageResponse<InventoryItem>;
       setInventory(data.content);
       setTotalPages(data.totalPages);
       setError(null);
@@ -78,8 +74,8 @@ export function InventoryPage() {
     if (type === 'history') {
       try {
         setModalLoading(true);
-        const response = await getInventoryMovements(item.productId);
-        setMovements(response.data.content);
+        const response = await inventoryApi.getInventoryMovements(item.productId);
+        setMovements(response.content);
       } catch (err) {
         console.error('Error loading movements:', err);
       } finally {
@@ -99,7 +95,7 @@ export function InventoryPage() {
     
     try {
       setModalLoading(true);
-      await recordStockEntry(selectedItem.productId, {
+      await inventoryApi.recordStockEntry(selectedItem.productId, {
         quantity: parseInt(quantity),
         reason,
       });
@@ -117,7 +113,7 @@ export function InventoryPage() {
     
     try {
       setModalLoading(true);
-      await recordStockExit(selectedItem.productId, {
+      await inventoryApi.recordStockExit(selectedItem.productId, {
         quantity: parseInt(quantity),
         reason,
       });
@@ -139,7 +135,7 @@ export function InventoryPage() {
     
     try {
       setModalLoading(true);
-      await recordStockAdjustment(selectedItem.productId, {
+      await inventoryApi.recordStockAdjustment(selectedItem.productId, {
         newStock: parseInt(newStock),
         reason,
       });

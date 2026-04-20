@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Alert, AlertSeverity } from '../api/inventory';
+import type { Alert } from '../api/inventory';
 
 interface AlertStoreState {
   activeAlerts: Alert[];
@@ -10,11 +10,9 @@ interface AlertStoreState {
   markAsReadLocal: (alertId: number) => void;
   resolveAlertLocal: (alertId: number) => void;
   clearAll: () => void;
-  getUnreadAlerts: () => Alert[];
-  getAlertsBySeverity: (severity: AlertSeverity) => Alert[];
 }
 
-export const useAlertStore = create<AlertStoreState>((set, get) => ({
+export const useAlertStore = create<AlertStoreState>((set) => ({
   activeAlerts: [],
   unreadCount: 0,
 
@@ -74,13 +72,5 @@ export const useAlertStore = create<AlertStoreState>((set, get) => ({
 
   clearAll: () => {
     set({ activeAlerts: [], unreadCount: 0 });
-  },
-
-  getUnreadAlerts: () => {
-    return get().activeAlerts.filter((a) => !a.read);
-  },
-
-  getAlertsBySeverity: (severity: AlertSeverity) => {
-    return get().activeAlerts.filter((a) => a.severity === severity);
   },
 }));

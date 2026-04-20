@@ -7,20 +7,9 @@
  */
 
 import { create } from 'zustand';
-import type { ScanMode, AiUseCase, YoloBox, DetectionStatus, MatchedProduct } from '../modules/types/ai.types';
+import type { ScanMode, AiUseCase, YoloBox, DetectionStatus, MatchedProduct, TrackedBox } from '../modules/types/ai.types';
 
-/**
- * Visual tracking entry produced by the IOU tracker in useYoloDetection.
- * trackId is stable across frames (not the same as YoloBox.id which is owned by setRawDetections).
- */
-export interface TrackedBox {
-  /** Persistent visual ID — NOT the same as YoloBox.id */
-  trackId: string;
-  /** Reference to the matched YOLO detection */
-  box: YoloBox;
-  /** performance.now() timestamp of last successful IOU match */
-  lastSeen: number;
-}
+export type { TrackedBox } from '../modules/types/ai.types';
 
 interface AiScanState {
   // Global modes
@@ -31,7 +20,7 @@ interface AiScanState {
 
   // Data Store
   detections: YoloBox[];
-  /** Visual tracking state — updated by useYoloDetection IOU tracker, consumed by DetectionOverlay */
+  /** Visual tracking state  Eupdated by useYoloDetection IOU tracker, consumed by DetectionOverlay */
   trackedBoxes: TrackedBox[];
 
   // Mode Actions
@@ -99,10 +88,10 @@ export const useAiScanStore = create<AiScanState>((set) => ({
       });
 
       if (existing) {
-        // Preserve tracking state. If ADDED, don't reset — user already added it.
+        // Preserve tracking state. If ADDED, don't reset  Euser already added it.
         return { ...newBox, id: existing.id, status: existing.status, matches: existing.matches };
       }
-      return newBox; // New box — fresh RAW status with new UUID
+      return newBox; // New box  Efresh RAW status with new UUID
     });
 
     return { detections: updatedDetections };
@@ -151,3 +140,4 @@ export const useAiScanStore = create<AiScanState>((set) => ({
     isProcessing: false,
   }),
 }));
+

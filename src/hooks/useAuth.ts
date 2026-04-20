@@ -1,6 +1,7 @@
 import { useAuthStore } from '../stores/authStore';
 import { useCartStore } from '../stores/cartStore';
 import { useAlertStore } from '../stores/alertStore';
+import { useAiScanStore } from '../stores/aiScanStore';
 import { authApi } from '../api/auth';
 import type { LoginRequest } from '../types';
 
@@ -35,6 +36,7 @@ export const useAuth = () => {
     }
     useCartStore.getState().clear();
     useAlertStore.getState().clearAll();
+    useAiScanStore.getState().resetAiState();
     logoutStore();
   };
 

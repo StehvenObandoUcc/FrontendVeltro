@@ -31,21 +31,13 @@ export const useCartStore = create<CartStore>((set, get) => ({
       const pid = product.id;
       const existingItem = state.items.find((item) => item.productId === pid);
       if (existingItem) {
-        const nextQuantity = existingItem.quantity + requestedQty;
-
         return {
           items: state.items.map((item) =>
             item.productId === pid
-              ? { ...item, quantity: nextQuantity }
+              ? { ...item, quantity: existingItem.quantity + requestedQty }
               : item
           ),
         };
-      }
-
-      const initialQuantity = requestedQty;
-
-      if (initialQuantity <= 0) {
-        return state;
       }
 
       return {
@@ -54,7 +46,7 @@ export const useCartStore = create<CartStore>((set, get) => ({
           {
             productId: pid,
             product,
-            quantity: initialQuantity,
+            quantity: requestedQty,
           },
         ],
       };
@@ -73,20 +65,13 @@ export const useCartStore = create<CartStore>((set, get) => ({
       return;
     }
 
-    set((state) => {
-      const updatedItems = state.items
-        .map((item) => {
-          if (item.productId !== productId) {
-            return item;
-          }
-
-          const parsedQty = Math.max(1, Math.floor(quantity));
-          return { ...item, quantity: parsedQty };
-        })
-        .filter((item): item is CartItem => item !== null);
-
-      return { items: updatedItems };
-    });
+    set((state) => ({
+      items: state.items.map((item) =>
+        item.productId === productId
+          ? { ...item, quantity: Math.max(1, Math.floor(quantity)) }
+          : item
+      ),
+    }));
   },
 
   clear: () => {

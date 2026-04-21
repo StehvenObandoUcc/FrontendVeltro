@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { LoginResponse, User, UserRole } from '../types';
+import type { User, UserRole } from '../types';
 
 interface AuthState {
   user: User | null;
@@ -8,7 +8,6 @@ interface AuthState {
   refreshToken: string | null;
   isAuthenticated: boolean;
   setAuth: (user: User, accessToken: string, refreshToken: string) => void;
-  setTokens: (auth: LoginResponse) => void;
   setAccessToken: (token: string) => void;
   logout: () => void;
   hasRole: (role: UserRole | UserRole[]) => boolean;
@@ -28,22 +27,6 @@ export const useAuthStore = create<AuthState>()(
           user,
           accessToken,
           refreshToken,
-          isAuthenticated: true,
-        });
-      },
-
-      setTokens: (auth) => {
-        const existingUser = get().user;
-        set({
-          user: {
-            id: auth.id ?? existingUser?.id ?? 0,
-            username: auth.username ?? existingUser?.username ?? '',
-            email: auth.email ?? existingUser?.email ?? '',
-            role: auth.role ?? existingUser?.role ?? 'CASHIER',
-            businessId: auth.businessId ?? existingUser?.businessId ?? null,
-          },
-          accessToken: auth.accessToken,
-          refreshToken: auth.refreshToken,
           isAuthenticated: true,
         });
       },

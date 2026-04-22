@@ -1,5 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 
+const FOCUSABLE_SELECTOR = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
 /**
  * Hook for managing focus trap in modals
  * - Traps tab focus within the modal
@@ -25,7 +27,7 @@ export const useFocusTrap = (
       if (e.key !== 'Tab' || !ref.current) return;
 
       const focusableElements = ref.current.querySelectorAll(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        FOCUSABLE_SELECTOR
       ) as NodeListOf<HTMLElement>;
 
       if (focusableElements.length === 0) return;
@@ -57,7 +59,7 @@ export const useFocusTrap = (
     // Focus the modal or first focusable element
     if (ref.current) {
       const focusableElements = ref.current.querySelectorAll(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        FOCUSABLE_SELECTOR
       ) as NodeListOf<HTMLElement>;
 
       if (focusableElements.length > 0) {

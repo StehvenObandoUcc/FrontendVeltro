@@ -6,7 +6,6 @@ interface AlertStoreState {
   unreadCount: number;
   setActiveAlerts: (alerts: Alert[]) => void;
   setUnreadCount: (count: number) => void;
-  addAlert: (alert: Alert) => void;
   markAsReadLocal: (alertId: number) => void;
   resolveAlertLocal: (alertId: number) => void;
   clearAll: () => void;
@@ -22,23 +21,6 @@ export const useAlertStore = create<AlertStoreState>((set) => ({
 
   setUnreadCount: (count) => {
     set({ unreadCount: Math.max(0, count) });
-  },
-
-  addAlert: (alert) => {
-    set((state) => {
-      const exists = state.activeAlerts.some((item) => item.id === alert.id);
-      if (exists) {
-        return {
-          activeAlerts: state.activeAlerts.map((item) =>
-            item.id === alert.id ? alert : item
-          ),
-        };
-      }
-
-      return {
-        activeAlerts: [alert, ...state.activeAlerts],
-      };
-    });
   },
 
   markAsReadLocal: (alertId) => {

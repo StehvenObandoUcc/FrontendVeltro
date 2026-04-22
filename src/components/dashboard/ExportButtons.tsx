@@ -23,7 +23,7 @@ export const ExportButtons: React.FC = () => {
       link.click();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      setError('Failed to export PDF report');
+      setError('Error al exportar reporte PDF');
       console.error('PDF export error:', err);
     } finally {
       setExportingPdf(false);
@@ -43,7 +43,7 @@ export const ExportButtons: React.FC = () => {
       link.click();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      setError('Failed to export Excel report');
+      setError('Error al exportar reporte Excel');
       console.error('Excel export error:', err);
     } finally {
       setExportingExcel(false);
@@ -87,7 +87,7 @@ export const ExportButtons: React.FC = () => {
           title="Download PDF report"
         >
           <FileText size={16} />
-          {exportingPdf ? 'Exporting...' : 'Export PDF'}
+          {exportingPdf ? 'Exportando...' : 'Exportar PDF'}
         </button>
 
         <button
@@ -115,7 +115,7 @@ export const ExportButtons: React.FC = () => {
           title="Download Excel report"
         >
           <FileSpreadsheet size={16} />
-          {exportingExcel ? 'Exporting...' : 'Export Excel'}
+          {exportingExcel ? 'Exportando...' : 'Exportar Excel'}
         </button>
       </div>
     </div>

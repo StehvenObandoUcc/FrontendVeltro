@@ -10,6 +10,7 @@
 import { useEffect, useRef } from 'react';
 import { useAiScanStore } from '../stores/aiScanStore';
 import { posApi } from '../api/pos';
+import type { DetectMatch } from '../api/pos';
 import type { MatchedProduct } from '../modules/types/ai.types';
 
 const API_COOLDOWN_MS    = 1000;  // 1s between backend calls
@@ -89,13 +90,12 @@ export const useAiScanQueue = (
         const data = await posApi.aiDetectFrame(blob, `crop_${candidate.id.slice(0, 8)}.jpg`);
 
         if (data?.length && data[0].matches?.length) {
-          const matches: MatchedProduct[] = data[0].matches.map((p: any) => ({
-            id:           p.id,
-            name:         p.name,
-            sku:          p.sku ?? '',
-            barcode:      p.barcode ?? '',
-            salePrice:    p.salePrice?.toString() ?? '0',
-            currentStock: undefined,
+          const matches: MatchedProduct[] = data[0].matches.map((p: DetectMatch) => ({
+            id: p.id,
+            name: p.name,
+            sku: p.sku,
+            barcode: p.barcode,
+            salePrice: p.salePrice,
           }));
           console.log(`[Queue] ✅ Match: ${matches[0].name} (CLIP verified)`);
           updateMatches(candidate.id, matches);
@@ -118,8 +118,7 @@ export const useAiScanQueue = (
     };
 
     process();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [detections, aiEnabled]);
+  }, [detections, aiEnabled, setIsProcessing, updateStatus, updateMatches, videoRef]);
 
   return {};
 };

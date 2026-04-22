@@ -3,18 +3,24 @@ import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { RoleGuard } from '../../components/auth/RoleGuard';
 
-// Mock useAuth hook
-vi.mock('../../hooks/useAuth', () => ({
-  useAuth: vi.fn(),
+vi.mock('../../stores/authStore', () => ({
+  useAuthStore: vi.fn(),
 }));
 
-import { useAuth } from '../../hooks/useAuth';
+import { useAuthStore } from '../../stores/authStore';
 
 describe('RoleGuard Component', () => {
   it('should render children when user has allowed role', () => {
-    (useAuth as any).mockReturnValue({
-      user: { id: '1', email: 'test@example.com', role: 'ADMIN' },
+    vi.mocked(useAuthStore).mockReturnValue({
+      user: { id: 1, email: 'test@example.com', role: 'ADMIN', username: 'admin', businessId: 1 },
+      accessToken: 'token',
+      refreshToken: 'refresh',
       isAuthenticated: true,
+      setAuth: vi.fn(),
+      setAccessToken: vi.fn(),
+      logout: vi.fn(),
+      hasRole: vi.fn(),
+      getBusinessId: vi.fn(),
     });
 
     render(
@@ -29,9 +35,16 @@ describe('RoleGuard Component', () => {
   });
 
   it('should redirect to /unauthorized when user does not have allowed role', () => {
-    (useAuth as any).mockReturnValue({
-      user: { id: '1', email: 'test@example.com', role: 'CASHIER' },
+    vi.mocked(useAuthStore).mockReturnValue({
+      user: { id: 1, email: 'test@example.com', role: 'CASHIER', username: 'cashier', businessId: 1 },
+      accessToken: 'token',
+      refreshToken: 'refresh',
       isAuthenticated: true,
+      setAuth: vi.fn(),
+      setAccessToken: vi.fn(),
+      logout: vi.fn(),
+      hasRole: vi.fn(),
+      getBusinessId: vi.fn(),
     });
 
     render(
@@ -46,9 +59,16 @@ describe('RoleGuard Component', () => {
   });
 
   it('should allow access when user has one of multiple allowed roles', () => {
-    (useAuth as any).mockReturnValue({
-      user: { id: '1', email: 'test@example.com', role: 'WAREHOUSE' },
+    vi.mocked(useAuthStore).mockReturnValue({
+      user: { id: 1, email: 'test@example.com', role: 'WAREHOUSE', username: 'warehouse', businessId: 1 },
+      accessToken: 'token',
+      refreshToken: 'refresh',
       isAuthenticated: true,
+      setAuth: vi.fn(),
+      setAccessToken: vi.fn(),
+      logout: vi.fn(),
+      hasRole: vi.fn(),
+      getBusinessId: vi.fn(),
     });
 
     render(
@@ -63,9 +83,16 @@ describe('RoleGuard Component', () => {
   });
 
   it('should handle case-insensitive role comparison', () => {
-    (useAuth as any).mockReturnValue({
-      user: { id: '1', email: 'test@example.com', role: 'admin' },
+    vi.mocked(useAuthStore).mockReturnValue({
+      user: { id: 1, email: 'test@example.com', role: 'admin' as any, username: 'admin', businessId: 1 },
+      accessToken: 'token',
+      refreshToken: 'refresh',
       isAuthenticated: true,
+      setAuth: vi.fn(),
+      setAccessToken: vi.fn(),
+      logout: vi.fn(),
+      hasRole: vi.fn(),
+      getBusinessId: vi.fn(),
     });
 
     render(
@@ -81,9 +108,16 @@ describe('RoleGuard Component', () => {
   });
 
   it('should deny access when user role is undefined', () => {
-    (useAuth as any).mockReturnValue({
-      user: { id: '1', email: 'test@example.com', role: undefined },
+    vi.mocked(useAuthStore).mockReturnValue({
+      user: { id: 1, email: 'test@example.com', role: undefined as any, username: 'user', businessId: 1 },
+      accessToken: 'token',
+      refreshToken: 'refresh',
       isAuthenticated: true,
+      setAuth: vi.fn(),
+      setAccessToken: vi.fn(),
+      logout: vi.fn(),
+      hasRole: vi.fn(),
+      getBusinessId: vi.fn(),
     });
 
     render(

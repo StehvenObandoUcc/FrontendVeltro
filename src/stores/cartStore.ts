@@ -1,15 +1,18 @@
 import { create } from 'zustand';
 import type { Product } from '../types';
 
+/** Minimum product shape accepted by the cart. Allows both full Product and MatchedProduct. */
+export type CartProductInput = Pick<Product, 'id' | 'name' | 'salePrice' | 'barcode' | 'sku'>;
+
 export interface CartItem {
   productId: number;
-  product: Product;
+  product: CartProductInput;
   quantity: number;
 }
 
 interface CartStore {
   items: CartItem[];
-  add: (product: Product, quantity: number) => void;
+  add: (product: CartProductInput, quantity: number) => void;
   remove: (productId: number) => void;
   updateQty: (productId: number, quantity: number) => void;
   clear: () => void;

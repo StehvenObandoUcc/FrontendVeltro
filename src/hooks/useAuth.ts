@@ -6,14 +6,12 @@ import { authApi } from '../api/auth';
 import type { LoginRequest } from '../types';
 
 export const useAuth = () => {
-  const {
-    user,
-    accessToken,
-    isAuthenticated,
-    setAuth,
-    logout: logoutStore,
-    hasRole,
-  } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const setAuth = useAuthStore((s) => s.setAuth);
+  const logoutStore = useAuthStore((s) => s.logout);
+  const hasRole = useAuthStore((s) => s.hasRole);
 
   const login = async (credentials: LoginRequest) => {
     const response = await authApi.login(credentials);

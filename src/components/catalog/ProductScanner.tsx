@@ -1,34 +1,9 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Camera, X } from 'lucide-react';
 import { productApi } from '../../api/catalog';
 import { posApi, type SuggestedProduct } from '../../api/pos';
-
-type CameraFeedbackState =
-  | 'idle'
-  | 'starting'
-  | 'scanning'
-  | 'product-added'
-  | 'not-found'
-  | 'camera-error';
-
-const CAMERA_START_CONFIG = { facingMode: 'environment' };
-const BARCODE_SCANNER_CONFIG = {
-  fps: 10,
-  qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
-    const width = Math.floor(Math.min(viewfinderWidth * 0.8, viewfinderHeight * 0.8));
-    const height = Math.floor(viewfinderHeight * 0.6);
-    return {
-      width: Math.max(50, width),
-      height: Math.max(50, height),
-    };
-  },
-  videoConstraints: {
-    width: { ideal: 1280 },
-    height: { ideal: 720 },
-    facingMode: 'environment',
-  },
-};
+import { useBarcodeScanner } from '../../hooks';
+import type { CameraFeedbackState } from '../../hooks/useBarcodeScanner';
 
 export interface ScannedProductData {
   /** If product already exists in DB */
@@ -59,59 +34,19 @@ interface ProductScannerProps {
 export const ProductScanner: React.FC<ProductScannerProps> = ({ onResult, onClose }) => {
   const [aiAvailable, setAiAvailable] = useState(false);
   const [showAiButton, setShowAiButton] = useState(false);
-  const [cameraReady, setCameraReady] = useState(false);
   const [scanning, setScanning] = useState(false);
-  const [lastBarcode, setLastBarcode] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [cameraFeedback, setCameraFeedback] = useState<CameraFeedbackState>('idle');
 
   // AI modal state
   const [aiLoading, setAiLoading] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<SuggestedProduct[] | null>(null);
-
-  const scannerRef = useRef<Html5Qrcode | null>(null);
-  const lastScannedTimeRef = useRef<number>(0);
-  const lastScannedCodeRef = useRef<string | null>(null);
-  const isMountedRef = useRef(false);
-  const isStartingRef = useRef(false);
-  const isStoppingRef = useRef(false);
-  const stopPromiseRef = useRef<Promise<void> | null>(null);
-  const startTokenRef = useRef(0);
-  const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isHandlingScanRef = useRef(false);
-
-  useEffect(() => {
-    isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-      if (feedbackTimerRef.current) {
-        clearTimeout(feedbackTimerRef.current);
-      }
-    };
-  }, []);
-
-  const setTransientFeedback = useCallback((value: CameraFeedbackState) => {
-    if (feedbackTimerRef.current) {
-      clearTimeout(feedbackTimerRef.current);
-      feedbackTimerRef.current = null;
-    }
-
-    setCameraFeedback(value);
-    if (value === 'product-added' || value === 'not-found') {
-      feedbackTimerRef.current = setTimeout(() => {
-        if (isMountedRef.current) {
-          setCameraFeedback('scanning');
-        }
-      }, 1600);
-    }
-  }, []);
+  const setTransientFeedbackRef = useRef<(state: CameraFeedbackState) => void>(() => {});
 
   // ----- Handle Handlers First -----
   const handleBarcodeScan = useCallback(
     async (barcode: string) => {
       const code = barcode.trim();
-      console.log('[Scanner] handleBarcodeScan llamado con:', code);
       if (!code) return;
 
       setScanning(true);
@@ -130,16 +65,18 @@ export const ProductScanner: React.FC<ProductScannerProps> = ({ onResult, onClos
           source: 'barcode-db',
         });
         setStatus('¡Producto encontrado en DB!');
-        setTransientFeedback('product-added');
-      } catch (err: any) {
-        if (err?.response?.status === 404 || err?.status === 404) {
+        setTransientFeedbackRef.current('product-added');
+      } catch (err: unknown) {
+        const status = (err as { response?: { status?: number }; status?: number })?.response?.status
+          ?? (err as { status?: number })?.status;
+        if (status === 404) {
           onResult({
             existsInDb: false,
             barcode: code,
             source: 'barcode-new',
           });
           setStatus('Nuevo código detectado.');
-          setTransientFeedback('not-found');
+          setTransientFeedbackRef.current('not-found');
         } else {
           console.error(err);
           onResult({
@@ -148,177 +85,45 @@ export const ProductScanner: React.FC<ProductScannerProps> = ({ onResult, onClos
             source: 'barcode-new',
           });
           setStatus('Nuevo código detectado.');
-          setTransientFeedback('not-found');
+          setTransientFeedbackRef.current('not-found');
         }
       } finally {
         setScanning(false);
       }
     },
-    [onResult, setTransientFeedback]
+    [onResult]
   );
 
-  // ----- Html5Qrcode implementation -----
-  const stopScanner = useCallback(async () => {
-    if (isStoppingRef.current) {
-      return stopPromiseRef.current ?? Promise.resolve();
-    }
-
-    const currentScanner = scannerRef.current;
-    if (!currentScanner) {
-      if (isMountedRef.current) {
-        setCameraReady(false);
-      }
-      return;
-    }
-
-    isStoppingRef.current = true;
-    const stopTask = (async () => {
-      try {
-        if (currentScanner.isScanning) {
-          await currentScanner.stop();
-        }
-      } catch {
-        // noop
-      }
-
-      try {
-        await currentScanner.clear();
-      } catch {
-        // noop
-      }
-
-      if (scannerRef.current === currentScanner) {
-        scannerRef.current = null;
-      }
-
-      if (isMountedRef.current) {
-        setCameraReady(false);
-      }
-    })().finally(() => {
-      isStoppingRef.current = false;
-      stopPromiseRef.current = null;
-    });
-
-    stopPromiseRef.current = stopTask;
-    return stopTask;
-  }, []);
-
-  const startScanner = useCallback(async () => {
-    const readerEl = document.getElementById('catalog-reader');
-    if (!readerEl) return;
-    if (isStartingRef.current || isStoppingRef.current || scannerRef.current) return;
-
-    if (stopPromiseRef.current) {
-      await stopPromiseRef.current;
-    }
-
-    isStartingRef.current = true;
-    const currentToken = ++startTokenRef.current;
-
-    setCameraReady(false);
-    setCameraFeedback('starting');
-    setError(null);
-
-    readerEl.innerHTML = '';
-
-    const scanner = new Html5Qrcode('catalog-reader', {
-      verbose: true,
-      formatsToSupport: [
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.CODE_39,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
-      ],
-    });
-    scannerRef.current = scanner;
-
-    const onSuccess = async (decodedText: string) => {
-      console.log('[Scanner] onSuccess llamado con:', decodedText);
-      console.log('[Scanner] Estado actual:', {
-        scanning,
-        aiLoading,
-        lastScannedCode: lastScannedCodeRef.current,
-      });
-      const now = Date.now();
-      if (
-        decodedText &&
-        (decodedText !== lastScannedCodeRef.current ||
-          now - lastScannedTimeRef.current > 3000)
-      ) {
-        if (isHandlingScanRef.current) {
-          return;
-        }
-
-        isHandlingScanRef.current = true;
-        lastScannedCodeRef.current = decodedText;
-        lastScannedTimeRef.current = now;
-        setLastBarcode(decodedText);
-
-        try {
-          await stopScanner();
-          await handleBarcodeScan(decodedText);
-        } finally {
-          isHandlingScanRef.current = false;
-        }
-      }
-    };
-
-    try {
-      await scanner.start(
-        CAMERA_START_CONFIG,
-        BARCODE_SCANNER_CONFIG,
-        onSuccess,
-        () => {
-          // noop
-        }
-      );
-
-      if (!isMountedRef.current || startTokenRef.current !== currentToken) {
-        await stopScanner();
-        return;
-      }
-
-      setCameraReady(true);
-      setCameraFeedback('scanning');
-    } catch {
-      if (!isMountedRef.current || startTokenRef.current !== currentToken) {
-        await stopScanner();
-        return;
-      }
-
-      setCameraReady(false);
-      setCameraFeedback('camera-error');
-      setError('No se pudo iniciar la cámara. Verifica permisos del navegador.');
-      await stopScanner();
-    } finally {
-      isStartingRef.current = false;
-    }
-  }, [aiLoading, handleBarcodeScan, scanning, stopScanner]);
+  const {
+    cameraReady,
+    cameraFeedback,
+    lastBarcode,
+    error: cameraError,
+    setError: setCameraError,
+    setTransientFeedback,
+  } = useBarcodeScanner({
+    readerId: 'catalog-reader',
+    enabled: !aiLoading,
+    onDecode: handleBarcodeScan,
+    startDelayMs: 200,
+    stopOnDecode: true,
+    startErrorMessage: 'No se pudo iniciar la cámara. Verifica permisos del navegador.',
+  });
 
   useEffect(() => {
-    if (aiLoading) {
-      setCameraFeedback('idle');
-      void stopScanner();
-      return;
+    setTransientFeedbackRef.current = setTransientFeedback;
+  }, [setTransientFeedback]);
+
+  useEffect(() => {
+    if (cameraError) {
+      setError(cameraError);
     }
-
-  const t = setTimeout(() => {
-    void startScanner();
-  }, 200);
-
-    return () => {
-      clearTimeout(t);
-      void stopScanner();
-    };
-  }, [aiLoading, startScanner, stopScanner]);
+  }, [cameraError]);
 
   // Check AI on mount
   useEffect(() => {
     posApi.checkAiAvailable()
       .then((res) => {
-        console.log('[Catalog Scanner] AI available:', res.available);
         setAiAvailable(res.available);
       })
       .catch((err) => {
@@ -336,14 +141,6 @@ export const ProductScanner: React.FC<ProductScannerProps> = ({ onResult, onClos
     const timer = setTimeout(() => setShowAiButton(true), 3000);
     return () => clearTimeout(timer);
   }, [cameraReady, aiAvailable, scanning, aiLoading, lastBarcode]);
-
-  // Reset lastBarcode after delay
-  useEffect(() => {
-    if (lastBarcode) {
-      const t = setTimeout(() => setLastBarcode(null), 3000);
-      return () => clearTimeout(t);
-    }
-  }, [lastBarcode]);
 
   // Clear error after delay
   useEffect(() => {
@@ -390,6 +187,7 @@ export const ProductScanner: React.FC<ProductScannerProps> = ({ onResult, onClos
           setStatus(null);
         } finally {
           setAiLoading(false);
+          setCameraError(null);
         }
       },
       'image/jpeg',

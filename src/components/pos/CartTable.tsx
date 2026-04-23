@@ -7,8 +7,12 @@ interface CartTableProps {
 }
 
 export const CartTable: React.FC<CartTableProps> = ({ onQuantityChange }) => {
-  const { items, remove, updateQty, getTotal, getSubtotal, getItemCount } =
-    useCartStore();
+  const items = useCartStore((s) => s.items);
+  const remove = useCartStore((s) => s.remove);
+  const updateQty = useCartStore((s) => s.updateQty);
+  const getTotal = useCartStore((s) => s.getTotal);
+  const getSubtotal = useCartStore((s) => s.getSubtotal);
+  const getItemCount = useCartStore((s) => s.getItemCount);
 
   const handleQuantityChange = (productId: number, value: string) => {
     const qty = parseInt(value, 10);

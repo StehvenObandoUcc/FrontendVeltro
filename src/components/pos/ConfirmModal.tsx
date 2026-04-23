@@ -19,7 +19,8 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   submitError = null,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
-  const { items, getTotal } = useCartStore();
+  const items = useCartStore((s) => s.items);
+  const getTotal = useCartStore((s) => s.getTotal);
   const [paymentMethod, setPaymentMethod] = useState<
     'CASH' | 'CARD' | 'NEQUI' | 'DAVIPLATA'
   >('CASH');

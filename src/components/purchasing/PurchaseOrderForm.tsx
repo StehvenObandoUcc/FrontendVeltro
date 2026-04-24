@@ -176,7 +176,7 @@ export const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div>
         <h3 className="text-lg font-medium" style={{ color: '#1F2937' }}>
-          Create Purchase Order
+          Crear Orden de Compra
         </h3>
       </div>
 
@@ -244,7 +244,7 @@ export const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
       {/* Items section */}
       <div>
         <h4 className="text-base font-medium" style={{ color: '#1F2937' }}>
-          Items
+          Artículos
         </h4>
 
         <div className="space-y-3">
@@ -257,7 +257,7 @@ export const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
                             {/* Product select */}
               <div>
                 <label className="block text-sm font-medium mb-1" style={{ color: '#1F2937' }}>
-                  Product
+                  Producto
                 </label>
                 <Controller
                   control={control}
@@ -277,7 +277,7 @@ export const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium" style={{ color: '#1F2937' }}>
-                    Quantity
+                    Cantidad
                   </label>
                   <input
                      type="number"
@@ -308,7 +308,7 @@ export const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
 
                 <div>
                   <label className="block text-sm font-medium" style={{ color: '#1F2937' }}>
-                    Unit Cost
+                    Costo Unitario
                   </label>
                   <input
                      type="text"
@@ -353,7 +353,7 @@ export const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
                      e.currentTarget.style.opacity = '1';
                    }}
                  >
-                   Remove Item
+                   Eliminar Artículo
                  </button>
               )}
             </div>
@@ -378,7 +378,7 @@ export const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
              e.currentTarget.style.opacity = '1';
            }}
          >
-           + Add Item
+           + Agregar Artículo
          </button>
 
         {errors.items && (
@@ -410,7 +410,7 @@ export const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
       {submitSuccess && (
         <div className="p-4 rounded-md" style={{ backgroundColor: '#E8F4F0', border: '1px solid #10B981' }}>
           <p className="text-sm" style={{ color: '#10B981' }}>
-            Purchase order created successfully!
+            ¡Orden de compra creada exitosamente!
           </p>
         </div>
       )}
@@ -431,7 +431,7 @@ export const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
            if (!isSubmitting) e.currentTarget.style.opacity = '1';
          }}
        >
-         {isSubmitting ? 'Creating...' : 'Create Purchase Order'}
+         {isSubmitting ? 'Creando...' : 'Crear Orden de Compra'}
        </button>
     </form>
   );

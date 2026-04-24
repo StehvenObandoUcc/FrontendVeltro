@@ -1,38 +1,14 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { Camera, Keyboard, X } from 'lucide-react';
 import { useCartStore } from '../../stores/cartStore';
 import { CameraErrorBoundary } from './CameraErrorBoundary';
 import { posApi } from '../../api/pos';
+import { useBarcodeScanner } from '../../hooks';
 import type { Product } from '../../types';
 import type { AxiosError } from 'axios';
+import type { CameraFeedbackState } from '../../hooks/useBarcodeScanner';
 
 type ScannerMode = 'camera' | 'manual';
-type CameraFeedbackState =
-  | 'idle'
-  | 'starting'
-  | 'scanning'
-  | 'product-added'
-  | 'not-found'
-  | 'camera-error';
-
-const CAMERA_START_CONFIG = { facingMode: 'environment' };
-const BARCODE_SCANNER_CONFIG = {
-  fps: 10,
-  qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
-    const width = Math.floor(Math.min(viewfinderWidth * 0.8, viewfinderHeight * 0.8));
-    const height = Math.floor(viewfinderHeight * 0.6);
-    return {
-      width: Math.max(50, width),
-      height: Math.max(50, height),
-    };
-  },
-  videoConstraints: {
-    width: { ideal: 1280 },
-    height: { ideal: 720 },
-    facingMode: 'environment',
-  },
-};
 
 export const ScannerContainer: React.FC = () => {
   const barcodeInputRef = useRef<HTMLInputElement>(null);
@@ -50,50 +26,9 @@ export const ScannerContainer: React.FC = () => {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
 
-  // Camera state
-  const [cameraReady, setCameraReady] = useState(false);
-  const [lastBarcode, setLastBarcode] = useState<string | null>(null);
-  const [cameraFeedback, setCameraFeedback] = useState<CameraFeedbackState>('idle');
-
   const addToCart = useCartStore((state) => state.add);
-
-  const scannerRef = useRef<Html5Qrcode | null>(null);
-  const lastScannedTimeRef = useRef<number>(0);
-  const lastScannedCodeRef = useRef<string | null>(null);
-  const isMountedRef = useRef(false);
-  const isStartingRef = useRef(false);
-  const isStoppingRef = useRef(false);
-  const stopPromiseRef = useRef<Promise<void> | null>(null);
-  const startTokenRef = useRef(0);
-  const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isProcessingScanRef = useRef(false);
-  const isHandlingScanRef = useRef(false);
-
-  useEffect(() => {
-    isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-      if (feedbackTimerRef.current) {
-        clearTimeout(feedbackTimerRef.current);
-      }
-    };
-  }, []);
-
-  const setTransientFeedback = useCallback((state: CameraFeedbackState) => {
-    if (feedbackTimerRef.current) {
-      clearTimeout(feedbackTimerRef.current);
-      feedbackTimerRef.current = null;
-    }
-
-    setCameraFeedback(state);
-    if (state === 'product-added' || state === 'not-found') {
-      feedbackTimerRef.current = setTimeout(() => {
-        if (isMountedRef.current) {
-          setCameraFeedback('scanning');
-        }
-      }, 1600);
-    }
-  }, []);
+  const setTransientFeedbackRef = useRef<(state: CameraFeedbackState) => void>(() => {});
 
   // ----- Handlers -----
 
@@ -114,7 +49,7 @@ export const ScannerContainer: React.FC = () => {
 
         addToCart(product, 1);
         setSuccessMsg(`+ ${product.name}`);
-        setTransientFeedback('product-added');
+        setTransientFeedbackRef.current('product-added');
         setBarcodeValue('');
         barcodeInputRef.current?.focus();
       } catch (err) {
@@ -127,174 +62,36 @@ export const ScannerContainer: React.FC = () => {
         } else {
           setError(`Producto no encontrado: ${code}`);
         }
-        setTransientFeedback('not-found');
+        setTransientFeedbackRef.current('not-found');
       } finally {
         setLoading(false);
         isProcessingScanRef.current = false;
       }
     },
-    [addToCart, setTransientFeedback]
+    [addToCart]
   );
 
-  // ----- html5-qrcode camera barcode scanning -----
-  const stopScanner = useCallback(async () => {
-    if (isStoppingRef.current) {
-      return stopPromiseRef.current ?? Promise.resolve();
-    }
-
-    const currentScanner = scannerRef.current;
-    if (!currentScanner) {
-      if (isMountedRef.current) {
-        setCameraReady(false);
-      }
-      return;
-    }
-
-    isStoppingRef.current = true;
-    const stopTask = (async () => {
-      try {
-        if (currentScanner.isScanning) {
-          await currentScanner.stop();
-        }
-      } catch {
-        // noop
-      }
-
-      try {
-        await currentScanner.clear();
-      } catch {
-        // noop
-      }
-
-      if (scannerRef.current === currentScanner) {
-        scannerRef.current = null;
-      }
-
-      if (isMountedRef.current) {
-        setCameraReady(false);
-      }
-    })().finally(() => {
-      isStoppingRef.current = false;
-      stopPromiseRef.current = null;
-    });
-
-    stopPromiseRef.current = stopTask;
-    return stopTask;
-  }, []);
-
-  const startScanner = useCallback(async () => {
-    const readerEl = document.getElementById('reader');
-    if (!readerEl) return;
-    if (isStartingRef.current || isStoppingRef.current || scannerRef.current) return;
-
-    if (stopPromiseRef.current) {
-      await stopPromiseRef.current;
-    }
-
-    isStartingRef.current = true;
-    const currentToken = ++startTokenRef.current;
-
-    setCameraReady(false);
-    setCameraFeedback('starting');
-    setError(null);
-
-    readerEl.innerHTML = '';
-
-    const scanner = new Html5Qrcode('reader', {
-      verbose: true,
-      formatsToSupport: [
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.CODE_39,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
-      ],
-    });
-    scannerRef.current = scanner;
-
-    const qrCodeSuccessCallback = async (decodedText: string) => {
-      console.log('[POS Scanner] frame procesado - decodedText:', decodedText);
-      const now = Date.now();
-      if (
-        decodedText &&
-        (decodedText !== lastScannedCodeRef.current ||
-          now - lastScannedTimeRef.current > 3000)
-      ) {
-        if (isHandlingScanRef.current) return;
-        isHandlingScanRef.current = true;
-        lastScannedCodeRef.current = decodedText;
-        lastScannedTimeRef.current = now;
-        setLastBarcode(decodedText);
-        try {
-          await handleBarcodeScan(decodedText);
-        } finally {
-          isHandlingScanRef.current = false;
-        }
-      }
-    };
-
-    try {
-      await scanner.start(
-        CAMERA_START_CONFIG,
-        BARCODE_SCANNER_CONFIG,
-        qrCodeSuccessCallback,
-        () => {
-          // noop
-        }
-      );
-
-      if (!isMountedRef.current || startTokenRef.current !== currentToken) {
-        await stopScanner();
-        return;
-      }
-
-      setCameraReady(true);
-      const readerEl = document.getElementById('reader');
-      if (readerEl) {
-        const rect = readerEl.getBoundingClientRect();
-        console.log('[POS Scanner] reader dimensions:', rect.width, 'x', rect.height);
-      }
-      setCameraFeedback('scanning');
-    } catch {
-      if (!isMountedRef.current || startTokenRef.current !== currentToken) {
-        await stopScanner();
-        return;
-      }
-
-      setCameraReady(false);
-      setCameraFeedback('camera-error');
-      setError('No se pudo iniciar la camara. Revisa permisos del navegador.');
-      await stopScanner();
-    } finally {
-      isStartingRef.current = false;
-    }
-  }, [handleBarcodeScan, stopScanner]);
+  const {
+    cameraReady,
+    cameraFeedback,
+    error: cameraError,
+    setError: setCameraError,
+    setTransientFeedback,
+  } = useBarcodeScanner({
+    readerId: 'reader',
+    enabled: mode === 'camera',
+    onDecode: handleBarcodeScan,
+    startDelayMs: 80,
+    startErrorMessage: 'No se pudo iniciar la camara. Revisa permisos del navegador.',
+  });
 
   useEffect(() => {
-    if (mode !== 'camera') {
-      setCameraFeedback('idle');
-      void stopScanner();
-      return;
-    }
+    setTransientFeedbackRef.current = setTransientFeedback;
+  }, [setTransientFeedback]);
 
-    const t = setTimeout(() => {
-      void startScanner();
-    }, 80);
-
-    return () => {
-      clearTimeout(t);
-      void stopScanner();
-    };
-  }, [mode, startScanner, stopScanner]);
-
-  // Reset lastBarcode after a delay to allow re-scanning same code
   useEffect(() => {
-    if (lastBarcode) {
-      const t = setTimeout(() => setLastBarcode(null), 3000);
-      return () => clearTimeout(t);
-    }
-  }, [lastBarcode]);
+    setError(cameraError);
+  }, [cameraError]);
 
 
 
@@ -326,10 +123,13 @@ export const ScannerContainer: React.FC = () => {
 
   useEffect(() => {
     if (error) {
-      const t = setTimeout(() => setError(null), 5000);
+      const t = setTimeout(() => {
+        setError(null);
+        setCameraError(null);
+      }, 5000);
       return () => clearTimeout(t);
     }
-  }, [error]);
+  }, [error, setCameraError]);
 
   /** Handle manual barcode submit (Enter key or button) */
   const handleBarcodeSubmit = useCallback(() => {
@@ -554,7 +354,10 @@ export const ScannerContainer: React.FC = () => {
         <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm flex items-center justify-between">
           <span>{error}</span>
           <button
-            onClick={() => setError(null)}
+            onClick={() => {
+              setError(null);
+              setCameraError(null);
+            }}
             className="ml-2 text-red-400 hover:text-red-600 shrink-0"
           >
             <X className="w-4 h-4" />

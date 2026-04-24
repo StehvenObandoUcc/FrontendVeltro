@@ -2,8 +2,6 @@ export { ScannerContainer } from './ScannerContainer';
 export { CartTable } from './CartTable';
 export { ConfirmModal } from './ConfirmModal';
 export { SaleReceipt } from './SaleReceipt';
-export { AiIdentificationModal } from './AiIdentificationModal';
 export { CameraErrorBoundary } from './CameraErrorBoundary';
 export { ScanModeToggle } from './ScanModeToggle';
-export { AiResultsPanel } from './AiResultsPanel';
 export { AiScannerContainer } from './AiScannerContainer';

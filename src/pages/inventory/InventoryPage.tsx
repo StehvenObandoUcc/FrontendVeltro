@@ -119,8 +119,9 @@ export function InventoryPage() {
       });
       await loadInventory();
       closeModal();
-    } catch (err: any) {
-      if (err.response?.status === 422) {
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 422) {
         setError('Stock insuficiente para esta salida');
       } else {
         setError('Error al registrar salida');

@@ -28,27 +28,27 @@ const POSPage = lazy(() =>
   import('./pages/pos').then((m) => ({ default: m.POSPage }))
 );
 const AlertListPage = lazy(() =>
-  import('./pages/inventory/AlertListPage').then((m) => ({
+  import('./pages/inventory').then((m) => ({
     default: m.AlertListPage,
   }))
 );
 const InventoryPage = lazy(() =>
-  import('./pages/inventory/InventoryPage').then((m) => ({
+  import('./pages/inventory').then((m) => ({
     default: m.InventoryPage,
   }))
 );
 const PurchaseOrderPage = lazy(() =>
-  import('./pages/purchasing/PurchaseOrderPage').then((m) => ({
+  import('./pages/purchasing').then((m) => ({
     default: m.PurchaseOrderPage,
   }))
 );
 const SupplierPage = lazy(() =>
-  import('./pages/purchasing/SupplierPage').then((m) => ({
+  import('./pages/purchasing').then((m) => ({
     default: m.SupplierPage,
   }))
 );
 const DashboardPage = lazy(() =>
-  import('./pages/dashboard/DashboardPage').then((m) => ({
+  import('./pages/dashboard').then((m) => ({
     default: m.DashboardPage,
   }))
 );

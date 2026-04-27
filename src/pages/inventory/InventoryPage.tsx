@@ -1,6 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { Camera, ArrowLeft } from 'lucide-react';
 import { AiScannerContainer } from '../../components/pos/AiScannerContainer';
+import { StockMovementModal } from '../../components/inventory/StockMovementModal';
+import { MovementHistoryModal } from '../../components/inventory/MovementHistoryModal';
 import { 
   inventoryApi,
   type InventoryItem,
@@ -149,10 +151,6 @@ export function InventoryPage() {
     }
   };
 
-  const filteredInventory = inventory.filter(item =>
-    item.productName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   const getStockStatus = (item: InventoryItem) => {
     const minStock = typeof item.minStock === 'number' ? item.minStock : 0;
     const hasMaxStock = typeof item.maxStock === 'number' && item.maxStock > 0;
@@ -165,28 +163,8 @@ export function InventoryPage() {
 
   const formatStockLimits = (item: InventoryItem) => {
     const minStock = typeof item.minStock === 'number' ? item.minStock : 0;
-    const maxStockLabel = typeof item.maxStock === 'number' && item.maxStock > 0 ? item.maxStock : 'Sin máximo';
+    const maxStockLabel = typeof item.maxStock === 'number' && item.maxStock > 0 ? item.maxStock : 'Sin mﾃ｡ximo';
     return `${minStock} / ${maxStockLabel}`;
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('es-CO', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const getMovementTypeLabel = (type: string) => {
-    const labels: Record<string, { text: string; color: string }> = {
-      ENTRY: { text: 'Entrada', color: 'text-green-600' },
-      EXIT: { text: 'Salida', color: 'text-red-600' },
-      ADJUSTMENT: { text: 'Ajuste', color: 'text-blue-600' },
-      SALE: { text: 'Venta', color: 'text-purple-600' },
-    };
-    return labels[type] || { text: type, color: 'text-gray-600' };
   };
 
   return (
@@ -195,7 +173,7 @@ export function InventoryPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>Inventario</h1>
-          <p className="mt-1 text-sm" style={{ color: 'var(--text-secondary)' }}>Gestión de stock y movimientos</p>
+          <p className="mt-1 text-sm" style={{ color: 'var(--text-secondary)' }}>Gestiﾃｳn de stock y movimientos</p>
         </div>
         
         <div className="flex gap-3 w-full sm:w-auto">
@@ -273,7 +251,7 @@ export function InventoryPage() {
                     Stock Actual
                   </th>
                   <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
-                    Mín / Máx
+                    Mﾃｭn / Mﾃ｡x
                   </th>
                   <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
                     Estado
@@ -284,7 +262,7 @@ export function InventoryPage() {
                 </tr>
               </thead>
               <tbody className="divide-y" style={{ borderColor: 'var(--border-light)' }}>
-                {filteredInventory.map((item) => {
+                {inventory.map((item) => {
                   const status = getStockStatus(item);
                   return (
                     <tr key={item.id} className="hover:bg-[rgba(3,142,87,0.02)] transition-colors">
@@ -341,7 +319,7 @@ export function InventoryPage() {
               </tbody>
             </table>
 
-            {filteredInventory.length === 0 && (
+            {inventory.length === 0 && (
               <div className="p-8 text-center" style={{ color: 'var(--text-tertiary)' }}>
                 No se encontraron productos en el inventario
               </div>
@@ -359,7 +337,7 @@ export function InventoryPage() {
                 Anterior
               </button>
               <span className="px-4 py-2 font-medium" style={{ color: 'var(--text-secondary)' }}>
-                Página {page + 1} de {totalPages}
+                Pﾃ｡gina {page + 1} de {totalPages}
               </span>
               <button
                 onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
@@ -373,185 +351,34 @@ export function InventoryPage() {
         </>
       )}
 
-      {/* Modal */}
-      {modalType && selectedItem && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <div className="card w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              {/* Modal Header */}
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
-                  {modalType === 'entry' && 'Registrar Entrada'}
-                  {modalType === 'exit' && 'Registrar Salida'}
-                  {modalType === 'adjustment' && 'Ajustar Stock'}
-                  {modalType === 'history' && 'Historial de Movimientos'}
-                </h2>
-                <button
-                  onClick={closeModal}
-                  className="p-1 rounded-md transition-colors"
-                  style={{ color: 'var(--text-tertiary)' }}
-                  onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
-                  onMouseLeave={e => e.currentTarget.style.color = 'var(--text-tertiary)'}
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: 'var(--surface-tertiary)' }}>
-                <p className="font-medium" style={{ color: 'var(--text-primary)' }}>{selectedItem.productName}</p>
-                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Stock actual: {selectedItem.currentStock}</p>
-              </div>
-
-              {/* Entry Form */}
-              {modalType === 'entry' && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Cantidad</label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={quantity}
-                      onChange={(e) => setQuantity(e.target.value)}
-                      className="input-base"
-                      placeholder="Cantidad a agregar"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Razón</label>
-                    <input
-                      type="text"
-                      value={reason}
-                      onChange={(e) => setReason(e.target.value)}
-                      className="input-base"
-                      placeholder="Ej: Compra a proveedor"
-                    />
-                  </div>
-                  <button
-                    onClick={handleEntry}
-                    disabled={modalLoading || !quantity || !reason}
-                    className="btn-primary w-full"
-                  >
-                    {modalLoading ? 'Procesando...' : 'Registrar Entrada'}
-                  </button>
-                </div>
-              )}
-
-              {/* Exit Form */}
-              {modalType === 'exit' && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Cantidad</label>
-                    <input
-                      type="number"
-                      min="1"
-                      max={selectedItem.currentStock}
-                      value={quantity}
-                      onChange={(e) => setQuantity(e.target.value)}
-                      className="input-base"
-                      placeholder="Cantidad a retirar"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Razón</label>
-                    <input
-                      type="text"
-                      value={reason}
-                      onChange={(e) => setReason(e.target.value)}
-                      className="input-base"
-                      placeholder="Ej: Merma, devolución"
-                    />
-                  </div>
-                  <button
-                    onClick={handleExit}
-                    disabled={modalLoading || !quantity || !reason}
-                    className="btn-danger w-full"
-                  >
-                    {modalLoading ? 'Procesando...' : 'Registrar Salida'}
-                  </button>
-                </div>
-              )}
-
-              {/* Adjustment Form */}
-              {modalType === 'adjustment' && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Nuevo Stock</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={newStock}
-                      onChange={(e) => setNewStock(e.target.value)}
-                      className="input-base"
-                      placeholder="Nueva cantidad total"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Razón del ajuste</label>
-                    <input
-                      type="text"
-                      value={reason}
-                      onChange={(e) => setReason(e.target.value)}
-                      className="input-base"
-                      placeholder="Ej: Conteo físico, corrección"
-                    />
-                  </div>
-                  <button
-                    onClick={handleAdjustment}
-                    disabled={modalLoading || !newStock || !reason}
-                    className="w-full py-3 rounded-lg font-semibold text-white transition-all"
-                    style={{ backgroundColor: '#3B82F6' }}
-                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#2563EB'}
-                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#3B82F6'}
-                  >
-                    {modalLoading ? 'Procesando...' : 'Ajustar Stock'}
-                  </button>
-                </div>
-              )}
-
-              {/* History */}
-              {modalType === 'history' && (
-                <div>
-                  {modalLoading ? (
-                    <div className="flex justify-center py-8">
-                      <div 
-                        className="animate-spin rounded-full h-8 w-8" 
-                        style={{ 
-                          borderColor: 'rgba(3, 142, 87, 0.2)',
-                          borderTopColor: 'var(--primary-base)',
-                          borderWidth: '3px'
-                        }} 
-                      />
-                    </div>
-                  ) : movements.length === 0 ? (
-                    <p className="text-center py-8" style={{ color: 'var(--text-tertiary)' }}>No hay movimientos registrados</p>
-                  ) : (
-                    <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
-                      {movements.map((mov) => {
-                        const typeInfo = getMovementTypeLabel(mov.movementType);
-                        return (
-                          <div key={mov.id} className="p-3 rounded-lg" style={{ backgroundColor: 'var(--surface-tertiary)' }}>
-                            <div className="flex justify-between items-start">
-                              <span className={`font-medium ${typeInfo.color}`}>{typeInfo.text}</span>
-                              <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{formatDate(mov.createdAt)}</span>
-                            </div>
-                            <div className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-                              {mov.previousStock} → {mov.newStock} ({mov.quantity > 0 ? '+' : ''}{mov.newStock - mov.previousStock})
-                            </div>
-                            <div className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>{mov.reason}</div>
-                            <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Por: {mov.createdBy}</div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <StockMovementModal
+        isOpen={modalType === 'entry' || modalType === 'exit' || modalType === 'adjustment'}
+        type={modalType === 'history' ? null : modalType}
+        item={selectedItem}
+        quantity={quantity}
+        reason={reason}
+        newStock={newStock}
+        loading={modalLoading}
+        onClose={closeModal}
+        onQuantityChange={setQuantity}
+        onReasonChange={setReason}
+        onNewStockChange={setNewStock}
+        onSubmit={
+          modalType === 'entry'
+            ? handleEntry
+            : modalType === 'exit'
+              ? handleExit
+              : handleAdjustment
+        }
+      />
+      <MovementHistoryModal
+        isOpen={modalType === 'history'}
+        item={selectedItem}
+        loading={modalLoading}
+        movements={movements}
+        onClose={closeModal}
+      />
     </div>
   );
 }
+

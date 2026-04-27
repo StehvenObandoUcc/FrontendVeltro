@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -7,6 +7,7 @@ import type { Category } from '../../types';
 import { CategoryTree } from '../../components/catalog/CategoryTree';
 import { useAuthStore } from '../../stores/authStore';
 import type { AxiosError } from 'axios';
+import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 
 const categorySchema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
@@ -23,6 +24,7 @@ export function CategoryPage() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
   const { hasRole } = useAuthStore();
 
   const canEdit = hasRole(['ADMIN', 'WAREHOUSE']);
@@ -46,7 +48,7 @@ export function CategoryPage() {
       const tree = await categoryApi.getAll();
       setCategories(tree);
     } catch (err) {
-      setError('Error al cargar las categorías');
+      setError('Error al cargar las categorﾃｭas');
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -69,17 +71,21 @@ export function CategoryPage() {
   };
 
   const handleDelete = async (category: Category) => {
-    if (!window.confirm(`¿Está seguro de desactivar la categoría "${category.name}"?`)) {
-      return;
-    }
+    setCategoryToDelete(category);
+  };
+
+  const confirmDeleteCategory = async () => {
+    if (!categoryToDelete) return;
     try {
-      await categoryApi.delete(category.id);
-      setSuccessMsg(`Categoría "${category.name}" desactivada correctamente`);
+      await categoryApi.delete(categoryToDelete.id);
+      setSuccessMsg(`Categoría "${categoryToDelete.name}" desactivada correctamente`);
       setTimeout(() => setSuccessMsg(null), 3000);
       await loadCategories();
     } catch (err) {
       setError('Error al desactivar la categoría');
       console.error(err);
+    } finally {
+      setCategoryToDelete(null);
     }
   };
 
@@ -110,7 +116,7 @@ export function CategoryPage() {
       loadCategories();
     } catch (err) {
       const axiosError = err as AxiosError<{ message: string }>;
-      setError(axiosError.response?.data?.message || 'Error al guardar la categoría');
+      setError(axiosError.response?.data?.message || 'Error al guardar la categorﾃｭa');
     } finally {
       setIsSaving(false);
     }
@@ -119,7 +125,7 @@ export function CategoryPage() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-[var(--text-secondary)]">Cargando categorías...</div>
+        <div className="text-[var(--text-secondary)]">Cargando categorﾃｭas...</div>
       </div>
     );
   }
@@ -129,15 +135,15 @@ export function CategoryPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Categorías</h1>
-          <p className="text-sm text-gray-500 mt-1">Gestione la jerarquía de categorías para sus productos</p>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Categorﾃｭas</h1>
+          <p className="text-sm text-gray-500 mt-1">Gestione la jerarquﾃｭa de categorﾃｭas para sus productos</p>
         </div>
         {canEdit && (
           <button
             onClick={handleNew}
             className="bg-[var(--primary-base)] text-white px-4 py-2 rounded-lg font-medium hover:bg-[var(--primary-dark)] transition-colors shadow-sm"
           >
-            + Nueva Categoría
+            + Nueva Categorﾃｭa
           </button>
         )}
       </div>
@@ -172,7 +178,7 @@ export function CategoryPage() {
             <div className="sticky top-6 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                 <h2 className="text-lg font-bold text-gray-900">
-                  {editingCategory ? 'Editar Categoría' : 'Nueva Categoría'}
+                  {editingCategory ? 'Editar Categorﾃｭa' : 'Nueva Categorﾃｭa'}
                 </h2>
                 <button 
                   onClick={handleCancel}
@@ -207,14 +213,14 @@ export function CategoryPage() {
 
             <div>
               <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-1">
-                Descripción
+                Descripciﾃｳn
               </label>
               <textarea
                 id="description"
                 rows={3}
                 {...register('description')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary-base)] focus:border-transparent outline-none transition-all resize-none"
-                placeholder="Descripción de la categoría"
+                placeholder="Descripciﾃｳn de la categorﾃｭa"
               />
             </div>
 
@@ -241,6 +247,17 @@ export function CategoryPage() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={categoryToDelete !== null}
+        title="Desactivar categoría"
+        message={`¿Está seguro de desactivar la categoría "${categoryToDelete?.name ?? ''}"?`}
+        confirmLabel="Desactivar"
+        cancelLabel="Cancelar"
+        variant="danger"
+        onConfirm={confirmDeleteCategory}
+        onCancel={() => setCategoryToDelete(null)}
+      />
     </div>
   );
 }

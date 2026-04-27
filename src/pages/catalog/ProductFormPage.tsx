@@ -47,7 +47,7 @@ async function normalizeToJpeg(file: File): Promise<File> {
         return resolve(file); // fallback
       }
       
-      // CRÍTICO: Rellenar con blanco para evitar que transparencias (PNG/WebP) pasen a negro
+      // CRITICAL: Fill with white to prevent transparent (PNG/WebP) backgrounds from turning black
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0);
@@ -77,7 +77,7 @@ export function ProductFormPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Conflict state — when barcode/SKU already exists
+  // Conflict state  Ewhen barcode/SKU already exists
   const [conflictError, setConflictError] = useState<{
     message: string;
     existingProductId: number | null;
@@ -157,7 +157,7 @@ export function ProductFormPage() {
     }
   };
 
-  /** Handle scanner result — auto-fill form fields */
+  /** Handle scanner result  Eauto-fill form fields */
   const handleScanResult = (data: ScannedProductData) => {
     setScanWarning(null);
     setScanSuccess(null);
@@ -167,7 +167,7 @@ export function ProductFormPage() {
     }
 
     if (data.existsInDb) {
-      // Product already exists — warn the user
+      // Product already exists  Ewarn the user
       setScanWarning(
         `Este producto ya existe en el sistema (ID: ${data.existingProductId}). ` +
         `Si deseas editarlo, ve a la lista de productos.`
@@ -183,7 +183,7 @@ export function ProductFormPage() {
       return;
     }
 
-    // Product is new — fill fields
+    // Product is new  Efill fields
     let filled: string[] = [];
 
     if (data.barcode) {
@@ -296,7 +296,7 @@ export function ProductFormPage() {
     }
   };
 
-  /** Controla la navegación en el formulario usando la tecla Enter */
+  /** Controls form navigation using the Enter key */
   const handleKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       const target = e.target as HTMLElement;
@@ -320,7 +320,7 @@ export function ProductFormPage() {
       
       // Si el elemento actual está en nuestra lista pero no es el último
       if (currentIndex !== -1 && currentIndex < fieldOrder.length - 1) {
-        e.preventDefault(); // Evitamos que el formulario se envíe prematuramente
+        e.preventDefault(); // Prevent premature form submission
         const nextId = fieldOrder[currentIndex + 1];
         const nextElement = document.getElementById(nextId);
         
@@ -362,7 +362,7 @@ export function ProductFormPage() {
 
 
 
-      {/* Scanner Section — toggle button + scanner */}
+      {/* Scanner Section  Etoggle button + scanner */}
       <div className="mb-6">
         {!showScanner ? (
           <button
@@ -676,3 +676,4 @@ export function ProductFormPage() {
     </div>
   );
 }
+

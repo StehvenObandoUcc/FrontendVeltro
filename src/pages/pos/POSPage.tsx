@@ -1,10 +1,11 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { AxiosError } from 'axios';
 import { Search, ShoppingCart, ArrowLeft, Check, Trash2 } from 'lucide-react';
 import { ScannerContainer, CartTable, ConfirmModal, SaleReceipt } from '../../components/pos';
 import { ScanModeToggle } from '../../components/pos/ScanModeToggle';
 import { AiScannerContainer } from '../../components/pos/AiScannerContainer';
+import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { useCartStore } from '../../stores/cartStore';
 import { useAiScanStore } from '../../stores/aiScanStore';
 import { posApi, type SaleResponse, type CreateSaleRequest } from '../../api/pos';
@@ -12,10 +13,14 @@ import type { ApiError } from '../../types';
 
 export const POSPage: React.FC = () => {
   const navigate = useNavigate();
-  const { items, clear, getTotal, getItemCount } = useCartStore();
+  const items = useCartStore((s) => s.items);
+  const clear = useCartStore((s) => s.clear);
+  const getTotal = useCartStore((s) => s.getTotal);
+  const getItemCount = useCartStore((s) => s.getItemCount);
   const { scanMode } = useAiScanStore();
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [saleResponse, setSaleResponse] = useState<SaleResponse | null>(null);
   const [showReceipt, setShowReceipt] = useState(false);
@@ -46,10 +51,13 @@ export const POSPage: React.FC = () => {
   };
 
   const handleClearCart = () => {
-    if (confirm('¿Estás seguro de que deseas vaciar el carrito?')) {
-      clear();
-      setError(null);
-    }
+    setShowClearConfirm(true);
+  };
+
+  const confirmClearCart = () => {
+    clear();
+    setError(null);
+    setShowClearConfirm(false);
   };
 
   const handleReceiptClose = () => {
@@ -163,12 +171,22 @@ export const POSPage: React.FC = () => {
         isLoading={isProcessing}
         submitError={error}
       />
-
       <SaleReceipt
         isOpen={showReceipt}
         saleData={saleResponse}
         onClose={handleReceiptClose}
       />
+      <ConfirmDialog
+        isOpen={showClearConfirm}
+        title="Vaciar carrito"
+        message="¿Estás seguro de que deseas vaciar el carrito?"
+        confirmLabel="Vaciar"
+        cancelLabel="Cancelar"
+        variant="danger"
+        onConfirm={confirmClearCart}
+        onCancel={() => setShowClearConfirm(false)}
+      />
     </div>
   );
 };
+

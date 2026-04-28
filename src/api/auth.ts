@@ -1,5 +1,13 @@
 import apiClient from './client';
-import type { LoginRequest, LoginResponse, RegisterRequest, Worker } from '../types';
+import type {
+  ApiSuccessResponse,
+  CreateWorkerResponse,
+  LoginRequest,
+  LoginResponse,
+  RegisterRequest,
+  UserRole,
+  Worker,
+} from '../types';
 
 export const authApi = {
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
@@ -7,13 +15,13 @@ export const authApi = {
     return response.data;
   },
 
-  register: async (data: RegisterRequest): Promise<{ success: boolean; message: string }> => {
-    const response = await apiClient.post<{ success: boolean; message: string }>('/auth/register', data);
+  register: async (data: RegisterRequest): Promise<ApiSuccessResponse> => {
+    const response = await apiClient.post<ApiSuccessResponse>('/auth/register', data);
     return response.data;
   },
 
-  createWorker: async (data: RegisterRequest): Promise<{ success: boolean; message: string; username: string; role: string }> => {
-    const response = await apiClient.post<{ success: boolean; message: string; username: string; role: string }>('/auth/workers', data);
+  createWorker: async (data: RegisterRequest): Promise<CreateWorkerResponse> => {
+    const response = await apiClient.post<CreateWorkerResponse>('/auth/workers', data);
     return response.data;
   },
 
@@ -22,12 +30,12 @@ export const authApi = {
     return response.data;
   },
 
-  deleteWorker: async (id: number): Promise<{ success: boolean; message: string }> => {
-    const response = await apiClient.delete<{ success: boolean; message: string }>(`/auth/workers/${id}`);
+  deleteWorker: async (id: number): Promise<ApiSuccessResponse> => {
+    const response = await apiClient.delete<ApiSuccessResponse>(`/auth/workers/${id}`);
     return response.data;
   },
 
-  updateWorkerRole: async (id: number, role: string): Promise<Worker> => {
+  updateWorkerRole: async (id: number, role: UserRole): Promise<Worker> => {
     const response = await apiClient.patch<Worker>(`/auth/workers/${id}/role`, { role });
     return response.data;
   },

@@ -1,5 +1,6 @@
 import apiClient from './client';
 import type { Product } from '../types';
+import type { MatchedProduct } from '../modules/types/ai.types';
 
 export interface CreateSaleRequest {
   items: {
@@ -154,13 +155,7 @@ export const posApi = {
   }
 };
 
-export interface DetectMatch {
-  id: number;
-  name: string;
-  salePrice: string;
-  barcode: string | null;
-  sku: string | null;
-}
+export type DetectMatch = MatchedProduct;
 
 export interface DetectSearchResponse {
   matches: DetectMatch[];

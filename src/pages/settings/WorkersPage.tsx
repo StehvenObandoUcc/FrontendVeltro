@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { AxiosError } from 'axios';
 import { authApi } from '../../api/auth';
-import type { ApiError, Worker } from '../../types';
+import type { ApiError, UserRole, Worker } from '../../types';
 import { formatDate } from '../../utils/format';
 
 const workerSchema = z.object({
@@ -97,7 +97,7 @@ export function WorkersPage() {
     }
   };
 
-  const handleRoleChange = async (workerId: number, newRole: string) => {
+  const handleRoleChange = async (workerId: number, newRole: UserRole) => {
     setUpdatingRoleId(workerId);
     setError(null);
     setSuccess(null);
@@ -146,7 +146,7 @@ export function WorkersPage() {
     }
   };
 
-  const getRoleLabel = (role: string): string => {
+  const getRoleLabel = (role: UserRole): string => {
     switch (role) {
       case 'CASHIER':
         return 'Cajero';
@@ -349,7 +349,7 @@ export function WorkersPage() {
                   {/* Role selector */}
                   <select
                     value={worker.role}
-                    onChange={(e) => handleRoleChange(worker.id, e.target.value)}
+                    onChange={(e) => handleRoleChange(worker.id, e.target.value as UserRole)}
                     disabled={updatingRoleId === worker.id}
                     className="text-xs font-semibold rounded-full border-0 py-1 pl-2.5 pr-7 cursor-pointer focus:ring-2 focus:ring-[#038E57]/20 disabled:opacity-50 disabled:cursor-not-allowed appearance-none bg-no-repeat bg-[right_0.3rem_center] bg-[length:1rem_1rem]"
                     style={{

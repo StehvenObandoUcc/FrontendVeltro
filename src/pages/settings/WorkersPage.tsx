@@ -5,6 +5,7 @@ import { z } from 'zod';
 import type { AxiosError } from 'axios';
 import { authApi } from '../../api/auth';
 import type { ApiError, Worker } from '../../types';
+import { formatDate } from '../../utils/format';
 
 const workerSchema = z.object({
   username: z
@@ -67,7 +68,7 @@ export function WorkersPage() {
       const data = await authApi.getWorkers();
       setWorkers(data);
     } catch {
-      // Silently fail — list will just be empty
+      // Silently fail  Elist will just be empty
     } finally {
       setIsLoadingWorkers(false);
     }
@@ -158,26 +159,12 @@ export function WorkersPage() {
     }
   };
 
-  const formatDate = (dateStr: string): string => {
-    try {
-      return new Date(dateStr).toLocaleString('es-CO', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    } catch {
-      return dateStr;
-    }
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestión de empleados</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">Gestión de empleados</h1>
+          <p className="text-sm text-[var(--text-secondary)] mt-1">
             {workers.length} empleado{workers.length !== 1 ? 's' : ''} en tu negocio
           </p>
         </div>
@@ -226,12 +213,12 @@ export function WorkersPage() {
       )}
 
       {showForm && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Crear nuevo empleado</h2>
+        <div className="bg-[var(--surface-primary)] rounded-xl shadow-sm border border-[var(--border-default)] p-6">
+          <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Crear nuevo empleado</h2>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="worker-username" className="text-sm font-semibold text-gray-700">
+                <label htmlFor="worker-username" className="text-sm font-semibold text-[var(--text-secondary)]">
                   Nombre de usuario
                 </label>
                 <input
@@ -240,14 +227,14 @@ export function WorkersPage() {
                   autoComplete="off"
                   maxLength={20}
                   {...register('username')}
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 outline-none focus:bg-white focus:ring-2 focus:ring-[#038E57]/20 focus:border-[#038E57] transition-all duration-200 text-sm"
+                  className="w-full px-4 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-secondary)] text-[var(--text-primary)] outline-none focus:bg-[var(--surface-primary)] focus:ring-2 focus:ring-[#038E57]/20 focus:border-[#038E57] transition-all duration-200 text-sm"
                   placeholder="nombre_usuario"
                 />
                 {errors.username && <p className="text-xs font-medium text-red-500">{errors.username.message}</p>}
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="worker-email" className="text-sm font-semibold text-gray-700">
+                <label htmlFor="worker-email" className="text-sm font-semibold text-[var(--text-secondary)]">
                   Correo electrónico
                 </label>
                 <input
@@ -255,14 +242,14 @@ export function WorkersPage() {
                   type="email"
                   autoComplete="off"
                   {...register('email')}
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 outline-none focus:bg-white focus:ring-2 focus:ring-[#038E57]/20 focus:border-[#038E57] transition-all duration-200 text-sm"
+                  className="w-full px-4 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-secondary)] text-[var(--text-primary)] outline-none focus:bg-[var(--surface-primary)] focus:ring-2 focus:ring-[#038E57]/20 focus:border-[#038E57] transition-all duration-200 text-sm"
                   placeholder="usuario@email.com"
                 />
                 {errors.email && <p className="text-xs font-medium text-red-500">{errors.email.message}</p>}
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="worker-password" className="text-sm font-semibold text-gray-700">
+                <label htmlFor="worker-password" className="text-sm font-semibold text-[var(--text-secondary)]">
                   Contraseña
                 </label>
                 <input
@@ -271,14 +258,14 @@ export function WorkersPage() {
                   autoComplete="new-password"
                   maxLength={20}
                   {...register('password')}
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 outline-none focus:bg-white focus:ring-2 focus:ring-[#038E57]/20 focus:border-[#038E57] transition-all duration-200 text-sm"
+                  className="w-full px-4 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-secondary)] text-[var(--text-primary)] outline-none focus:bg-[var(--surface-primary)] focus:ring-2 focus:ring-[#038E57]/20 focus:border-[#038E57] transition-all duration-200 text-sm"
                   placeholder="Minimo 8 caracteres"
                 />
                 {errors.password && <p className="text-xs font-medium text-red-500">{errors.password.message}</p>}
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="worker-confirm-password" className="text-sm font-semibold text-gray-700">
+                <label htmlFor="worker-confirm-password" className="text-sm font-semibold text-[var(--text-secondary)]">
                   Confirmar Contraseña
                 </label>
                 <input
@@ -287,20 +274,20 @@ export function WorkersPage() {
                   autoComplete="new-password"
                   maxLength={20}
                   {...register('confirmPassword')}
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 outline-none focus:bg-white focus:ring-2 focus:ring-[#038E57]/20 focus:border-[#038E57] transition-all duration-200 text-sm"
+                  className="w-full px-4 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-secondary)] text-[var(--text-primary)] outline-none focus:bg-[var(--surface-primary)] focus:ring-2 focus:ring-[#038E57]/20 focus:border-[#038E57] transition-all duration-200 text-sm"
                   placeholder="Repite tu contraseña"
                 />
                 {errors.confirmPassword && <p className="text-xs font-medium text-red-500">{errors.confirmPassword.message}</p>}
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="worker-role" className="text-sm font-semibold text-gray-700">
+                <label htmlFor="worker-role" className="text-sm font-semibold text-[var(--text-secondary)]">
                   Rol
                 </label>
                 <select
                   id="worker-role"
                   {...register('role')}
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 outline-none focus:bg-white focus:ring-2 focus:ring-[#038E57]/20 focus:border-[#038E57] transition-all duration-200 text-sm"
+                  className="w-full px-4 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-secondary)] text-[var(--text-primary)] outline-none focus:bg-[var(--surface-primary)] focus:ring-2 focus:ring-[#038E57]/20 focus:border-[#038E57] transition-all duration-200 text-sm"
                 >
                   <option value="CASHIER">Cajero (Punto de venta)</option>
                   <option value="WAREHOUSE">Almacén (Inventario y compras)</option>
@@ -333,29 +320,29 @@ export function WorkersPage() {
       )}
 
       {/* Workers table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">Empleados del negocio</h2>
+      <div className="bg-[var(--surface-primary)] rounded-xl shadow-sm border border-[var(--border-default)] overflow-hidden">
+        <div className="px-6 py-4 border-b border-[var(--border-light)]">
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Empleados del negocio</h2>
         </div>
         {isLoadingWorkers ? (
-          <div className="px-6 py-12 text-center text-gray-500 text-sm">Cargando empleados...</div>
+          <div className="px-6 py-12 text-center text-[var(--text-secondary)] text-sm">Cargando empleados...</div>
         ) : workers.length === 0 ? (
-          <div className="px-6 py-12 text-center text-gray-400 text-sm">No hay empleados registrados</div>
+          <div className="px-6 py-12 text-center text-[var(--text-tertiary)] text-sm">No hay empleados registrados</div>
         ) : (
           <div className="divide-y divide-gray-100">
             {workers.map((worker) => (
               <div key={worker.id} className="px-6 py-4 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-sm font-semibold text-gray-600 flex-shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-[var(--surface-tertiary)] flex items-center justify-center text-sm font-semibold text-[var(--text-secondary)] flex-shrink-0">
                     {worker.username.charAt(0).toUpperCase()}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{worker.username}</p>
-                    <p className="text-xs text-gray-500 truncate">{worker.email}</p>
+                    <p className="text-sm font-medium text-[var(--text-primary)] truncate">{worker.username}</p>
+                    <p className="text-xs text-[var(--text-secondary)] truncate">{worker.email}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className="text-xs text-gray-400 hidden lg:inline">
+                  <span className="text-xs text-[var(--text-tertiary)] hidden lg:inline">
                     {formatDate(worker.createdAt)}
                   </span>
 
@@ -378,7 +365,7 @@ export function WorkersPage() {
                   <button
                     onClick={() => setConfirmDeleteId(worker.id)}
                     disabled={deletingId === worker.id}
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="p-1.5 rounded-lg text-[var(--text-tertiary)] hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Eliminar empleado"
                   >
                     {deletingId === worker.id ? (
@@ -402,7 +389,7 @@ export function WorkersPage() {
       {/* Delete confirmation dialog */}
       {confirmDeleteId !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-xl shadow-xl border border-gray-200 max-w-sm w-full p-6">
+          <div className="bg-[var(--surface-primary)] rounded-xl shadow-xl border border-[var(--border-default)] max-w-sm w-full p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
                 <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -410,8 +397,8 @@ export function WorkersPage() {
                 </svg>
               </div>
               <div>
-                <h3 className="text-base font-semibold text-gray-900">Eliminar empleado</h3>
-                <p className="text-sm text-gray-500 mt-0.5">
+                <h3 className="text-base font-semibold text-[var(--text-primary)]">Eliminar empleado</h3>
+                <p className="text-sm text-[var(--text-secondary)] mt-0.5">
                    Se desactivará la cuenta de <strong>{workers.find(w => w.id === confirmDeleteId)?.username}</strong>. Esta acción se puede revertir.
                 </p>
               </div>
@@ -454,3 +441,4 @@ export function WorkersPage() {
     </div>
   );
 }
+

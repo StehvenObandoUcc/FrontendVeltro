@@ -1,6 +1,7 @@
 import { Link, useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
+import type { UserRole } from '../../types';
 import { AlertBadge } from '../inventory';
 import {
   LayoutDashboard,
@@ -28,7 +29,7 @@ export function MainLayout() {
     navigate('/login', { replace: true });
   };
 
-  const getRoleLabel = (role: string): string => {
+  const getRoleLabel = (role: UserRole): string => {
     switch (role) {
       case 'ADMIN': return 'Administrador';
       case 'CASHIER': return 'Cajero';
@@ -171,7 +172,7 @@ export function MainLayout() {
           <div className="flex items-center justify-between mb-3">
             <div>
               <p className="text-sm font-medium text-white">{user?.username}</p>
-              <p className="text-xs text-gray-400 mt-0.5">{getRoleLabel(user?.role || '')}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{getRoleLabel(user?.role as UserRole)}</p>
             </div>
             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--primary-base)', boxShadow: '0 0 8px var(--primary-base)' }} />
           </div>

@@ -8,7 +8,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import type { AxiosError } from 'axios';
 import { authApi } from '../../api/auth';
 import { useAuthStore } from '../../stores/authStore';
-import type { ApiError } from '../../types';
+import type { ApiError, UserRole } from '../../types';
 
 const loginSchema = z.object({
   username: z
@@ -74,7 +74,7 @@ export function LoginPage() {
     }
   };
 
-  const getRedirectPathByRole = (role: string): string => {
+  const getRedirectPathByRole = (role: UserRole): string => {
     switch (role) {
       case 'ADMIN':
         return '/app/dashboard';
@@ -82,8 +82,6 @@ export function LoginPage() {
         return '/app/pos';
       case 'WAREHOUSE':
         return '/app/inventory';
-      default:
-        return '/';
     }
   };
 

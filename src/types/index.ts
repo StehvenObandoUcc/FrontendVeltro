@@ -1,11 +1,4 @@
-// API Response wrapper
-export interface ApiResponse<T> {
-  data: T;
-  message?: string;
-  timestamp: string;
-}
-
-// Paginated response (Spring Boot sends 'number' for current page)
+/** Paginated response (Spring Boot sends `number` for current page). */
 export interface PageResponse<T> {
   content: T[];
   totalElements: number;
@@ -16,10 +9,10 @@ export interface PageResponse<T> {
   last: boolean;
 }
 
-// User roles
+/** Supported user roles in the application. */
 export type UserRole = 'ADMIN' | 'CASHIER' | 'WAREHOUSE';
 
-// Auth types
+/** Authenticated user payload. */
 export interface User {
   id: number;
   username: string;
@@ -41,7 +34,8 @@ export interface RegisterRequest {
   businessName?: string;
 }
 
-export interface LoginResponse {
+/** Shared token response returned by login and refresh endpoints. */
+export interface AuthTokenResponse {
   accessToken: string;
   refreshToken: string;
   tokenType: 'Bearer';
@@ -53,19 +47,22 @@ export interface LoginResponse {
   email?: string;
 }
 
-export interface RefreshResponse {
-  accessToken: string;
-  refreshToken: string;
-  tokenType: 'Bearer';
-  expiresIn: number;
-  username: string;
-  role: UserRole;
-  businessId: number | null;
-  id?: number;
-  email?: string;
+export type LoginResponse = AuthTokenResponse;
+export type RefreshResponse = AuthTokenResponse;
+
+/** Standard success payload returned by write-only endpoints. */
+export interface ApiSuccessResponse {
+  success: boolean;
+  message: string;
 }
 
-// Product types
+/** Success payload returned when a worker is created. */
+export interface CreateWorkerResponse extends ApiSuccessResponse {
+  username: string;
+  role: UserRole;
+}
+
+/** Product entity returned by catalog endpoints. */
 export interface Product {
   id: number;
   name: string;
@@ -97,7 +94,7 @@ export interface ProductRequest {
   minStockCritical?: number;
 }
 
-// Category types
+/** Category entity used by catalog tree endpoints. */
 export interface Category {
   id: number;
   name: string;
@@ -114,17 +111,7 @@ export interface CategoryRequest {
   parentCategoryId?: number;
 }
 
-// Inventory types
-export interface Inventory {
-  id: number;
-  productId: number;
-  productName: string;
-  currentStock: number;
-  minStock: number;
-  maxStock: number;
-}
-
-// Error response
+/** Normalized API error payload. */
 export interface ApiError {
   success?: boolean;
   error?: string;
@@ -135,12 +122,12 @@ export interface ApiError {
   details?: Record<string, string>;
 }
 
-// Worker types
+/** Worker account used in employee management. */
 export interface Worker {
   id: number;
   username: string;
   email: string;
-  role: string;
+  role: UserRole;
   active: boolean;
   createdAt: string;
 }

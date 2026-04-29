@@ -58,7 +58,7 @@ export const AiScannerContainer: React.FC<Props> = ({ useCase = 'pos-sell' }) =>
         addedIds.current.add(det.id);
 
         const match = det.matches[0];
-        console.log('[Cart] Auto-adding product:', match);
+
 
         addToCart(match, 1);
         updateDetectionStatus(det.id, 'ADDED');

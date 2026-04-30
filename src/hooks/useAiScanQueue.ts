@@ -82,23 +82,23 @@ export const useAiScanQueue = (
         );
         if (!blob || blob.size === 0) throw new Error('Empty blob');
 
-        console.log(`[Queue] Crop: original=${w}×${h}px → sent=${cropW}×${cropH}px | blob=${blob.size} bytes`);
+
 
         // ── Send to backend POST /api/v1/scanner/ai ──────────────────────────
         const data = await posApi.aiDetectFrame(blob, `crop_${candidate.id.slice(0, 8)}.jpg`);
 
         if (data?.length && data[0].matches?.length) {
           const matches = data[0].matches;
-          console.log(`[Queue] ✅ Match: ${matches[0].name} (CLIP verified)`);
+
           updateMatches(candidate.id, matches);
         } else {
-          console.log('[Queue] No match found for candidate', candidate.id.slice(0, 8));
+
           updateStatus(candidate.id, 'ERROR');
         }
       } catch (err) {
         const status = (err as { response?: { status?: number } })?.response?.status;
         if (status === 404 || status === 0) {
-          console.log('[Queue] No CLIP match found');
+          // No match found - expected case, no logging needed
         } else {
           console.error('[Queue] Backend call failed:', err);
         }

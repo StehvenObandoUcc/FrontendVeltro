@@ -251,7 +251,7 @@ export function ProductFormPage() {
         try {
           const normalizedImages = await Promise.all(imageFiles.map(normalizeToJpeg));
           await productApi.uploadImages(savedProductId, normalizedImages);
-          console.log(`[PRODUCT] Images uploaded and embedding generated for product id=${savedProductId}`);
+
         } catch (imgErr) {
           console.error('Error uploading images:', imgErr);
         }
@@ -318,7 +318,7 @@ export function ProductFormPage() {
       
       const currentIndex = fieldOrder.indexOf(target.id);
       
-      // Si el elemento actual está en nuestra lista pero no es el último
+      // Current element is in our list but is not the last one
       if (currentIndex !== -1 && currentIndex < fieldOrder.length - 1) {
         e.preventDefault(); // Prevent premature form submission
         const nextId = fieldOrder[currentIndex + 1];

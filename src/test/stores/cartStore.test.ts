@@ -22,7 +22,7 @@ const createTestProduct = (id: number, name: string, salePrice: string = '10.00'
 });
 
 describe('cartStore', () => {
-  let store: any;
+  let store: ReturnType<typeof useCartStore.getState>;
 
   beforeEach(() => {
     // Reset store before each test

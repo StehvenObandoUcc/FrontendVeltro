@@ -102,7 +102,7 @@ export const useYoloDetection = (
         if (cancelled) return;
         sessionRef.current = session;
         setModelLoaded(true);
-        console.log('[YOLO] Loaded. Inputs:', session.inputNames, '| Outputs:', session.outputNames);
+
       } catch (err) {
         console.error('[YOLO] Model load failed:', err);
         setModelError(String(err));

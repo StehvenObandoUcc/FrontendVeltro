@@ -29,9 +29,9 @@ export const AlertBadge: React.FC = () => {
         (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1)';
       }}
       aria-label={
-        unreadCount > 0 ? `${unreadCount} unread alerts` : 'View alerts'
+        unreadCount > 0 ? `${unreadCount} alertas sin leer` : 'Ver alertas'
       }
-      title={unreadCount > 0 ? 'Click to view alerts' : 'View alerts'}
+      title={unreadCount > 0 ? 'Clic para ver alertas' : 'Ver alertas'}
     >
       <Bell className="h-5 w-5" strokeWidth={2.25} />
       {unreadCount > 0 && (

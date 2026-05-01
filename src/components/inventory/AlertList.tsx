@@ -93,10 +93,10 @@ export const AlertList: React.FC<AlertListProps> = ({
           className="mt-2 text-lg font-medium"
           style={{ color: '#1F2937' }}
         >
-          No alerts
+          Sin alertas
         </h3>
         <p className="mt-1 text-sm" style={{ color: '#6B7280' }}>
-          Your inventory is in good shape!
+          Tu inventario está en buen estado.
         </p>
       </div>
     );
@@ -228,10 +228,10 @@ export const AlertList: React.FC<AlertListProps> = ({
               (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#FFFFFF';
             }}
           >
-            Previous
+            Anterior
           </button>
           <span className="text-sm" style={{ color: '#6B7280' }}>
-            Page {currentPage + 1} of {totalPages}
+            Página {currentPage + 1} de {totalPages}
           </span>
           <button
             onClick={() => onPageChange(currentPage + 1)}
@@ -253,7 +253,7 @@ export const AlertList: React.FC<AlertListProps> = ({
               (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#FFFFFF';
             }}
           >
-            Next
+            Siguiente
           </button>
         </div>
       )}

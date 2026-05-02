@@ -1,6 +1,7 @@
 import { Link, useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
+import { useAlerts } from '../../hooks';
 import type { UserRole } from '../../types';
 import { AlertBadge } from '../inventory';
 import {
@@ -19,6 +20,7 @@ import {
 } from 'lucide-react';
 
 export function MainLayout() {
+  useAlerts();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();

@@ -1,14 +1,12 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { inventoryApi, type Alert } from '../../api/inventory';
 import { AlertList } from '../../components/inventory';
 import { useAlertStore } from '../../stores/alertStore';
 
-/**
- * AlertListPage - Display and manage all alerts
- * Allows viewing alerts with pagination and dismissing them
- */
 export const AlertListPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
+  const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
+  const [bulkActionError, setBulkActionError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [selectedSeverity, setSelectedSeverity] = useState<string | undefined>(undefined);
@@ -45,24 +43,72 @@ export const AlertListPage: React.FC = () => {
     setCurrentPage(0);
   };
 
+  const handleMarkAllAsRead = async () => {
+    const unreadAlerts = activeAlerts.filter((alert) => !alert.read);
+    if (unreadAlerts.length === 0) return;
+    setBulkActionError(null);
+    setIsBulkActionLoading(true);
+
+    const results = await Promise.allSettled(unreadAlerts.map((alert) => inventoryApi.markAlertAsRead(alert.id)));
+    const failed = results.filter((result) => result.status === 'rejected').length;
+
+    if (failed > 0) {
+      setBulkActionError(`${unreadAlerts.length - failed} leidas, ${failed} fallaron.`);
+    }
+
+    await fetchAlerts();
+    setIsBulkActionLoading(false);
+  };
+
+  const handleResolveAll = async () => {
+    const unresolvedAlerts = activeAlerts.filter((alert) => !alert.resolved);
+    if (unresolvedAlerts.length === 0) return;
+    setBulkActionError(null);
+    setIsBulkActionLoading(true);
+
+    const results = await Promise.allSettled(unresolvedAlerts.map((alert) => inventoryApi.resolveAlert(alert.id)));
+    const failed = results.filter((result) => result.status === 'rejected').length;
+
+    if (failed > 0) {
+      setBulkActionError(`${unresolvedAlerts.length - failed} resueltas, ${failed} fallaron.`);
+    }
+
+    await fetchAlerts();
+    setIsBulkActionLoading(false);
+  };
+
+  const readLabel = totalPages > 1 ? 'Marcar leidas (esta pagina)' : 'Marcar todas como leidas';
+  const resolveLabel = totalPages > 1 ? 'Resolver (esta pagina)' : 'Resolver todas';
+  const unreadOnPage = activeAlerts.filter((alert) => !alert.read).length;
+  const unresolvedOnPage = activeAlerts.filter((alert) => !alert.resolved).length;
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">Alertas de Inventario</h1>
-        <p className="mt-1 text-[var(--text-secondary)] text-sm">
-          Monitorea y gestiona las alertas de stock
-        </p>
-        <p className="mt-1 text-xs text-[var(--text-muted)]">
-          No leídas: {unreadCount}
-        </p>
+        <p className="mt-1 text-[var(--text-secondary)] text-sm">Monitorea y gestiona las alertas de stock</p>
+        <p className="mt-1 text-xs text-[var(--text-muted)]">No leidas: {unreadCount}</p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            onClick={() => void handleMarkAllAsRead()}
+            disabled={isBulkActionLoading || unreadOnPage === 0}
+            className="btn-secondary"
+          >
+            {readLabel}
+          </button>
+          <button
+            onClick={() => void handleResolveAll()}
+            disabled={isBulkActionLoading || unresolvedOnPage === 0}
+            className="btn-primary"
+          >
+            {resolveLabel}
+          </button>
+        </div>
+        {bulkActionError && <p className="mt-2 text-sm text-[var(--critical-red)]">{bulkActionError}</p>}
       </div>
 
-      {/* Filters */}
       <div className="card p-6">
-        <label className="block text-sm font-semibold text-[var(--text-primary)] mb-4">
-          Filtrar por Severidad
-        </label>
+        <label className="block text-sm font-semibold text-[var(--text-primary)] mb-4">Filtrar por Severidad</label>
         <div className="flex flex-wrap gap-3">
           <button
             onClick={() => handleSeverityChange(undefined)}
@@ -82,7 +128,7 @@ export const AlertListPage: React.FC = () => {
                 : 'bg-white border border-red-200 text-red-700 hover:bg-red-50'
             }`}
           >
-            <span className="w-2 h-2 rounded-full bg-current"></span> Críticas
+            <span className="w-2 h-2 rounded-full bg-current"></span> Criticas
           </button>
           <button
             onClick={() => handleSeverityChange('WARNING')}
@@ -102,12 +148,11 @@ export const AlertListPage: React.FC = () => {
                 : 'bg-white border border-blue-200 text-blue-700 hover:bg-blue-50'
             }`}
           >
-            <span className="w-2 h-2 rounded-full bg-current"></span> Información
+            <span className="w-2 h-2 rounded-full bg-current"></span> Informacion
           </button>
         </div>
       </div>
 
-      {/* Alert List */}
       <div className="card overflow-hidden">
         <AlertList
           alerts={activeAlerts}

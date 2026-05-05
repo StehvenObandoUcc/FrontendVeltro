@@ -336,6 +336,25 @@ export const handlers = [
     );
   }),
 
+  http.put(`${API_BASE}/alerts/:id/read`, () => {
+    return HttpResponse.json(
+      { ...generateMockAlert(1), read: true },
+      { status: 200 }
+    );
+  }),
+
+  http.put(`${API_BASE}/alerts/read-all`, () => {
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  http.put(`${API_BASE}/alerts/resolve-all`, () => {
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  http.get(`${API_BASE}/alerts/unread/count`, () => {
+    return HttpResponse.json({ count: 3 }, { status: 200 });
+  }),
+
   // ========== PURCHASING ==========
   http.post(`${API_BASE}/purchase-orders`, () => {
     return HttpResponse.json(generateMockPurchaseOrder(1), { status: 201 });

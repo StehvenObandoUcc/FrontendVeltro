@@ -2,6 +2,7 @@
 import { inventoryApi, type Alert } from '../../api/inventory';
 import { AlertList } from '../../components/inventory';
 import { useAlertStore } from '../../stores/alertStore';
+import { useAuthStore } from '../../stores/authStore';
 
 export const AlertListPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -14,6 +15,10 @@ export const AlertListPage: React.FC = () => {
   const unreadCount = useAlertStore((state) => state.unreadCount);
   const setActiveAlerts = useAlertStore((state) => state.setActiveAlerts);
   const setUnreadCount = useAlertStore((state) => state.setUnreadCount);
+  const userRole = useAuthStore((state) => state.user?.role);
+
+  const canMarkAllAsRead = userRole === 'ADMIN' || userRole === 'WAREHOUSE';
+  const canResolveAll = userRole === 'ADMIN';
 
   const fetchAlerts = React.useCallback(async () => {
     setIsLoading(true);
@@ -44,43 +49,36 @@ export const AlertListPage: React.FC = () => {
   };
 
   const handleMarkAllAsRead = async () => {
-    const unreadAlerts = activeAlerts.filter((alert) => !alert.read);
-    if (unreadAlerts.length === 0) return;
+    if (!canMarkAllAsRead || unreadCount === 0) return;
     setBulkActionError(null);
     setIsBulkActionLoading(true);
-
-    const results = await Promise.allSettled(unreadAlerts.map((alert) => inventoryApi.markAlertAsRead(alert.id)));
-    const failed = results.filter((result) => result.status === 'rejected').length;
-
-    if (failed > 0) {
-      setBulkActionError(`${unreadAlerts.length - failed} leidas, ${failed} fallaron.`);
+    try {
+      await inventoryApi.markAllAlertsAsRead();
+      await fetchAlerts();
+    } catch {
+      setBulkActionError('No se pudieron marcar todas las alertas como leidas.');
+    } finally {
+      setIsBulkActionLoading(false);
     }
-
-    await fetchAlerts();
-    setIsBulkActionLoading(false);
   };
 
   const handleResolveAll = async () => {
-    const unresolvedAlerts = activeAlerts.filter((alert) => !alert.resolved);
-    if (unresolvedAlerts.length === 0) return;
+    if (!canResolveAll || activeAlerts.length === 0) return;
+
+    const confirmed = window.confirm('Esta accion resolvera todas las alertas activas del negocio actual.');
+    if (!confirmed) return;
+
     setBulkActionError(null);
     setIsBulkActionLoading(true);
-
-    const results = await Promise.allSettled(unresolvedAlerts.map((alert) => inventoryApi.resolveAlert(alert.id)));
-    const failed = results.filter((result) => result.status === 'rejected').length;
-
-    if (failed > 0) {
-      setBulkActionError(`${unresolvedAlerts.length - failed} resueltas, ${failed} fallaron.`);
+    try {
+      await inventoryApi.resolveAllAlerts();
+      await fetchAlerts();
+    } catch {
+      setBulkActionError('No se pudieron resolver todas las alertas.');
+    } finally {
+      setIsBulkActionLoading(false);
     }
-
-    await fetchAlerts();
-    setIsBulkActionLoading(false);
   };
-
-  const readLabel = totalPages > 1 ? 'Marcar leidas (esta pagina)' : 'Marcar todas como leidas';
-  const resolveLabel = totalPages > 1 ? 'Resolver (esta pagina)' : 'Resolver todas';
-  const unreadOnPage = activeAlerts.filter((alert) => !alert.read).length;
-  const unresolvedOnPage = activeAlerts.filter((alert) => !alert.resolved).length;
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -88,21 +86,26 @@ export const AlertListPage: React.FC = () => {
         <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">Alertas de Inventario</h1>
         <p className="mt-1 text-[var(--text-secondary)] text-sm">Monitorea y gestiona las alertas de stock</p>
         <p className="mt-1 text-xs text-[var(--text-muted)]">No leidas: {unreadCount}</p>
+        <p className="mt-1 text-xs text-[var(--text-muted)]">Las acciones globales aplican a todo el negocio, no solo a esta pagina.</p>
         <div className="mt-4 flex flex-wrap gap-2">
-          <button
-            onClick={() => void handleMarkAllAsRead()}
-            disabled={isBulkActionLoading || unreadOnPage === 0}
-            className="btn-secondary"
-          >
-            {readLabel}
-          </button>
-          <button
-            onClick={() => void handleResolveAll()}
-            disabled={isBulkActionLoading || unresolvedOnPage === 0}
-            className="btn-primary"
-          >
-            {resolveLabel}
-          </button>
+          {canMarkAllAsRead && (
+            <button
+              onClick={() => void handleMarkAllAsRead()}
+              disabled={isBulkActionLoading || unreadCount === 0}
+              className="btn-secondary"
+            >
+              {isBulkActionLoading ? 'Procesando...' : 'Marcar todas como leidas'}
+            </button>
+          )}
+          {canResolveAll && (
+            <button
+              onClick={() => void handleResolveAll()}
+              disabled={isBulkActionLoading || activeAlerts.length === 0}
+              className="btn-primary"
+            >
+              {isBulkActionLoading ? 'Procesando...' : 'Resolver todas'}
+            </button>
+          )}
         </div>
         {bulkActionError && <p className="mt-2 text-sm text-[var(--critical-red)]">{bulkActionError}</p>}
       </div>

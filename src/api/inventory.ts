@@ -174,6 +174,14 @@ export const inventoryApi = {
     return response.data;
   },
 
+  markAllAlertsAsRead: async (): Promise<void> => {
+    await apiClient.put('/alerts/read-all');
+  },
+
+  resolveAllAlerts: async (): Promise<void> => {
+    await apiClient.put('/alerts/resolve-all');
+  },
+
 /**
  * Backward-compatible alias for resolve
  */

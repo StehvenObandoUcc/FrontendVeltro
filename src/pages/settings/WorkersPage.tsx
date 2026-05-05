@@ -213,7 +213,7 @@ export function WorkersPage() {
       )}
 
       {showForm && (
-        <div className="bg-[var(--surface-primary)] rounded-xl shadow-sm border border-[var(--border-default)] p-6">
+        <div className="card p-6">
           <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Crear nuevo empleado</h2>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -227,7 +227,7 @@ export function WorkersPage() {
                   autoComplete="off"
                   maxLength={20}
                   {...register('username')}
-                  className="w-full px-4 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-secondary)] text-[var(--text-primary)] outline-none focus:bg-[var(--surface-primary)] focus:ring-2 focus:ring-[#038E57]/20 focus:border-[#038E57] transition-all duration-200 text-sm"
+                  className="input-base w-full"
                   placeholder="nombre_usuario"
                 />
                 {errors.username && <p className="text-xs font-medium text-red-500">{errors.username.message}</p>}
@@ -242,7 +242,7 @@ export function WorkersPage() {
                   type="email"
                   autoComplete="off"
                   {...register('email')}
-                  className="w-full px-4 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-secondary)] text-[var(--text-primary)] outline-none focus:bg-[var(--surface-primary)] focus:ring-2 focus:ring-[#038E57]/20 focus:border-[#038E57] transition-all duration-200 text-sm"
+                  className="input-base w-full"
                   placeholder="usuario@email.com"
                 />
                 {errors.email && <p className="text-xs font-medium text-red-500">{errors.email.message}</p>}
@@ -258,7 +258,7 @@ export function WorkersPage() {
                   autoComplete="new-password"
                   maxLength={20}
                   {...register('password')}
-                  className="w-full px-4 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-secondary)] text-[var(--text-primary)] outline-none focus:bg-[var(--surface-primary)] focus:ring-2 focus:ring-[#038E57]/20 focus:border-[#038E57] transition-all duration-200 text-sm"
+                  className="input-base w-full"
                   placeholder="Minimo 8 caracteres"
                 />
                 {errors.password && <p className="text-xs font-medium text-red-500">{errors.password.message}</p>}
@@ -274,7 +274,7 @@ export function WorkersPage() {
                   autoComplete="new-password"
                   maxLength={20}
                   {...register('confirmPassword')}
-                  className="w-full px-4 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-secondary)] text-[var(--text-primary)] outline-none focus:bg-[var(--surface-primary)] focus:ring-2 focus:ring-[#038E57]/20 focus:border-[#038E57] transition-all duration-200 text-sm"
+                  className="input-base w-full"
                   placeholder="Repite tu contraseña"
                 />
                 {errors.confirmPassword && <p className="text-xs font-medium text-red-500">{errors.confirmPassword.message}</p>}
@@ -287,7 +287,7 @@ export function WorkersPage() {
                 <select
                   id="worker-role"
                   {...register('role')}
-                  className="w-full px-4 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-secondary)] text-[var(--text-primary)] outline-none focus:bg-[var(--surface-primary)] focus:ring-2 focus:ring-[#038E57]/20 focus:border-[#038E57] transition-all duration-200 text-sm"
+                  className="input-base w-full"
                 >
                   <option value="CASHIER">Cajero (Punto de venta)</option>
                   <option value="WAREHOUSE">Almacén (Inventario y compras)</option>
@@ -320,7 +320,7 @@ export function WorkersPage() {
       )}
 
       {/* Workers table */}
-      <div className="bg-[var(--surface-primary)] rounded-xl shadow-sm border border-[var(--border-default)] overflow-hidden">
+      <div className="card overflow-hidden">
         <div className="px-6 py-4 border-b border-[var(--border-light)]">
           <h2 className="text-lg font-semibold text-[var(--text-primary)]">Empleados del negocio</h2>
         </div>
@@ -389,7 +389,7 @@ export function WorkersPage() {
       {/* Delete confirmation dialog */}
       {confirmDeleteId !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-[var(--surface-primary)] rounded-xl shadow-xl border border-[var(--border-default)] max-w-sm w-full p-6">
+          <div className="card max-w-sm w-full p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
                 <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -160,18 +160,16 @@ export const inventoryApi = {
  * Mark alert as read
  * PUT /api/v1/alerts/{alertId}/read
  */
-  markAlertAsRead: async (alertId: number) => {
-    const response = await apiClient.put<Alert>(`/alerts/${alertId}/read`);
-    return response.data;
+  markAlertAsRead: async (alertId: number): Promise<void> => {
+    await apiClient.put(`/alerts/${alertId}/read`);
   },
 
 /**
  * Resolve an alert
  * PUT /api/v1/alerts/{alertId}/resolve
  */
-  resolveAlert: async (alertId: number) => {
-    const response = await apiClient.put<Alert>(`/alerts/${alertId}/resolve`);
-    return response.data;
+  resolveAlert: async (alertId: number): Promise<void> => {
+    await apiClient.put(`/alerts/${alertId}/resolve`);
   },
 
   markAllAlertsAsRead: async (): Promise<void> => {

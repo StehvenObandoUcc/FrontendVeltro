@@ -1,20 +1,19 @@
 import apiClient from './client';
 import type { PageResponse } from '../types';
 
-export type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'VOID';
-export type AuditEntity = 'SALE' | 'INVENTORY' | 'ORDER' | 'PRODUCT' | 'SUPPLIER';
+export type AuditAction = 'CONFIRM' | 'VOID' | 'RECEIVE' | 'ADJUST';
+export type AuditEntity = 'SALE' | 'PURCHASE_ORDER' | 'INVENTORY';
 
 export interface AuditRecord {
-  id: string;
+  id: number;
   action: AuditAction;
   entityType: AuditEntity;
-  entityId: string;
-  previousData: Record<string, unknown>;
-  newData: Record<string, unknown>;
-  userId: string;
+  entityId: number;
+  previousData: string | null;
+  newData: string | null;
   username: string;
-  timestamp: string; // ISO DateTime
-  reason?: string;
+  ipAddress: string | null;
+  createdAt: string; // ISO Instant
 }
 
 export interface AuditFilters {
@@ -47,8 +46,13 @@ export const auditApi = {
     return response.data;
   },
 
-  getAuditRecordDetail: async (auditId: string) => {
+  getAuditRecordDetail: async (auditId: number) => {
     const response = await apiClient.get<AuditRecord>(`/audit/${auditId}`);
+    return response.data;
+  },
+
+  getEntityAudit: async (type: string, entityId: number) => {
+    const response = await apiClient.get<AuditRecord[]>(`/audit/entity/${type}/${entityId}`);
     return response.data;
   }
 };
@@ -59,3 +63,4 @@ export const auditApi = {
  * This is a client-side stub that will fail if called.
  * TODO: Implement CSV export on backend or remove this.
  */
+

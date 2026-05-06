@@ -60,5 +60,13 @@ export const dashboardApi = {
 
   exportProfitabilityReportExcel: function() {
     return this.exportReport('EXCEL');
+  },
+
+  getProfitabilityReport: async (startDate: string, endDate: string) => {
+    const response = await apiClient.get(`/reports/profitability`, {
+      params: { startDate, endDate }
+    });
+    return response.data;
   }
 };
+

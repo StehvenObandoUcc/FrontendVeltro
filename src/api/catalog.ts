@@ -21,7 +21,7 @@ export const productApi = {
 
   create: async (product: ProductRequest, image?: File | null): Promise<Product> => {
     const formData = new FormData();
-    // Append product data as a JSON Blob — backend @RequestPart("product") reads it as String then deserialises
+    // Append product data as a JSON Blob  Ebackend @RequestPart("product") reads it as String then deserialises
     formData.append('product', new Blob([JSON.stringify(product)], { type: 'application/json' }));
     if (image) {
       formData.append('image', image, image.name);
@@ -48,8 +48,15 @@ export const productApi = {
     await apiClient.put(`/products/${id}/deactivate`);
   },
 
-  activate: async (id: number): Promise<void> => {
-    await apiClient.put(`/products/${id}/activate`);
+  
+
+  hardDelete: async (id: number): Promise<void> => {
+    await apiClient.delete(`/products/${id}`);
+  },
+
+  activate: async (id: number): Promise<Product> => {
+    const response = await apiClient.put<Product>(`/products/${id}/activate`);
+    return response.data;
   },
 };
 
@@ -79,4 +86,14 @@ export const categoryApi = {
   delete: async (id: number): Promise<void> => {
     await apiClient.put(`/categories/${id}/deactivate`);
   },
+
+  hardDelete: async (id: number): Promise<void> => {
+    await apiClient.delete(`/categories/${id}`);
+  },
+
+  activate: async (id: number): Promise<Category> => {
+    const response = await apiClient.put<Category>(`/categories/${id}/activate`);
+    return response.data;
+  },
 };
+

@@ -134,7 +134,7 @@ export const purchasingApi = {
   createPurchaseOrder: async (data: CreatePORequest): Promise<PurchaseOrder> => {
     let createResponse: { data: PurchaseOrder };
 
-    // Step 1: Create the PO (without items — backend DTO doesn't accept items)
+    // Step 1: Create the PO (without items  Ebackend DTO doesn't accept items)
     try {
       createResponse = await apiClient.post<PurchaseOrder>('/purchase-orders', {
         supplierId: data.supplierId,
@@ -201,5 +201,31 @@ export const purchasingApi = {
   voidPurchaseOrder: async (orderId: number) => {
     const response = await apiClient.put<PurchaseOrder>(`/purchase-orders/${orderId}/void`);
     return response.data;
+  },
+
+  removeOrderItem: async (orderId: number, detailId: number) => {
+    const response = await apiClient.delete(`/purchase-orders/${orderId}/items/${detailId}`);
+    return response.data;
+  },
+
+  getPurchaseOrderByNumber: async (orderNumber: string) => {
+    const response = await apiClient.get<PurchaseOrder>(`/purchase-orders/number/${orderNumber}`);
+    return response.data;
+  },
+
+  activateSupplier: async (id: number) => {
+    const response = await apiClient.put<Supplier>(`/suppliers/${id}/activate`);
+    return response.data;
+  },
+
+  deactivateSupplier: async (id: number) => {
+    const response = await apiClient.put<Supplier>(`/suppliers/${id}/deactivate`);
+    return response.data;
+  },
+
+  getSupplierByTaxId: async (taxId: string) => {
+    const response = await apiClient.get<Supplier>(`/suppliers/tax-id/${taxId}`);
+    return response.data;
   }
 };
+

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { inventoryApi, type Alert } from '../../api/inventory';
 import { useAlertStore } from '../../stores/alertStore';
 import { SeverityBadge } from './SeverityBadge';
+import { SEVERITY_STYLE_MAP } from '../../constants/alertSeverityStyles';
 
 interface AlertListProps {
   alerts: Alert[];
@@ -116,14 +117,15 @@ export const AlertList: React.FC<AlertListProps> = ({
             key={alert.id}
             className="p-4 transition-colors"
             style={{
-              backgroundColor: idx % 2 === 0 ? '#FFFFFF' : '#F9F7F2',
+              backgroundColor: SEVERITY_STYLE_MAP[alert.severity].rowBg,
+              borderLeft: SEVERITY_STYLE_MAP[alert.severity].borderLeft,
               borderBottom: idx < alerts.length - 1 ? '1px solid #E8E3DB' : 'none',
             }}
             onMouseEnter={(e) => {
-              (e.currentTarget as HTMLDivElement).style.backgroundColor = '#F9F7F2';
+              (e.currentTarget as HTMLDivElement).style.backgroundColor = SEVERITY_STYLE_MAP[alert.severity].hoverBg;
             }}
             onMouseLeave={(e) => {
-              (e.currentTarget as HTMLDivElement).style.backgroundColor = idx % 2 === 0 ? '#FFFFFF' : '#F9F7F2';
+              (e.currentTarget as HTMLDivElement).style.backgroundColor = SEVERITY_STYLE_MAP[alert.severity].rowBg;
             }}
           >
             <div className="flex items-start justify-between">

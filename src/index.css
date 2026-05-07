@@ -34,6 +34,7 @@
   --primary-light: #10A96D;        
   --primary-lighter: #3DC08A;      /* Lighter emerald for hover states */
   --primary-dark: #027A43;         
+  --primary-hover: var(--primary-light);
   --primary-faint: rgba(3, 142, 87, 0.08); 
 
   /* Accent & Critical */

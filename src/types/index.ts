@@ -19,6 +19,8 @@ export interface User {
   email: string;
   role: UserRole;
   businessId: number | null;
+  businessName?: string;
+  adminName?: string;
 }
 
 export interface LoginRequest {
@@ -45,6 +47,8 @@ export interface AuthTokenResponse {
   businessId: number | null;
   id?: number;
   email?: string;
+  businessName?: string;
+  adminName?: string;
 }
 
 export type LoginResponse = AuthTokenResponse;

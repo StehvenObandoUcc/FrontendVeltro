@@ -1,4 +1,4 @@
-﻿import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { CameraOff, Loader2, CheckCircle, X } from 'lucide-react';
 import { useAiScanStore } from '../../stores/aiScanStore';
 import { useCartStore } from '../../stores/cartStore';
@@ -83,11 +83,12 @@ export const AiScannerContainer: React.FC<Props> = ({
     try {
       setIsCameraInitializing(true);
       setCameraError(null);
+      const isPortrait = window.innerHeight > window.innerWidth;
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: 'environment',
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
+          width: { ideal: isPortrait ? 720 : 1280 },
+          height: { ideal: isPortrait ? 1280 : 720 },
         },
       });
 
@@ -181,6 +182,16 @@ export const AiScannerContainer: React.FC<Props> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    const handleOrientationChange = () => {
+      handleRetryCamera();
+    };
+    window.addEventListener('orientationchange', handleOrientationChange);
+    return () => {
+      window.removeEventListener('orientationchange', handleOrientationChange);
+    };
+  }, []);
+
   const pendingDetections = detections.filter((det) => {
     if (det.status !== 'SUCCESS' || confirmedIds.current.has(det.id)) {
       return false;
@@ -212,7 +223,7 @@ export const AiScannerContainer: React.FC<Props> = ({
     <div className="space-y-3">
       <div className="relative w-full overflow-hidden rounded-xl bg-black" style={{ aspectRatio: '4 / 3' }}>
         <video ref={videoRef} className="absolute inset-0 w-full h-full object-cover" playsInline muted />
-        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />
+        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-cover pointer-events-none" />
         {isAiMode && <DetectionOverlay canvasRef={canvasRef} />}
 
         {!cameraActive && (

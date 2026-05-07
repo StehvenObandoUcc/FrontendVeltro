@@ -175,6 +175,20 @@ export function MainLayout() {
             <div>
               <p className="text-sm font-medium text-white">{user?.username}</p>
               <p className="text-xs text-gray-400 mt-0.5">{getRoleLabel(user?.role as UserRole)}</p>
+              {user?.role !== 'ADMIN' && (
+                <div className="mt-2 space-y-0.5">
+                  {user?.businessName && (
+                    <p className="text-[10px] text-gray-400">
+                      Tienda: <span className="text-white font-medium">{user.businessName}</span>
+                    </p>
+                  )}
+                  {user?.adminName && (
+                    <p className="text-[10px] text-gray-400">
+                      Jefe: <span className="text-white font-medium">{user.adminName}</span>
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--primary-base)', boxShadow: '0 0 8px var(--primary-base)' }} />
           </div>

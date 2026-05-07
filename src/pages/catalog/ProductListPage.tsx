@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { productApi } from '../../api/catalog';
 import type { Product, PageResponse } from '../../types';
 import { useAuthStore } from '../../stores/authStore';
+import { formatCurrency } from '../../utils/formatCurrency';
 
 export function ProductListPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -68,12 +69,6 @@ export function ProductListPage() {
     }
   };
 
-  const formatPrice = (price: string): string => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-    }).format(parseFloat(price));
-  };
 
   if (isLoading && products.length === 0) {
     return (
@@ -147,10 +142,10 @@ export function ProductListPage() {
                   </span>
                 </td>
                 <td className="text-sm text-right tabular-data font-medium text-[var(--text-primary)]">
-                  {formatPrice(product.costPrice)}
+                  {formatCurrency(product.costPrice)}
                 </td>
                 <td className="text-sm text-right tabular-data font-bold text-[var(--primary-base)]">
-                  {formatPrice(product.salePrice)}
+                  {formatCurrency(product.salePrice)}
                 </td>
                 <td className="text-center">
                   <span

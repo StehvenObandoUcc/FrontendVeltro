@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { purchasingApi } from '../../api/purchasing';
 
 interface ReceptionFlowProps {
@@ -19,6 +20,23 @@ export const ReceptionFlow: React.FC<ReceptionFlowProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // [C6] Scroll lock: prevent background scrolling while modal is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
+
+  // [C6] Escape key handler for accessibility
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose?.();
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [onClose]);
+
   const handleSubmit = async () => {
     setIsSubmitting(true);
     setError(null);
@@ -37,7 +55,7 @@ export const ReceptionFlow: React.FC<ReceptionFlowProps> = ({
     }
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
       <div className="rounded-lg max-w-md w-full mx-4" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E8E3DB' }}>
         {/* Header */}
@@ -91,6 +109,7 @@ export const ReceptionFlow: React.FC<ReceptionFlowProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

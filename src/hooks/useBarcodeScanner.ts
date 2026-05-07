@@ -188,9 +188,17 @@ export function useBarcodeScanner({
     };
 
     try {
+      const isPortrait = window.innerHeight > window.innerWidth;
       await scanner.start(
         CAMERA_START_CONFIG,
-        BARCODE_SCANNER_CONFIG,
+        {
+          ...BARCODE_SCANNER_CONFIG,
+          videoConstraints: {
+            width: { ideal: isPortrait ? 720 : 1280 },
+            height: { ideal: isPortrait ? 1280 : 720 },
+            facingMode: 'environment',
+          },
+        },
         qrCodeSuccessCallback,
         () => {
           // noop

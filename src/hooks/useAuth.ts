@@ -21,6 +21,8 @@ export const useAuth = () => {
       email: response.email ?? '',
       role: response.role,
       businessId: response.businessId,
+      businessName: response.businessName,
+      adminName: response.adminName,
     };
     setAuth(user, response.accessToken, response.refreshToken);
     return response;

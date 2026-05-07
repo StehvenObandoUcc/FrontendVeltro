@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { purchasingApi, type PurchaseOrder } from '../../api/purchasing';
 import { StateVisualizer } from './StateVisualizer';
 import { ReceptionFlow } from './ReceptionFlow';
+import { formatCurrency } from '../../utils/formatCurrency';
 
 interface OrderListProps {
   orders: PurchaseOrder[];
@@ -123,17 +124,14 @@ export const OrderList: React.FC<OrderListProps> = ({
       )}
 
       {/* Order items */}
-      <div
-        className="border-2 rounded-lg"
-        style={{ borderColor: '#E8E3DB' }}
-      >
+      <div>
         {orders.map((order, idx) => (
           <div
             key={order.id}
             className="p-4"
             style={{
               backgroundColor: idx % 2 === 0 ? '#FFFFFF' : '#F9F7F2',
-              borderBottom: idx < orders.length - 1 ? '1px solid #E8E3DB' : 'none',
+              borderBottom: 'none',
             }}
           >
             {/* Header */}
@@ -157,7 +155,7 @@ export const OrderList: React.FC<OrderListProps> = ({
                     fontVariantNumeric: 'tabular-nums',
                   }}
                 >
-                  $ {order.total}
+                  {formatCurrency(order.total)}
                 </p>
                 <p className="text-xs" style={{ color: '#9CA3AF' }}>
                   {order.auditInfo?.createdAt
@@ -303,7 +301,7 @@ export const OrderList: React.FC<OrderListProps> = ({
                             fontVariantNumeric: 'tabular-nums',
                           }}
                         >
-                          $ {detail.unitCost}
+                          {formatCurrency(detail.unitCost)}
                         </td>
                         <td
                           className="px-3 py-2 text-right"
@@ -329,7 +327,7 @@ export const OrderList: React.FC<OrderListProps> = ({
                             fontVariantNumeric: 'tabular-nums',
                           }}
                         >
-                          $ {detail.subtotal}
+                          {formatCurrency(detail.subtotal)}
                         </td>
                       </tr>
                     ))}

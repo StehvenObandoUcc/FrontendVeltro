@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { Product } from '../../types';
 import { Search, ChevronDown } from 'lucide-react';
+import { formatCurrency } from '../../utils/formatCurrency';
 
 interface ProductSearchSelectProps {
   value: string;
@@ -49,7 +50,7 @@ export const ProductSearchSelect: React.FC<ProductSearchSelectProps> = ({
         onClick={() => setIsOpen(!isOpen)}
       >
         <span className="truncate select-none">
-          {selectedProduct ? `${selectedProduct.name} ($ ${selectedProduct.salePrice})` : 'Select a product'}
+          {selectedProduct ? `${selectedProduct.name} (${formatCurrency(selectedProduct.salePrice)})` : 'Select a product'}
         </span>
         <ChevronDown size={16} className="text-gray-400" />
       </div>
@@ -87,7 +88,7 @@ export const ProductSearchSelect: React.FC<ProductSearchSelectProps> = ({
                     setSearchTerm('');
                   }}
                 >
-                  {product.name} <span className="text-gray-500">($ {product.salePrice})</span>
+                  {product.name} <span className="text-gray-500">({formatCurrency(product.salePrice)})</span>
                 </div>
               ))
             )}

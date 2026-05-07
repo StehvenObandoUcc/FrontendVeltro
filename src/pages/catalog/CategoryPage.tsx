@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -48,7 +48,7 @@ export function CategoryPage() {
       const tree = await categoryApi.getAll();
       setCategories(tree);
     } catch (err) {
-      setError('Error al cargar las categorﾃｭas');
+      setError('Error al cargar las categorías');
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -116,7 +116,7 @@ export function CategoryPage() {
       loadCategories();
     } catch (err) {
       const axiosError = err as AxiosError<{ message: string }>;
-      setError(axiosError.response?.data?.message || 'Error al guardar la categorﾃｭa');
+      setError(axiosError.response?.data?.message || 'Error al guardar la categoría');
     } finally {
       setIsSaving(false);
     }
@@ -125,7 +125,7 @@ export function CategoryPage() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-[var(--text-secondary)]">Cargando categorﾃｭas...</div>
+        <div className="text-[var(--text-secondary)]">Cargando categorías...</div>
       </div>
     );
   }
@@ -135,15 +135,15 @@ export function CategoryPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Categorﾃｭas</h1>
-          <p className="text-sm text-gray-500 mt-1">Gestione la jerarquﾃｭa de categorﾃｭas para sus productos</p>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Categorías</h1>
+          <p className="text-sm text-gray-500 mt-1">Gestione la jerarquía de categorías para sus productos</p>
         </div>
         {canEdit && (
           <button
             onClick={handleNew}
             className="bg-[var(--primary-base)] text-white px-4 py-2 rounded-lg font-medium hover:bg-[var(--primary-dark)] transition-colors shadow-sm"
           >
-            + Nueva Categorﾃｭa
+            + Nueva Categoría
           </button>
         )}
       </div>
@@ -178,7 +178,7 @@ export function CategoryPage() {
             <div className="sticky top-6 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                 <h2 className="text-lg font-bold text-gray-900">
-                  {editingCategory ? 'Editar Categorﾃｭa' : 'Nueva Categorﾃｭa'}
+                  {editingCategory ? 'Editar Categoría' : 'Nueva Categoría'}
                 </h2>
                 <button 
                   onClick={handleCancel}
@@ -213,14 +213,14 @@ export function CategoryPage() {
 
             <div>
               <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-1">
-                Descripciﾃｳn
+                Descripción
               </label>
               <textarea
                 id="description"
                 rows={3}
                 {...register('description')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary-base)] focus:border-transparent outline-none transition-all resize-none"
-                placeholder="Descripciﾃｳn de la categorﾃｭa"
+                placeholder="Descripción de la categoría"
               />
             </div>
 

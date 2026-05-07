@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,12 +8,12 @@ import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 
 // Validation schema matching backend CreateSupplierRequest
 const supplierSchema = z.object({
-  name: z.string().min(1, 'El nombre es requerido').max(200, 'Mﾃ｡ximo 200 caracteres'),
-  taxId: z.string().min(1, 'El RUC/Tax ID es requerido').max(50, 'Mﾃ｡ximo 50 caracteres'),
-  email: z.string().email('Email invﾃ｡lido').max(200).optional().or(z.literal('')),
-  phone: z.string().max(20, 'Mﾃ｡ximo 20 caracteres').optional().or(z.literal('')),
-  address: z.string().max(500, 'Mﾃ｡ximo 500 caracteres').optional().or(z.literal('')),
-  notes: z.string().max(500, 'Mﾃ｡ximo 500 caracteres').optional().or(z.literal('')),
+  name: z.string().min(1, 'El nombre es requerido').max(200, 'Máximo 200 caracteres'),
+  taxId: z.string().min(1, 'El RUC/Tax ID es requerido').max(50, 'Máximo 50 caracteres'),
+  email: z.string().email('Email inválido').max(200).optional().or(z.literal('')),
+  phone: z.string().max(20, 'Máximo 20 caracteres').optional().or(z.literal('')),
+  address: z.string().max(500, 'Máximo 500 caracteres').optional().or(z.literal('')),
+  notes: z.string().max(500, 'Máximo 500 caracteres').optional().or(z.literal('')),
 });
 
 type SupplierFormData = z.infer<typeof supplierSchema>;
@@ -147,7 +147,7 @@ export const SupplierPage: React.FC = () => {
             Proveedores
           </h1>
           <p className="mt-1 text-[var(--text-secondary)] text-sm">
-            Gestiona los proveedores para ﾃｳrdenes de compra
+            Gestiona los proveedores para órdenes de compra
           </p>
         </div>
         <button
@@ -242,7 +242,7 @@ export const SupplierPage: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-semibold text-[var(--text-primary)] mb-1.5">
-                  Telﾃｩfono
+                  Teléfono
                 </label>
                 <input
                   type="text"
@@ -258,7 +258,7 @@ export const SupplierPage: React.FC = () => {
 
             <div>
               <label className="block text-sm font-semibold text-[var(--text-primary)] mb-1.5">
-                Direcciﾃｳn
+                Dirección
               </label>
               <input
                 type="text"

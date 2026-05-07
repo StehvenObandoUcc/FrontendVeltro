@@ -30,8 +30,10 @@ export const SaleReceipt: React.FC<SaleReceiptProps> = ({
   const paymentMethodLabel: Record<string, string> = {
     CASH: 'Efectivo',
     CARD: 'Tarjeta',
-    NEQUI: 'Nequi',
-    DAVIPLATA: 'Daviplata',
+    TRANSFER: 'Transferencia',
+    YAPE: 'Yape',
+    PLIN: 'Plin',
+    MIXED: 'Mixto',
   };
 
   const itemCount = saleData.details?.reduce((sum, d) => sum + d.quantity, 0) ?? 0;

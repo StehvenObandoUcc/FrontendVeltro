@@ -22,7 +22,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   const items = useCartStore((s) => s.items);
   const getTotal = useCartStore((s) => s.getTotal);
   const [paymentMethod, setPaymentMethod] = useState<
-    'CASH' | 'CARD' | 'NEQUI' | 'DAVIPLATA'
+    'CASH' | 'CARD' | 'YAPE' | 'PLIN' | 'TRANSFER' | 'MIXED'
   >('CASH');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -135,17 +135,19 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
               value={paymentMethod}
               onChange={(e) =>
                 setPaymentMethod(
-                  e.target.value as 'CASH' | 'CARD' | 'NEQUI' | 'DAVIPLATA'
+                  e.target.value as 'CASH' | 'CARD' | 'YAPE' | 'PLIN' | 'TRANSFER' | 'MIXED'
                 )
               }
               className="w-full rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
               aria-label="Select payment method for transaction"
-              title="Cash, Card, Nequi, or Daviplata"
+              title="Método de pago disponible"
             >
               <option value="CASH">Efectivo</option>
               <option value="CARD">Tarjeta</option>
-              <option value="NEQUI">Nequi</option>
-              <option value="DAVIPLATA">Daviplata</option>
+              <option value="TRANSFER">Transferencia</option>
+              <option value="YAPE">Yape</option>
+              <option value="PLIN">Plin</option>
+              <option value="MIXED">Mixto</option>
             </select>
           </div>
 

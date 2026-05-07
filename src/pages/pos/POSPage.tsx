@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { AxiosError } from 'axios';
 import { Search, ShoppingCart, ArrowLeft, Check, Trash2 } from 'lucide-react';
@@ -31,7 +31,7 @@ export const POSPage: React.FC = () => {
       setIsProcessing(true);
       setError(null);
 
-      const response = await posApi.confirmSale(saleData);
+      const response = await posApi.quickSale(saleData);
       setSaleResponse(response);
       setShowReceipt(true);
       setShowConfirmModal(false);

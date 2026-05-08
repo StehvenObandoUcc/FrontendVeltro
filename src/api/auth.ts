@@ -30,6 +30,11 @@ export const authApi = {
     return response.data;
   },
 
+  getWorkerCount: async (): Promise<{ count: number }> => {
+    const response = await apiClient.get<{ count: number }>('/auth/workers/count');
+    return response.data;
+  },
+
   deleteWorker: async (id: number): Promise<ApiSuccessResponse> => {
     const response = await apiClient.delete<ApiSuccessResponse>(`/auth/workers/${id}`);
     return response.data;

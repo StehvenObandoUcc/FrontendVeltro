@@ -177,30 +177,32 @@ export const AlertList: React.FC<AlertListProps> = ({
                   </button>
                 )}
 
-                <button
-                  onClick={() => handleResolve(alert.id)}
-                  disabled={resolving === alert.id || updatingRead === alert.id}
-                  className="px-3 py-1 text-sm font-medium rounded transition"
-                  style={{
-                    color: '#038E57',
-                    backgroundColor: 'transparent',
-                    opacity: resolving === alert.id ? 0.5 : 1,
-                    cursor:
-                      resolving === alert.id || updatingRead === alert.id
-                        ? 'not-allowed'
-                        : 'pointer',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (resolving !== alert.id && updatingRead !== alert.id) {
-                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#E8F4F0';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
-                  }}
-                >
-                  {resolving === alert.id ? 'Resolviendo...' : 'Resolver'}
-                </button>
+                {alert.severity !== 'INFO' && (
+                  <button
+                    onClick={() => handleResolve(alert.id)}
+                    disabled={resolving === alert.id || updatingRead === alert.id}
+                    className="px-3 py-1 text-sm font-medium rounded transition"
+                    style={{
+                      color: '#038E57',
+                      backgroundColor: 'transparent',
+                      opacity: resolving === alert.id ? 0.5 : 1,
+                      cursor:
+                        resolving === alert.id || updatingRead === alert.id
+                          ? 'not-allowed'
+                          : 'pointer',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (resolving !== alert.id && updatingRead !== alert.id) {
+                        (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#E8F4F0';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
+                    }}
+                  >
+                    {resolving === alert.id ? 'Resolviendo...' : 'Resolver'}
+                  </button>
+                )}
               </div>
             </div>
           </div>

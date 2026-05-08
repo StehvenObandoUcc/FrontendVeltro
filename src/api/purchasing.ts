@@ -193,8 +193,8 @@ export const purchasingApi = {
     return response.data;
   },
 
-  markAsReceived: async (orderId: number) => {
-    const response = await apiClient.put<PurchaseOrder>(`/purchase-orders/${orderId}/receive`);
+  markAsReceived: async (orderId: number, body?: { paymentMethod?: string; paymentDetails?: string; notes?: string }) => {
+    const response = await apiClient.put<PurchaseOrder>(`/purchase-orders/${orderId}/receive`, body);
     return response.data;
   },
 

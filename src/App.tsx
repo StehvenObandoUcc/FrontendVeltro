@@ -18,6 +18,9 @@ const RegisterPage = lazy(() =>
 const ProductListPage = lazy(() =>
   import('./pages/catalog').then((m) => ({ default: m.ProductListPage }))
 );
+const InactiveProductListPage = lazy(() =>
+  import('./pages/catalog').then((m) => ({ default: m.InactiveProductListPage }))
+);
 const ProductFormPage = lazy(() =>
   import('./pages/catalog').then((m) => ({ default: m.ProductFormPage }))
 );
@@ -58,8 +61,9 @@ const AuditListPage = lazy(() =>
 const WorkersPage = lazy(() =>
   import('./pages/settings').then((m) => ({ default: m.WorkersPage }))
 );
-
-
+const ProfilePage = lazy(() =>
+  import('./pages/settings').then((m) => ({ default: m.ProfilePage }))
+);
 
 function App() {
   return (
@@ -84,6 +88,16 @@ function App() {
         >
           {/* Default redirect based on role handled by LoginPage */}
           <Route index element={<Navigate to="/app/dashboard" replace />} />
+
+          {/* Profile - All authenticated users */}
+          <Route
+            path="profile"
+            element={
+              <RoleGuard allowedRoles={['ADMIN', 'CASHIER', 'WAREHOUSE']}>
+                <ProfilePage />
+              </RoleGuard>
+            }
+          />
 
           {/* Dashboard - All authenticated users */}
           <Route path="dashboard" element={<DashboardPage />} />
@@ -150,6 +164,14 @@ function App() {
             element={
               <RoleGuard allowedRoles={['ADMIN', 'WAREHOUSE', 'CASHIER']}>
                 <ProductListPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="catalog/products/inactive"
+            element={
+              <RoleGuard allowedRoles={['ADMIN', 'WAREHOUSE']}>
+                <InactiveProductListPage />
               </RoleGuard>
             }
           />

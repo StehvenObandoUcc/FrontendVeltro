@@ -9,6 +9,13 @@ export const productApi = {
     return response.data;
   },
 
+  getInactive: async (page = 0, size = 10): Promise<PageResponse<Product>> => {
+    const response = await apiClient.get<PageResponse<Product>>('/products/inactive', {
+      params: { page, size },
+    });
+    return response.data;
+  },
+
   getById: async (id: number): Promise<Product> => {
     const response = await apiClient.get<Product>(`/products/${id}`);
     return response.data;

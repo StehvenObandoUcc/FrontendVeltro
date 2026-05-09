@@ -13,7 +13,8 @@ export function RoleGuard({
   allowedRoles, 
   fallbackPath = '/unauthorized' 
 }: RoleGuardProps) {
-  const { user, isAuthenticated } = useAuthStore();
+  const user = useAuthStore((state) => state.user);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   if (!isAuthenticated || !user) {
     return <Navigate to="/login" replace />;

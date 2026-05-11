@@ -1,9 +1,10 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { CameraOff, Loader2, CheckCircle, X } from 'lucide-react';
 import { useAiScanStore } from '../../stores/aiScanStore';
 import { useCartStore } from '../../stores/cartStore';
 import { useYoloDetection } from '../../hooks/useYoloDetection';
 import { useAiScanQueue } from '../../hooks/useAiScanQueue';
+import { useCameraStream } from '../../hooks/useCameraStream';
 import { DetectionOverlay } from './DetectionOverlay';
 
 interface ConfirmedProduct {
@@ -24,16 +25,11 @@ export const AiScannerContainer: React.FC<Props> = ({
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
   const addedIds = useRef<Set<string>>(new Set());
   const confirmedIds = useRef<Set<string>>(new Set());
   const rejectedProducts = useRef<Map<number, number>>(new Map());
-  const cameraSessionIdRef = useRef(0);
 
-  const [cameraActive, setCameraActive] = useState(false);
-  const [cameraError, setCameraError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [isCameraInitializing, setIsCameraInitializing] = useState(false);
 
   const {
     scanMode,
@@ -46,6 +42,23 @@ export const AiScannerContainer: React.FC<Props> = ({
 
   const { add: addToCart } = useCartStore();
   const isAiMode = scanMode === 'ai';
+
+  const onCameraStop = useCallback(() => {
+    clearDetections();
+    confirmedIds.current.clear();
+    rejectedProducts.current.clear();
+  }, [clearDetections]);
+
+  const {
+    cameraActive,
+    cameraError,
+    isCameraInitializing,
+    restartCamera,
+  } = useCameraStream({
+    videoRef,
+    onStop: onCameraStop,
+  });
+
   const { modelLoaded, modelError } = useYoloDetection(videoRef, canvasRef, cameraActive && isAiMode);
 
   useAiScanQueue(videoRef, isAiMode);
@@ -67,74 +80,6 @@ export const AiScannerContainer: React.FC<Props> = ({
     const live = new Set(detections.map((d) => d.id));
     addedIds.current = new Set([...addedIds.current].filter((id) => live.has(id)));
   }, [detections, addToCart, updateDetectionStatus, useCase]);
-
-  const stopCamera = () => {
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
-    if (videoRef.current) videoRef.current.srcObject = null;
-    setCameraActive(false);
-    setIsCameraInitializing(false);
-    clearDetections();
-    confirmedIds.current.clear();
-    rejectedProducts.current.clear();
-  };
-
-  const initCameraSafely = async (sessionId: number) => {
-    try {
-      setIsCameraInitializing(true);
-      setCameraError(null);
-      const isPortrait = window.innerHeight > window.innerWidth;
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: 'environment',
-          width: { ideal: isPortrait ? 720 : 1280 },
-          height: { ideal: isPortrait ? 1280 : 720 },
-        },
-      });
-
-      if (cameraSessionIdRef.current !== sessionId) {
-        stream.getTracks().forEach((track) => track.stop());
-        return;
-      }
-
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        try {
-          await videoRef.current.play();
-        } catch (error) {
-          if (
-            (error instanceof DOMException && error.name === 'AbortError') ||
-            cameraSessionIdRef.current !== sessionId
-          ) {
-            return;
-          }
-          throw error;
-        }
-
-        if (cameraSessionIdRef.current !== sessionId) {
-          stream.getTracks().forEach((track) => track.stop());
-          return;
-        }
-
-        setCameraActive(true);
-      }
-    } catch (error) {
-      if (cameraSessionIdRef.current === sessionId) {
-        setCameraError(error instanceof Error ? error.message : 'Failed to access camera');
-      }
-    } finally {
-      if (cameraSessionIdRef.current === sessionId) {
-        setIsCameraInitializing(false);
-      }
-    }
-  };
-
-  const handleRetryCamera = () => {
-    const sessionId = ++cameraSessionIdRef.current;
-    stopCamera();
-    void initCameraSafely(sessionId);
-  };
 
   const getValidMatch = (detectionId: string) => {
     const det = detections.find((d) => d.id === detectionId);
@@ -172,25 +117,7 @@ export const AiScannerContainer: React.FC<Props> = ({
     if (useCase) {
       setAiUseCase(useCase);
     }
-    const sessionId = ++cameraSessionIdRef.current;
-    void initCameraSafely(sessionId);
-
-    return () => {
-      cameraSessionIdRef.current += 1;
-      stopCamera();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    const handleOrientationChange = () => {
-      handleRetryCamera();
-    };
-    window.addEventListener('orientationchange', handleOrientationChange);
-    return () => {
-      window.removeEventListener('orientationchange', handleOrientationChange);
-    };
-  }, []);
+  }, [useCase, setAiUseCase]);
 
   const pendingDetections = detections.filter((det) => {
     if (det.status !== 'SUCCESS' || confirmedIds.current.has(det.id)) {
@@ -206,10 +133,10 @@ export const AiScannerContainer: React.FC<Props> = ({
     return (
       <div className="flex flex-col items-center justify-center py-12 px-4 text-center rounded-xl bg-red-50 border border-red-200">
         <CameraOff className="w-12 h-12 mb-3 text-red-400" />
-        <p className="font-semibold text-red-600">Error de camara</p>
+        <p className="font-semibold text-red-600">Error de cámara</p>
         <p className="text-sm mt-1 text-gray-500">{cameraError}</p>
         <button
-          onClick={handleRetryCamera}
+          onClick={restartCamera}
           disabled={isCameraInitializing}
           className="mt-4 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed"
         >

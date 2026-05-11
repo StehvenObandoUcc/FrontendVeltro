@@ -18,11 +18,11 @@ export const SeverityBadge: React.FC<SeverityBadgeProps> = ({ severity }) => {
   > = {
     CRITICAL: {
       icon: <OctagonAlert size={14} />,
-      label: 'Critical',
+      label: 'Crítico',
     },
     WARNING: {
       icon: <AlertTriangle size={14} />,
-      label: 'Warning',
+      label: 'Advertencia',
     },
     INFO: {
       icon: <Info size={14} />,

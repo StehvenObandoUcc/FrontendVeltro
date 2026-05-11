@@ -171,9 +171,9 @@ export function MainLayout() {
 
         {/* User Context Footer */}
         <div className="p-4" style={{ borderTop: '1px solid rgba(255,255,255,0.1)', backgroundColor: 'rgba(0,0,0,0.2)' }}>
-          <div className="flex items-center justify-between mb-3">
+          <Link to="/app/profile" className="flex items-center justify-between mb-3 group cursor-pointer" onClick={() => setSidebarOpen(false)}>
             <div>
-              <p className="text-sm font-medium text-white">{user?.username}</p>
+              <p className="text-sm font-medium text-white group-hover:text-[var(--primary-lighter)] transition-colors">{user?.username}</p>
               <p className="text-xs text-gray-400 mt-0.5">{getRoleLabel(user?.role as UserRole)}</p>
               {user?.role !== 'ADMIN' && (
                 <div className="mt-2 space-y-0.5">
@@ -191,7 +191,7 @@ export function MainLayout() {
               )}
             </div>
             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--primary-base)', boxShadow: '0 0 8px var(--primary-base)' }} />
-          </div>
+          </Link>
           <button
             onClick={handleLogout}
             className="w-full py-2 px-3 rounded text-xs font-semibold text-gray-300 transition-colors"

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useCartStore } from '../../stores/cartStore';
 import type { CreateSaleRequest } from '../../api/pos';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { formatCurrency } from '../../utils/formatCurrency';
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -70,7 +71,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
       setError(null);
 
       if (items.length === 0) {
-        setError('El carrito esta vacio');
+        setError('El carrito está vacío');
         return;
       }
 
@@ -125,7 +126,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           return;
         }
         if (Math.abs(cashVal + otherVal - parseFloat(total)) > 0.01) {
-          setError(`La suma de los montos ($${(cashVal + otherVal).toFixed(2)}) debe coincidir con el total ($${parseFloat(total).toFixed(2)})`);
+          setError(`La suma de los montos (${formatCurrency(cashVal + otherVal)}) debe coincidir con el total (${formatCurrency(total)})`);
           return;
         }
 
@@ -159,7 +160,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           }
           mixedDetails = `Plin${phoneNumber ? ' Cel: ' + phoneNumber : ''} (Op: ${operationCode})`;
         }
-        paymentDetailsStr = `Pago Mixto - Efectivo: $${cashVal.toFixed(2)} + ${mixedMethod}: $${otherVal.toFixed(2)} (${mixedDetails})`;
+        paymentDetailsStr = `Pago Mixto - Efectivo: ${formatCurrency(cashVal)} + ${mixedMethod}: ${formatCurrency(otherVal)} (${mixedDetails})`;
       }
 
       const finalNotes = notes
@@ -181,7 +182,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
       await onConfirm(saleData);
     } catch (err) {
       const errorMsg =
-        err instanceof Error ? err.message : 'Error al confirmar venta';
+        err instanceof Error ? err.message : 'Error al confirmar la venta';
       setError(errorMsg);
     }
   };
@@ -212,16 +213,16 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
 
         <div className="space-y-4 p-6" id="confirm-modal-description">
           <div className="rounded border bg-gray-50 p-4">
-            <h3 className="mb-2 text-sm font-semibold">Items a vender:</h3>
-            <ul className="space-y-1 text-sm text-gray-700" aria-label="Items in cart">
+            <h3 className="mb-2 text-sm font-semibold">Productos a vender:</h3>
+            <ul className="space-y-1 text-sm text-gray-700" aria-label="Productos en el carrito">
               {items.map((item) => (
                 <li key={item.productId} className="flex justify-between">
                   <span>{item.product.name}</span>
                   <span
                     className="font-medium"
-                    aria-label={`${item.quantity} items at $ ${parseFloat(item.product.salePrice).toFixed(2)} each`}
+                    aria-label={`${item.quantity} productos a ${formatCurrency(item.product.salePrice)} cada uno`}
                   >
-                    {item.quantity}x $ {parseFloat(item.product.salePrice).toFixed(2)}
+                    {item.quantity}x {formatCurrency(item.product.salePrice)}
                   </span>
                 </li>
               ))}
@@ -233,9 +234,9 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
               <span className="text-lg font-bold">Total:</span>
               <span
                 className="text-2xl font-bold text-green-600"
-                aria-label={`Sale total: $ ${parseFloat(total).toFixed(2)}`}
+                aria-label={`Total de la venta: ${formatCurrency(total)}`}
               >
-                $ {parseFloat(total).toFixed(2)}
+                {formatCurrency(total)}
               </span>
             </div>
           </div>
@@ -245,7 +246,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
               htmlFor="payment-method"
               className="mb-2 block text-sm font-medium text-gray-700"
             >
-              Metodo de pago
+              Método de pago
             </label>
             <select
               id="payment-method"
@@ -256,7 +257,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                 )
               }
               className="w-full rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-              aria-label="Select payment method for transaction"
+              aria-label="Seleccione el método de pago para la transacción"
               title="Método de pago disponible"
             >
               <option value="CASH">Efectivo</option>
@@ -285,13 +286,13 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                 onChange={(e) => setAmountReceived(e.target.value)}
                 placeholder={`Ej: ${parseFloat(total).toFixed(0)}`}
                 className="w-full rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none text-sm"
-                aria-label="Enter cash amount received from customer"
+                aria-label="Ingrese el monto recibido en efectivo del cliente"
                 title="Monto recibido en efectivo"
                 required
               />
               {amountReceived && parseFloat(amountReceived) >= parseFloat(total) && (
                 <p className="mt-1 text-sm font-semibold text-green-600 text-left">
-                  Vuelto (Cambio): $ {(parseFloat(amountReceived) - parseFloat(total)).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                  Vuelto (Cambio): {formatCurrency(parseFloat(amountReceived) - parseFloat(total))}
                 </p>
               )}
             </div>
@@ -427,8 +428,10 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
               </div>
 
               <div className="bg-white p-3 rounded border border-yellow-200">
-                <span className="text-xs font-semibold text-gray-500 block mb-0.5">Monto en {mixedMethod}:</span>
-                <span className="text-lg font-bold text-yellow-600">$ {parseFloat(mixedOtherAmount || '0').toFixed(2)}</span>
+                <span className="text-xs font-semibold text-gray-500 block mb-0.5">
+                  Monto en {mixedMethod === 'CARD' ? 'Tarjeta' : mixedMethod === 'TRANSFER' ? 'Transferencia' : mixedMethod}:
+                </span>
+                <span className="text-lg font-bold text-yellow-600">{formatCurrency(mixedOtherAmount || '0')}</span>
               </div>
 
               {/* Sub-inputs conditional for the second mixed method */}
@@ -533,11 +536,11 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
               id="sale-notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Ej: Cliente solicito embalaje especial"
+              placeholder="Ej: Cliente solicitó embalaje especial"
               className="w-full resize-none rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
               rows={2}
-              aria-label="Add optional notes for this sale"
-              title="Enter any special notes or instructions for this transaction"
+              aria-label="Agregar notas opcionales para esta venta"
+              title="Ingrese notas o instrucciones especiales para esta transacción"
             />
           </div>
 
@@ -557,8 +560,8 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
             onClick={onClose}
             disabled={isLoading}
             className="flex-1 rounded bg-gray-300 px-4 py-2 font-medium text-gray-800 transition hover:bg-gray-400 disabled:cursor-not-allowed disabled:opacity-50"
-            aria-label="Cancel sale confirmation and close dialog"
-            title="Close this dialog (Escape key)"
+            aria-label="Cancelar confirmación de venta y cerrar diálogo"
+            title="Cerrar este diálogo (Tecla Escape)"
           >
             Cancelar
           </button>
@@ -566,8 +569,8 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
             onClick={handleConfirm}
             disabled={isLoading || items.length === 0}
             className="flex-1 rounded bg-green-600 px-4 py-2 font-medium text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
-            aria-label={`Confirm and process sale of $ ${parseFloat(total).toFixed(2)}`}
-            title="Complete this transaction"
+            aria-label={`Confirmar y procesar venta de ${formatCurrency(total)}`}
+            title="Completar esta transacción"
           >
             {isLoading ? 'Procesando...' : 'Confirmar'}
           </button>

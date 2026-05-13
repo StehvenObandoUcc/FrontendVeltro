@@ -25,7 +25,7 @@ export function CategoryPage() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
-  const { hasRole } = useAuthStore();
+  const hasRole = useAuthStore((state) => state.hasRole);
 
   const canEdit = hasRole(['ADMIN', 'WAREHOUSE']);
 

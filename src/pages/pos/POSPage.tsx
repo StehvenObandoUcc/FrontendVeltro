@@ -10,6 +10,7 @@ import { useCartStore } from '../../stores/cartStore';
 import { useAiScanStore } from '../../stores/aiScanStore';
 import { posApi, type SaleResponse, type CreateSaleRequest } from '../../api/pos';
 import type { ApiError } from '../../types';
+import { formatCurrency } from '../../utils/formatCurrency';
 
 export const POSPage: React.FC = () => {
   const navigate = useNavigate();
@@ -38,13 +39,22 @@ export const POSPage: React.FC = () => {
       clear();
     } catch (err) {
       const axiosError = err as AxiosError<ApiError>;
-      const errorMsg =
-        axiosError.response?.status === 422
-          ? axiosError.response?.data?.message ||
-            'No se puede confirmar la venta por stock insuficiente en uno o mas productos.'
-          : axiosError.response?.data?.message ||
-            (err instanceof Error ? err.message : 'Error al confirmar la venta');
+      let errorMsg = 'Error al confirmar la venta';
+      if (axiosError.response) {
+        if (axiosError.response.status === 422) {
+          errorMsg = axiosError.response.data?.message || 'No se puede confirmar la venta por stock insuficiente en uno o mas productos.';
+        } else if (axiosError.response.status === 500) {
+          errorMsg = 'Error interno del servidor al procesar la venta. Intente nuevamente.';
+        } else {
+          errorMsg = axiosError.response.data?.message || errorMsg;
+        }
+      } else if (axiosError.request) {
+        errorMsg = 'Error de red. No se pudo establecer conexión con el servidor.';
+      } else {
+        errorMsg = err instanceof Error ? err.message : errorMsg;
+      }
       setError(errorMsg);
+      throw new Error(errorMsg);
     } finally {
       setIsProcessing(false);
     }
@@ -134,7 +144,7 @@ export const POSPage: React.FC = () => {
               <div className="flex justify-between items-center mb-3 pb-3 border-b border-[var(--border-light)]">
                 <span className="text-[var(--text-secondary)] font-medium text-sm">Total</span>
                 <span className="text-xl sm:text-2xl font-bold tabular-data text-[var(--primary-base)]">
-                  $ {parseFloat(getTotal()).toFixed(0)}
+                  {formatCurrency(getTotal())}
                 </span>
               </div>
               <button
@@ -189,4 +199,3 @@ export const POSPage: React.FC = () => {
     </div>
   );
 };
-

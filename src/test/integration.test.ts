@@ -54,6 +54,44 @@ describe('Frontend Integration Tests with Mocked API', () => {
 
       expect(response.status).toBe(401);
     });
+
+    it('should register successfully', async () => {
+      const response = await fetch(`${API_BASE}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: 'newuser',
+          email: 'newuser@veltro.com',
+          password: 'password123',
+        }),
+      });
+
+      expect(response.status).toBe(201);
+      const data = await response.json();
+      expect(data.success).toBe(true);
+    });
+
+    it('should return 400 on registration validation error', async () => {
+      server.use(
+        http.post(`${API_BASE}/auth/register`, () => {
+          return HttpResponse.json({ error: 'Username already exists' }, { status: 400 });
+        })
+      );
+
+      const response = await fetch(`${API_BASE}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: 'existinguser',
+          email: 'existing@veltro.com',
+          password: 'password123',
+        }),
+      });
+
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.error).toBe('Username already exists');
+    });
   });
 
   describe('Catalog Module (F1-03)', () => {
@@ -185,6 +223,33 @@ describe('Frontend Integration Tests with Mocked API', () => {
       expect(response.status).toBe(400);
       const data = await response.json();
       expect(data.error).toContain('Insufficient stock');
+    });
+
+    it('should handle POS error - 500 server error', async () => {
+      server.use(
+        http.post(`${API_BASE}/sales/quick`, () => {
+          return HttpResponse.json(
+            { error: 'Internal Server Error' },
+            { status: 500 }
+          );
+        })
+      );
+
+      const response = await fetch(`${API_BASE}/sales/quick`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer test-token',
+        },
+        body: JSON.stringify({
+          items: [{ productId: 1, quantity: 2 }],
+          paymentMethod: 'CASH',
+        }),
+      });
+
+      expect(response.status).toBe(500);
+      const data = await response.json();
+      expect(data.error).toBe('Internal Server Error');
     });
   });
 

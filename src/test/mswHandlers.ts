@@ -150,6 +150,10 @@ export const handlers = [
     );
   }),
 
+  http.get(`${API_BASE}/auth/workers/count`, () => {
+    return HttpResponse.json({ count: 3 }, { status: 200 });
+  }),
+
   http.delete(`${API_BASE}/auth/workers/:id`, () => {
     return HttpResponse.json(
       { success: true, message: 'Worker deleted successfully' },

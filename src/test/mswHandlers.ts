@@ -94,7 +94,13 @@ export const handlers = [
       {
         accessToken: MOCK_ACCESS_TOKEN,
         refreshToken: MOCK_REFRESH_TOKEN,
-        user: generateMockUser('ADMIN'),
+        tokenType: 'Bearer',
+        expiresIn: 3600,
+        username: 'admin',
+        role: 'ADMIN',
+        businessId: 1,
+        id: 1,
+        email: 'admin@veltro.com',
       },
       { status: 200 }
     );
@@ -105,9 +111,74 @@ export const handlers = [
       {
         accessToken: MOCK_ACCESS_TOKEN,
         refreshToken: MOCK_REFRESH_TOKEN,
+        tokenType: 'Bearer',
+        expiresIn: 3600,
+        username: 'admin',
+        role: 'ADMIN',
+        businessId: 1,
+        id: 1,
+        email: 'admin@veltro.com',
       },
       { status: 200 }
     );
+  }),
+
+  http.post(`${API_BASE}/auth/register`, () => {
+    return HttpResponse.json(
+      { success: true, message: 'User registered successfully' },
+      { status: 201 }
+    );
+  }),
+
+  http.post(`${API_BASE}/auth/workers`, async ({ request }) => {
+    const body = await request.json() as { username?: string; role?: string };
+    return HttpResponse.json(
+      {
+        success: true,
+        message: 'Worker created successfully',
+        username: body.username ?? 'worker',
+        role: body.role ?? 'CASHIER',
+      },
+      { status: 201 }
+    );
+  }),
+
+  http.get(`${API_BASE}/auth/workers`, () => {
+    return HttpResponse.json(
+      [generateMockUser('CASHIER'), generateMockUser('WAREHOUSE')],
+      { status: 200 }
+    );
+  }),
+
+  http.get(`${API_BASE}/auth/workers/count`, () => {
+    return HttpResponse.json({ count: 3 }, { status: 200 });
+  }),
+
+  http.delete(`${API_BASE}/auth/workers/:id`, () => {
+    return HttpResponse.json(
+      { success: true, message: 'Worker deleted successfully' },
+      { status: 200 }
+    );
+  }),
+
+  http.patch(`${API_BASE}/auth/workers/:id/role`, async ({ params, request }) => {
+    const body = await request.json() as { role?: string };
+    return HttpResponse.json(
+      {
+        ...generateMockUser('CASHIER'),
+        id: Number(params.id),
+        role: body.role ?? 'CASHIER',
+      },
+      { status: 200 }
+    );
+  }),
+
+  http.post(`${API_BASE}/auth/logout`, () => {
+    return HttpResponse.json({}, { status: 200 });
+  }),
+
+  http.put(`${API_BASE}/auth/change-password`, () => {
+    return HttpResponse.json({}, { status: 200 });
   }),
 
   // ========== CATALOG ==========
@@ -146,9 +217,7 @@ export const handlers = [
 
   http.get(`${API_BASE}/categories`, () => {
     return HttpResponse.json(
-      {
-        content: [generateMockCategory(1), generateMockCategory(2)],
-      },
+      [generateMockCategory(1), generateMockCategory(2)],
       { status: 200 }
     );
   }),
@@ -158,41 +227,51 @@ export const handlers = [
   }),
 
   // ========== POS / SALES ==========
-  http.get(`${API_BASE}/pos/sales`, ({ request }) => {
-    const url = new URL(request.url);
-    const page = url.searchParams.get('page') || '0';
-    return HttpResponse.json(
-      {
-        content: [generateMockSale(1), generateMockSale(2)],
-        totalElements: 50,
-        totalPages: 5,
-        number: parseInt(page),
-        pageSize: 10,
-      },
-      { status: 200 }
-    );
-  }),
-
-  http.post(`${API_BASE}/pos/sales`, async ({ request }) => {
+  http.post(`${API_BASE}/sales/quick`, async () => {
     return HttpResponse.json(
       {
         id: 1,
         saleNumber: 'SALE-000001',
-        total: 51.00,
         status: 'COMPLETED',
-        createdAt: new Date().toISOString(),
+        cashierId: 1,
+        subtotal: '51.00',
+        total: 51.00,
+        amountReceived: '60.00',
+        change: '9.00',
+        paymentMethod: 'CASH',
+        completedAt: new Date().toISOString(),
+        details: [
+          {
+            id: 1,
+            productId: 1,
+            productName: 'Product 1',
+            quantity: 2,
+            unitPrice: '25.50',
+            subtotal: '51.00',
+          },
+        ],
+        version: 1,
       },
       { status: 201 }
     );
   }),
 
-  http.get(`${API_BASE}/pos/sales/:id`, () => {
-    return HttpResponse.json(generateMockSale(1), { status: 200 });
-  }),
-
-  http.put(`${API_BASE}/pos/sales/:id/void`, () => {
+  http.post(`${API_BASE}/sales/:id/void`, () => {
     return HttpResponse.json(
-      { ...generateMockSale(1), status: 'VOIDED' },
+      {
+        id: 1,
+        saleNumber: 'SALE-000001',
+        status: 'VOIDED',
+        cashierId: 1,
+        subtotal: '51.00',
+        total: '51.00',
+        amountReceived: '60.00',
+        change: '9.00',
+        paymentMethod: 'CASH',
+        completedAt: new Date().toISOString(),
+        details: [],
+        version: 2,
+      },
       { status: 200 }
     );
   }),
@@ -236,7 +315,7 @@ export const handlers = [
   }),
 
   // ========== INVENTORY / ALERTS ==========
-  http.get(`${API_BASE}/inventory/alerts`, ({ request }) => {
+  http.get(`${API_BASE}/alerts`, ({ request }) => {
     const url = new URL(request.url);
     const page = url.searchParams.get('page') || '0';
     return HttpResponse.json(
@@ -254,19 +333,38 @@ export const handlers = [
     );
   }),
 
-  http.put(`${API_BASE}/inventory/alerts/:id/dismiss`, () => {
+  http.put(`${API_BASE}/alerts/:id/resolve`, () => {
     return HttpResponse.json(
       { ...generateMockAlert(1), resolved: true },
       { status: 200 }
     );
   }),
 
+  http.put(`${API_BASE}/alerts/:id/read`, () => {
+    return HttpResponse.json(
+      { ...generateMockAlert(1), read: true },
+      { status: 200 }
+    );
+  }),
+
+  http.put(`${API_BASE}/alerts/read-all`, () => {
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  http.put(`${API_BASE}/alerts/resolve-all`, () => {
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  http.get(`${API_BASE}/alerts/unread/count`, () => {
+    return HttpResponse.json({ count: 3 }, { status: 200 });
+  }),
+
   // ========== PURCHASING ==========
-  http.post(`${API_BASE}/purchasing/orders`, () => {
+  http.post(`${API_BASE}/purchase-orders`, () => {
     return HttpResponse.json(generateMockPurchaseOrder(1), { status: 201 });
   }),
 
-  http.get(`${API_BASE}/purchasing/orders`, ({ request }) => {
+  http.get(`${API_BASE}/purchase-orders`, ({ request }) => {
     const url = new URL(request.url);
     const page = url.searchParams.get('page') || '0';
     return HttpResponse.json(
@@ -281,29 +379,29 @@ export const handlers = [
     );
   }),
 
-  http.get(`${API_BASE}/purchasing/orders/:id`, () => {
+  http.get(`${API_BASE}/purchase-orders/:id`, () => {
     return HttpResponse.json(generateMockPurchaseOrder(1), { status: 200 });
   }),
 
-  http.put(`${API_BASE}/purchasing/orders/:id/receive`, () => {
+  http.put(`${API_BASE}/purchase-orders/:id/receive`, () => {
     return HttpResponse.json(
       { ...generateMockPurchaseOrder(1), status: 'RECEIVED' },
       { status: 200 }
     );
   }),
 
-  http.post(`${API_BASE}/purchasing/orders/:id/clone`, () => {
+  http.post(`${API_BASE}/purchase-orders/:id/clone`, () => {
     return HttpResponse.json(generateMockPurchaseOrder(999), { status: 201 });
   }),
 
-  http.put(`${API_BASE}/purchasing/orders/:id/void`, () => {
+  http.put(`${API_BASE}/purchase-orders/:id/void`, () => {
     return HttpResponse.json(
       { ...generateMockPurchaseOrder(1), status: 'VOIDED' },
       { status: 200 }
     );
   }),
 
-  http.get(`${API_BASE}/purchasing/suppliers`, () => {
+  http.get(`${API_BASE}/suppliers`, () => {
     return HttpResponse.json(
       [
         { id: 1, name: 'Supplier 1', email: 'supplier1@test.com', phone: '555-0001' },
@@ -317,16 +415,17 @@ export const handlers = [
   http.get(`${API_BASE}/dashboard`, () => {
     return HttpResponse.json(
       {
-        todaySales: 5000.00,
-        averageTicket: 125.50,
+        todaySales: '5000.00',
+        todaySalesCount: 40,
+        averageTicket: '125.50',
         outOfStockProducts: 3,
-        estimatedMonthlyProfit: 45000.00,
+        outOfStockProductList: [{ productName: 'Product 9' }, { productName: 'Product 12' }],
+        estimatedMonthlyProfit: '45000.00',
+        lowStockAlertCount: 5,
         recentSales: [
-          { id: 1, saleNumber: 'SALE-000001', total: 125.50, itemCount: 5, createdAt: new Date().toISOString(), cashier: 'John Doe' },
-          { id: 2, saleNumber: 'SALE-000002', total: 89.99, itemCount: 3, createdAt: new Date().toISOString(), cashier: 'Jane Smith' },
+          { saleId: 1, saleNumber: 'SALE-000001', total: '125.50', itemCount: 5, completedAt: new Date().toISOString(), cashierId: 2 },
+          { saleId: 2, saleNumber: 'SALE-000002', total: '89.99', itemCount: 3, completedAt: new Date().toISOString(), cashierId: 3 },
         ],
-        activePendingOrders: 2,
-        lowStockCount: 5,
       },
       { status: 200 }
     );

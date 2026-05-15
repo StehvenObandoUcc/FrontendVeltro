@@ -1,18 +1,17 @@
 import { useAuthStore } from '../stores/authStore';
 import { useCartStore } from '../stores/cartStore';
 import { useAlertStore } from '../stores/alertStore';
+import { useAiScanStore } from '../stores/aiScanStore';
 import { authApi } from '../api/auth';
 import type { LoginRequest } from '../types';
 
 export const useAuth = () => {
-  const {
-    user,
-    accessToken,
-    isAuthenticated,
-    setAuth,
-    logout: logoutStore,
-    hasRole,
-  } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const setAuth = useAuthStore((s) => s.setAuth);
+  const logoutStore = useAuthStore((s) => s.logout);
+  const hasRole = useAuthStore((s) => s.hasRole);
 
   const login = async (credentials: LoginRequest) => {
     const response = await authApi.login(credentials);
@@ -22,6 +21,8 @@ export const useAuth = () => {
       email: response.email ?? '',
       role: response.role,
       businessId: response.businessId,
+      businessName: response.businessName,
+      adminName: response.adminName,
     };
     setAuth(user, response.accessToken, response.refreshToken);
     return response;
@@ -35,6 +36,7 @@ export const useAuth = () => {
     }
     useCartStore.getState().clear();
     useAlertStore.getState().clearAll();
+    useAiScanStore.getState().resetAiState();
     logoutStore();
   };
 

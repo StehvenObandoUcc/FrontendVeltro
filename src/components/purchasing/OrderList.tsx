@@ -1,11 +1,8 @@
 import React, { useState } from 'react';
-import type { PurchaseOrder } from '../../api/purchasing';
-import {
-  clonePurchaseOrder,
-  voidPurchaseOrder,
-} from '../../api/purchasing';
+import { purchasingApi, type PurchaseOrder } from '../../api/purchasing';
 import { StateVisualizer } from './StateVisualizer';
 import { ReceptionFlow } from './ReceptionFlow';
+import { formatCurrency } from '../../utils/formatCurrency';
 
 interface OrderListProps {
   orders: PurchaseOrder[];
@@ -32,7 +29,7 @@ export const OrderList: React.FC<OrderListProps> = ({
     setOperatingOrderId(orderId);
     setError(null);
     try {
-      await clonePurchaseOrder(orderId);
+      await purchasingApi.clonePurchaseOrder(orderId);
       onOrderUpdated?.();
     } catch (err: unknown) {
       const msg =
@@ -49,7 +46,7 @@ export const OrderList: React.FC<OrderListProps> = ({
     setError(null);
     try {
       // Backend voidOrder accepts no request body
-      await voidPurchaseOrder(orderId);
+      await purchasingApi.voidPurchaseOrder(orderId);
       setVoidingOrder(null);
       onOrderUpdated?.();
     } catch (err: unknown) {
@@ -95,10 +92,10 @@ export const OrderList: React.FC<OrderListProps> = ({
           />
         </svg>
         <h3 className="mt-2 text-lg font-medium" style={{ color: '#1F2937' }}>
-          No purchase orders
+          No hay órdenes de compra
         </h3>
         <p className="mt-1 text-sm" style={{ color: '#6B7280' }}>
-          Create your first purchase order to get started
+          Crea tu primera orden de compra
         </p>
       </div>
     );
@@ -127,17 +124,14 @@ export const OrderList: React.FC<OrderListProps> = ({
       )}
 
       {/* Order items */}
-      <div
-        className="border-2 rounded-lg"
-        style={{ borderColor: '#E8E3DB' }}
-      >
+      <div>
         {orders.map((order, idx) => (
           <div
             key={order.id}
             className="p-4"
             style={{
               backgroundColor: idx % 2 === 0 ? '#FFFFFF' : '#F9F7F2',
-              borderBottom: idx < orders.length - 1 ? '1px solid #E8E3DB' : 'none',
+              borderBottom: 'none',
             }}
           >
             {/* Header */}
@@ -150,7 +144,7 @@ export const OrderList: React.FC<OrderListProps> = ({
                   <StateVisualizer status={order.status} size="sm" />
                 </div>
                 <p className="text-sm mt-1" style={{ color: '#6B7280' }}>
-                  Supplier: {order.supplierName}
+                  Proveedor: {order.supplierName}
                 </p>
               </div>
               <div className="text-right">
@@ -161,7 +155,7 @@ export const OrderList: React.FC<OrderListProps> = ({
                     fontVariantNumeric: 'tabular-nums',
                   }}
                 >
-                  $ {order.total}
+                  {formatCurrency(order.total)}
                 </p>
                 <p className="text-xs" style={{ color: '#9CA3AF' }}>
                   {order.auditInfo?.createdAt
@@ -194,7 +188,7 @@ export const OrderList: React.FC<OrderListProps> = ({
                   (e.currentTarget as HTMLButtonElement).style.color = '#038E57';
                 }}
               >
-                {expandedOrder === order.id ? 'Hide Items' : 'View Items'}
+                {expandedOrder === order.id ? 'Ocultar Items' : 'Ver Items'}
               </button>
 
               {order.status !== 'VOIDED' && (
@@ -205,7 +199,7 @@ export const OrderList: React.FC<OrderListProps> = ({
                       disabled={operatingOrderId === order.id}
                       className="btn-primary text-sm px-3 py-1"
                     >
-                      Receive
+                      Recibir
                     </button>
                   )}
                   <button
@@ -213,7 +207,7 @@ export const OrderList: React.FC<OrderListProps> = ({
                     disabled={operatingOrderId === order.id}
                     className="btn-primary text-sm px-3 py-1"
                   >
-                    Clone
+                    Clonar
                   </button>
                   {/* Void only for PENDING and PARTIAL — RECEIVED orders cannot be voided */}
                   {(order.status === 'PENDING' || order.status === 'PARTIAL') && (
@@ -231,7 +225,7 @@ export const OrderList: React.FC<OrderListProps> = ({
                         (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1)';
                       }}
                     >
-                      Void
+                      Anular
                     </button>
                   )}
                 </>
@@ -251,25 +245,25 @@ export const OrderList: React.FC<OrderListProps> = ({
                         className="px-3 py-2 text-left font-medium"
                         style={{ color: '#4B5563', borderBottom: '1px solid #E8E3DB' }}
                       >
-                        Product
+                        Producto
                       </th>
                       <th
                         className="px-3 py-2 text-right font-medium"
                         style={{ color: '#4B5563', borderBottom: '1px solid #E8E3DB' }}
                       >
-                        Qty
+                        Cant.
                       </th>
                       <th
                         className="px-3 py-2 text-right font-medium"
                         style={{ color: '#4B5563', borderBottom: '1px solid #E8E3DB' }}
                       >
-                        Unit Cost
+                        Costo Unit.
                       </th>
                       <th
                         className="px-3 py-2 text-right font-medium"
                         style={{ color: '#4B5563', borderBottom: '1px solid #E8E3DB' }}
                       >
-                        Received
+                        Recibido
                       </th>
                       <th
                         className="px-3 py-2 text-right font-medium"
@@ -307,7 +301,7 @@ export const OrderList: React.FC<OrderListProps> = ({
                             fontVariantNumeric: 'tabular-nums',
                           }}
                         >
-                          $ {detail.unitCost}
+                          {formatCurrency(detail.unitCost)}
                         </td>
                         <td
                           className="px-3 py-2 text-right"
@@ -322,7 +316,7 @@ export const OrderList: React.FC<OrderListProps> = ({
                               className="ml-1 font-medium"
                               style={{ color: '#FFAC00' }}
                             >
-                              (pending)
+                              (pendiente)
                             </span>
                           )}
                         </td>
@@ -333,7 +327,7 @@ export const OrderList: React.FC<OrderListProps> = ({
                             fontVariantNumeric: 'tabular-nums',
                           }}
                         >
-                          $ {detail.subtotal}
+                          {formatCurrency(detail.subtotal)}
                         </td>
                       </tr>
                     ))}
@@ -355,7 +349,7 @@ export const OrderList: React.FC<OrderListProps> = ({
                   className="text-sm font-medium mb-3"
                   style={{ color: '#1F2937' }}
                 >
-                  Are you sure you want to void this order?
+                  ¿Seguro que deseas anular esta orden?
                 </p>
                 <div className="flex gap-2">
                   <button
@@ -375,7 +369,7 @@ export const OrderList: React.FC<OrderListProps> = ({
                       (e.currentTarget as HTMLButtonElement).style.color = '#038E57';
                     }}
                   >
-                    Cancel
+                    Cancelar
                   </button>
                   <button
                     onClick={() => handleVoid(order.id)}
@@ -396,7 +390,7 @@ export const OrderList: React.FC<OrderListProps> = ({
                       (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1)';
                     }}
                   >
-                    Confirm Void
+                    Confirmar Anulación
                   </button>
                 </div>
               </div>

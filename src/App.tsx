@@ -1,14 +1,25 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthGuard, RoleGuard } from './components/auth';
-import { MainLayout } from './components/layout';
-import { LoginPage, RegisterPage } from './pages/auth';
+import { MainLayout, PageLoader } from './components/layout';
 import { UnauthorizedPage, NotFoundPage } from './pages/ErrorPages';
-import { LandingPage } from './pages/landing';
+
+const LandingPage = lazy(() =>
+  import('./pages/landing').then((m) => ({ default: m.LandingPage }))
+);
+const LoginPage = lazy(() =>
+  import('./pages/auth').then((m) => ({ default: m.LoginPage }))
+);
+const RegisterPage = lazy(() =>
+  import('./pages/auth').then((m) => ({ default: m.RegisterPage }))
+);
 
 // Lazy load page components for code splitting
 const ProductListPage = lazy(() =>
   import('./pages/catalog').then((m) => ({ default: m.ProductListPage }))
+);
+const InactiveProductListPage = lazy(() =>
+  import('./pages/catalog').then((m) => ({ default: m.InactiveProductListPage }))
 );
 const ProductFormPage = lazy(() =>
   import('./pages/catalog').then((m) => ({ default: m.ProductFormPage }))
@@ -20,27 +31,27 @@ const POSPage = lazy(() =>
   import('./pages/pos').then((m) => ({ default: m.POSPage }))
 );
 const AlertListPage = lazy(() =>
-  import('./pages/inventory/AlertListPage').then((m) => ({
+  import('./pages/inventory').then((m) => ({
     default: m.AlertListPage,
   }))
 );
 const InventoryPage = lazy(() =>
-  import('./pages/inventory/InventoryPage').then((m) => ({
+  import('./pages/inventory').then((m) => ({
     default: m.InventoryPage,
   }))
 );
 const PurchaseOrderPage = lazy(() =>
-  import('./pages/purchasing/PurchaseOrderPage').then((m) => ({
+  import('./pages/purchasing').then((m) => ({
     default: m.PurchaseOrderPage,
   }))
 );
 const SupplierPage = lazy(() =>
-  import('./pages/purchasing/SupplierPage').then((m) => ({
+  import('./pages/purchasing').then((m) => ({
     default: m.SupplierPage,
   }))
 );
 const DashboardPage = lazy(() =>
-  import('./pages/dashboard/DashboardPage').then((m) => ({
+  import('./pages/dashboard').then((m) => ({
     default: m.DashboardPage,
   }))
 );
@@ -50,184 +61,173 @@ const AuditListPage = lazy(() =>
 const WorkersPage = lazy(() =>
   import('./pages/settings').then((m) => ({ default: m.WorkersPage }))
 );
-
-// Loading component shown while lazy components are loading
-const PageLoader = () => (
-  <div className="flex justify-center items-center h-96">
-    <div className="space-y-4 text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-      <p className="text-gray-600">Loading...</p>
-    </div>
-  </div>
+const ProfilePage = lazy(() =>
+  import('./pages/settings').then((m) => ({ default: m.ProfilePage }))
 );
 
 function App() {
   return (
-    <Routes>
-      {/* Public routes */}
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/unauthorized" element={<UnauthorizedPage />} />
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        {/* Public routes */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-      {/* Protected routes */}
-      <Route
-        path="/app"
-        element={
-          <AuthGuard>
-            <MainLayout />
-          </AuthGuard>
-        }
-      >
-        {/* Default redirect based on role handled by LoginPage */}
-        <Route index element={<Navigate to="/app/dashboard" replace />} />
-
-        {/* Dashboard - All authenticated users */}
+        {/* Protected routes */}
         <Route
-          path="dashboard"
+          path="/app"
           element={
-            <Suspense fallback={<PageLoader />}>
-              <DashboardPage />
-            </Suspense>
-          }
-        />
-
-        {/* POS - ADMIN and CASHIER only */}
-        <Route
-          path="pos"
-          element={
-            <RoleGuard allowedRoles={['ADMIN', 'CASHIER']}>
+            <AuthGuard>
               <Suspense fallback={<PageLoader />}>
+                <MainLayout />
+              </Suspense>
+            </AuthGuard>
+          }
+        >
+          {/* Default redirect based on role handled by LoginPage */}
+          <Route index element={<Navigate to="/app/dashboard" replace />} />
+
+          {/* Profile - All authenticated users */}
+          <Route
+            path="profile"
+            element={
+              <RoleGuard allowedRoles={['ADMIN', 'CASHIER', 'WAREHOUSE']}>
+                <ProfilePage />
+              </RoleGuard>
+            }
+          />
+
+          {/* Dashboard - All authenticated users */}
+          <Route path="dashboard" element={<DashboardPage />} />
+
+          {/* POS - ADMIN and CASHIER only */}
+          <Route
+            path="pos"
+            element={
+              <RoleGuard allowedRoles={['ADMIN', 'CASHIER']}>
                 <POSPage />
-              </Suspense>
-            </RoleGuard>
-          }
-        />
+              </RoleGuard>
+            }
+          />
 
-        {/* Inventory - ADMIN and WAREHOUSE only */}
-        <Route
-          path="inventory"
-          element={
-            <RoleGuard allowedRoles={['ADMIN', 'WAREHOUSE']}>
-              <Suspense fallback={<PageLoader />}>
+          {/* Inventory - ADMIN and WAREHOUSE only */}
+          <Route
+            path="inventory"
+            element={
+              <RoleGuard allowedRoles={['ADMIN', 'WAREHOUSE']}>
                 <InventoryPage />
-              </Suspense>
-            </RoleGuard>
-          }
-        />
+              </RoleGuard>
+            }
+          />
 
-        {/* Alerts - ADMIN and WAREHOUSE only */}
-        <Route
-          path="alerts"
-          element={
-            <RoleGuard allowedRoles={['ADMIN', 'WAREHOUSE']}>
-              <Suspense fallback={<PageLoader />}>
+          {/* Alerts - ADMIN and WAREHOUSE only */}
+          <Route
+            path="alerts"
+            element={
+              <RoleGuard allowedRoles={['ADMIN', 'WAREHOUSE']}>
                 <AlertListPage />
-              </Suspense>
-            </RoleGuard>
-          }
-        />
+              </RoleGuard>
+            }
+          />
 
-        {/* Purchasing - ADMIN and WAREHOUSE only */}
-        <Route
-          path="purchasing"
-          element={
-            <RoleGuard allowedRoles={['ADMIN', 'WAREHOUSE']}>
-              <Suspense fallback={<PageLoader />}>
+          {/* Purchasing - ADMIN and WAREHOUSE only */}
+          <Route
+            path="purchasing"
+            element={
+              <RoleGuard allowedRoles={['ADMIN', 'WAREHOUSE']}>
                 <PurchaseOrderPage />
-              </Suspense>
-            </RoleGuard>
-          }
-        />
-        <Route
-          path="purchasing/suppliers"
-          element={
-            <RoleGuard allowedRoles={['ADMIN']}>
-              <Suspense fallback={<PageLoader />}>
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="purchasing/suppliers"
+            element={
+              <RoleGuard allowedRoles={['ADMIN']}>
                 <SupplierPage />
-              </Suspense>
-            </RoleGuard>
-          }
-        />
+              </RoleGuard>
+            }
+          />
 
-        {/* Catalog - read for all authenticated users, edits for ADMIN/WAREHOUSE */}
-        <Route
-          path="catalog"
-          element={
-            <RoleGuard allowedRoles={['ADMIN', 'WAREHOUSE', 'CASHIER']}>
-              <Navigate to="/app/catalog/products" replace />
-            </RoleGuard>
-          }
-        />
-        <Route
-          path="catalog/products"
-          element={
-            <RoleGuard allowedRoles={['ADMIN', 'WAREHOUSE', 'CASHIER']}>
-              <Suspense fallback={<PageLoader />}>
+          {/* Catalog - read for all authenticated users, edits for ADMIN/WAREHOUSE */}
+          <Route
+            path="catalog"
+            element={
+              <RoleGuard allowedRoles={['ADMIN', 'WAREHOUSE', 'CASHIER']}>
+                <Navigate to="/app/catalog/products" replace />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="catalog/products"
+            element={
+              <RoleGuard allowedRoles={['ADMIN', 'WAREHOUSE', 'CASHIER']}>
                 <ProductListPage />
-              </Suspense>
-            </RoleGuard>
-          }
-        />
-        <Route
-          path="catalog/products/new"
-          element={
-            <RoleGuard allowedRoles={['ADMIN', 'WAREHOUSE']}>
-              <Suspense fallback={<PageLoader />}>
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="catalog/products/inactive"
+            element={
+              <RoleGuard allowedRoles={['ADMIN', 'WAREHOUSE']}>
+                <InactiveProductListPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="catalog/products/new"
+            element={
+              <RoleGuard allowedRoles={['ADMIN', 'WAREHOUSE']}>
                 <ProductFormPage />
-              </Suspense>
-            </RoleGuard>
-          }
-        />
-        <Route
-          path="catalog/products/:id/edit"
-          element={
-            <RoleGuard allowedRoles={['ADMIN', 'WAREHOUSE']}>
-              <Suspense fallback={<PageLoader />}>
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="catalog/products/:id/edit"
+            element={
+              <RoleGuard allowedRoles={['ADMIN', 'WAREHOUSE']}>
                 <ProductFormPage />
-              </Suspense>
-            </RoleGuard>
-          }
-        />
-        <Route
-          path="catalog/categories"
-          element={
-            <RoleGuard allowedRoles={['ADMIN', 'WAREHOUSE', 'CASHIER']}>
-              <Suspense fallback={<PageLoader />}>
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="catalog/categories"
+            element={
+              <RoleGuard allowedRoles={['ADMIN', 'WAREHOUSE', 'CASHIER']}>
                 <CategoryPage />
-              </Suspense>
-            </RoleGuard>
-          }
-        />
+              </RoleGuard>
+            }
+          />
 
-        {/* Audit Trail - ADMIN only */}
-        <Route
-          path="audit"
-          element={
-            <RoleGuard allowedRoles={['ADMIN']}>
-              <Suspense fallback={<PageLoader />}>
+          {/* Audit Trail - ADMIN only */}
+          <Route
+            path="audit"
+            element={
+              <RoleGuard allowedRoles={['ADMIN']}>
                 <AuditListPage />
-              </Suspense>
-            </RoleGuard>
-          }
-        />
+              </RoleGuard>
+            }
+          />
 
-        {/* Worker Management - ADMIN only */}
-        <Route
-          path="settings/workers"
-          element={
-            <RoleGuard allowedRoles={['ADMIN']}>
-              <Suspense fallback={<PageLoader />}>
+          {/* Worker Management - ADMIN only */}
+          <Route
+            path="settings/workers"
+            element={
+              <RoleGuard allowedRoles={['ADMIN']}>
                 <WorkersPage />
-              </Suspense>
-            </RoleGuard>
-          }
-        />
-      </Route>
+              </RoleGuard>
+            }
+          />
 
-      {/* 404 */}
-      <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+          {/* Catch-all interno — preserva sidebar/navbar */}
+          <Route path="*" element={<NotFoundPage />} />
+        </Route>
+
+        {/* 404 */}
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </Suspense>
   );
 }
 

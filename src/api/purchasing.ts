@@ -94,7 +94,7 @@ export class PurchaseOrderCreationError extends Error {
   }
 }
 
-export interface PurchaseOrderResponse extends PurchaseOrder {}
+
 
 const getErrorMessage = (error: unknown, fallback: string): string => {
   const axiosError = error as AxiosError<{ message?: string; error?: string }>;
@@ -110,125 +110,122 @@ const getErrorMessage = (error: unknown, fallback: string): string => {
  * Get list of suppliers
  * GET /api/v1/suppliers
  */
-export const getSuppliers = () => {
-  return apiClient.get<Supplier[]>('/suppliers');
-};
+export const purchasingApi = {
+  getSuppliers: async () => {
+    const response = await apiClient.get<Supplier[]>('/suppliers');
+    return response.data;
+  },
 
-/**
- * Create a new supplier
- * POST /api/v1/suppliers
- */
-export const createSupplier = (data: CreateSupplierRequest) => {
-  return apiClient.post<Supplier>('/suppliers', data);
-};
+  createSupplier: async (data: CreateSupplierRequest) => {
+    const response = await apiClient.post<Supplier>('/suppliers', data);
+    return response.data;
+  },
 
-/**
- * Update a supplier
- * PUT /api/v1/suppliers/{id}
- */
-export const updateSupplier = (id: number, data: Partial<CreateSupplierRequest>) => {
-  return apiClient.put<Supplier>(`/suppliers/${id}`, data);
-};
+  updateSupplier: async (id: number, data: Partial<CreateSupplierRequest>) => {
+    const response = await apiClient.put<Supplier>(`/suppliers/${id}`, data);
+    return response.data;
+  },
 
-/**
- * Delete a supplier (soft delete in backend)
- * DELETE /api/v1/suppliers/{id}
- */
-export const deleteSupplier = (id: number) => {
-  return apiClient.delete(`/suppliers/${id}`);
-};
+  deleteSupplier: async (id: number) => {
+    const response = await apiClient.delete(`/suppliers/${id}`);
+    return response.data;
+  },
 
-/**
- * Create a new purchase order with items.
- * Backend flow: POST /purchase-orders (create PO), then POST /purchase-orders/{id}/items for each item.
- * This function handles the multi-step creation transparently.
- * POST /api/v1/purchase-orders
- */
-export const createPurchaseOrder = async (data: CreatePORequest): Promise<PurchaseOrderResponse> => {
-  let createResponse: { data: PurchaseOrderResponse };
+  createPurchaseOrder: async (data: CreatePORequest): Promise<PurchaseOrder> => {
+    let createResponse: { data: PurchaseOrder };
 
-  // Step 1: Create the PO (without items — backend DTO doesn't accept items)
-  try {
-    createResponse = await apiClient.post<PurchaseOrderResponse>('/purchase-orders', {
-      supplierId: data.supplierId,
-      notes: data.notes,
-      expectedDeliveryDate: data.expectedDeliveryDate,
-      receiptImageUrl: data.receiptImageUrl,
-    });
-  } catch (error) {
-    throw new PurchaseOrderCreationError(
-      getErrorMessage(error, 'No se pudo crear la orden de compra.'),
-      'create-order'
-    );
-  }
-
-  const orderId = createResponse.data.id;
-
-  // Step 2: Add each item
-  let latestOrder = createResponse.data;
-  for (let index = 0; index < data.items.length; index += 1) {
-    const item = data.items[index];
+    // Step 1: Create the PO (without items  Ebackend DTO doesn't accept items)
     try {
-      const itemResponse = await apiClient.post<PurchaseOrderResponse>(
-        `/purchase-orders/${orderId}/items`,
-        {
-          productId: item.productId,
-          requestedQuantity: item.quantity,
-          unitCost: item.unitCost,
-        } as AddOrderItemRequest
-      );
-      latestOrder = itemResponse.data;
+      createResponse = await apiClient.post<PurchaseOrder>('/purchase-orders', {
+        supplierId: data.supplierId,
+        notes: data.notes,
+        expectedDeliveryDate: data.expectedDeliveryDate,
+        receiptImageUrl: data.receiptImageUrl,
+      });
     } catch (error) {
       throw new PurchaseOrderCreationError(
-        getErrorMessage(error, 'No se pudo agregar un item a la orden de compra.'),
-        'add-item',
-        index
+        getErrorMessage(error, 'No se pudo crear la orden de compra.'),
+        'create-order'
       );
     }
+
+    const orderId = createResponse.data.id;
+
+    // Step 2: Add each item
+    let latestOrder = createResponse.data;
+    for (let index = 0; index < data.items.length; index += 1) {
+      const item = data.items[index];
+      try {
+        const itemResponse = await apiClient.post<PurchaseOrder>(
+          `/purchase-orders/${orderId}/items`,
+          {
+            productId: item.productId,
+            requestedQuantity: item.quantity,
+            unitCost: item.unitCost,
+          } as AddOrderItemRequest
+        );
+        latestOrder = itemResponse.data;
+      } catch (error) {
+        throw new PurchaseOrderCreationError(
+          getErrorMessage(error, 'No se pudo agregar un item a la orden de compra.'),
+          'add-item',
+          index
+        );
+      }
+    }
+
+    return latestOrder;
+  },
+
+  getPurchaseOrders: async (supplierId?: number) => {
+    const params = supplierId ? { supplierId } : undefined;
+    const response = await apiClient.get<PurchaseOrder[]>('/purchase-orders', { params });
+    return response.data;
+  },
+
+  getPurchaseOrderById: async (orderId: number) => {
+    const response = await apiClient.get<PurchaseOrder>(`/purchase-orders/${orderId}`);
+    return response.data;
+  },
+
+  clonePurchaseOrder: async (orderId: number) => {
+    const response = await apiClient.post<PurchaseOrder>(`/purchase-orders/${orderId}/clone`);
+    return response.data;
+  },
+
+  markAsReceived: async (orderId: number, body?: { paymentMethod?: string; paymentDetails?: string; notes?: string }) => {
+    const response = await apiClient.put<PurchaseOrder>(`/purchase-orders/${orderId}/receive`, body);
+    return response.data;
+  },
+
+  voidPurchaseOrder: async (orderId: number) => {
+    const response = await apiClient.put<PurchaseOrder>(`/purchase-orders/${orderId}/void`);
+    return response.data;
+  },
+
+  removeOrderItem: async (orderId: number, detailId: number) => {
+    const response = await apiClient.delete(`/purchase-orders/${orderId}/items/${detailId}`);
+    return response.data;
+  },
+
+  getPurchaseOrderByNumber: async (orderNumber: string) => {
+    const response = await apiClient.get<PurchaseOrder>(`/purchase-orders/number/${orderNumber}`);
+    return response.data;
+  },
+
+  activateSupplier: async (id: number) => {
+    const response = await apiClient.put<Supplier>(`/suppliers/${id}/activate`);
+    return response.data;
+  },
+
+  deactivateSupplier: async (id: number) => {
+    const response = await apiClient.put<Supplier>(`/suppliers/${id}/deactivate`);
+    return response.data;
+  },
+
+  getSupplierByTaxId: async (taxId: string) => {
+    const response = await apiClient.get<Supplier>(`/suppliers/tax-id/${taxId}`);
+    return response.data;
   }
-
-  return latestOrder;
 };
 
-/**
- * Get all purchase orders (backend returns List, not Page).
- * GET /api/v1/purchase-orders
- */
-export const getPurchaseOrders = (supplierId?: number) => {
-  const params = supplierId ? { supplierId } : undefined;
-  return apiClient.get<PurchaseOrder[]>('/purchase-orders', { params });
-};
-
-/**
- * Get specific purchase order by ID
- * GET /api/v1/purchase-orders/{orderId}
- */
-export const getPurchaseOrderById = (orderId: number) => {
-  return apiClient.get<PurchaseOrder>(`/purchase-orders/${orderId}`);
-};
-
-/**
- * Clone a purchase order (Prototype Pattern)
- * POST /api/v1/purchase-orders/{orderId}/clone
- */
-export const clonePurchaseOrder = (orderId: number) => {
-  return apiClient.post<PurchaseOrder>(`/purchase-orders/${orderId}/clone`);
-};
-
-/**
- * Mark entire purchase order as received.
- * Backend accepts no request body — marks the whole order at once.
- * PUT /api/v1/purchase-orders/{orderId}/receive
- */
-export const markAsReceived = (orderId: number) => {
-  return apiClient.put<PurchaseOrder>(`/purchase-orders/${orderId}/receive`);
-};
-
-/**
- * Void/cancel a purchase order.
- * Backend accepts no request body.
- * PUT /api/v1/purchase-orders/{orderId}/void
- */
-export const voidPurchaseOrder = (orderId: number) => {
-  return apiClient.put<PurchaseOrder>(`/purchase-orders/${orderId}/void`);
-};

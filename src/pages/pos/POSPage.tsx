@@ -5,17 +5,23 @@ import { Search, ShoppingCart, ArrowLeft, Check, Trash2 } from 'lucide-react';
 import { ScannerContainer, CartTable, ConfirmModal, SaleReceipt } from '../../components/pos';
 import { ScanModeToggle } from '../../components/pos/ScanModeToggle';
 import { AiScannerContainer } from '../../components/pos/AiScannerContainer';
+import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { useCartStore } from '../../stores/cartStore';
 import { useAiScanStore } from '../../stores/aiScanStore';
-import { confirmSale, type SaleResponse, type CreateSaleRequest } from '../../api/pos';
+import { posApi, type SaleResponse, type CreateSaleRequest } from '../../api/pos';
 import type { ApiError } from '../../types';
+import { formatCurrency } from '../../utils/formatCurrency';
 
 export const POSPage: React.FC = () => {
   const navigate = useNavigate();
-  const { items, clear, getTotal, getItemCount } = useCartStore();
+  const items = useCartStore((s) => s.items);
+  const clear = useCartStore((s) => s.clear);
+  const getTotal = useCartStore((s) => s.getTotal);
+  const getItemCount = useCartStore((s) => s.getItemCount);
   const { scanMode } = useAiScanStore();
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [saleResponse, setSaleResponse] = useState<SaleResponse | null>(null);
   const [showReceipt, setShowReceipt] = useState(false);
@@ -26,30 +32,42 @@ export const POSPage: React.FC = () => {
       setIsProcessing(true);
       setError(null);
 
-      const response = await confirmSale(saleData);
-      setSaleResponse(response.data);
+      const response = await posApi.quickSale(saleData);
+      setSaleResponse(response);
       setShowReceipt(true);
       setShowConfirmModal(false);
       clear();
     } catch (err) {
       const axiosError = err as AxiosError<ApiError>;
-      const errorMsg =
-        axiosError.response?.status === 422
-          ? axiosError.response?.data?.message ||
-            'No se puede confirmar la venta por stock insuficiente en uno o mas productos.'
-          : axiosError.response?.data?.message ||
-            (err instanceof Error ? err.message : 'Error al confirmar la venta');
+      let errorMsg = 'Error al confirmar la venta';
+      if (axiosError.response) {
+        if (axiosError.response.status === 422) {
+          errorMsg = axiosError.response.data?.message || 'No se puede confirmar la venta por stock insuficiente en uno o mas productos.';
+        } else if (axiosError.response.status === 500) {
+          errorMsg = 'Error interno del servidor al procesar la venta. Intente nuevamente.';
+        } else {
+          errorMsg = axiosError.response.data?.message || errorMsg;
+        }
+      } else if (axiosError.request) {
+        errorMsg = 'Error de red. No se pudo establecer conexión con el servidor.';
+      } else {
+        errorMsg = err instanceof Error ? err.message : errorMsg;
+      }
       setError(errorMsg);
+      throw new Error(errorMsg);
     } finally {
       setIsProcessing(false);
     }
   };
 
   const handleClearCart = () => {
-    if (confirm('¿Estás seguro de que deseas vaciar el carrito?')) {
-      clear();
-      setError(null);
-    }
+    setShowClearConfirm(true);
+  };
+
+  const confirmClearCart = () => {
+    clear();
+    setError(null);
+    setShowClearConfirm(false);
   };
 
   const handleReceiptClose = () => {
@@ -126,7 +144,7 @@ export const POSPage: React.FC = () => {
               <div className="flex justify-between items-center mb-3 pb-3 border-b border-[var(--border-light)]">
                 <span className="text-[var(--text-secondary)] font-medium text-sm">Total</span>
                 <span className="text-xl sm:text-2xl font-bold tabular-data text-[var(--primary-base)]">
-                  $ {parseFloat(getTotal()).toFixed(0)}
+                  {formatCurrency(getTotal())}
                 </span>
               </div>
               <button
@@ -163,11 +181,20 @@ export const POSPage: React.FC = () => {
         isLoading={isProcessing}
         submitError={error}
       />
-
       <SaleReceipt
         isOpen={showReceipt}
         saleData={saleResponse}
         onClose={handleReceiptClose}
+      />
+      <ConfirmDialog
+        isOpen={showClearConfirm}
+        title="Vaciar carrito"
+        message="¿Estás seguro de que deseas vaciar el carrito?"
+        confirmLabel="Vaciar"
+        cancelLabel="Cancelar"
+        variant="danger"
+        onConfirm={confirmClearCart}
+        onCancel={() => setShowClearConfirm(false)}
       />
     </div>
   );

@@ -7,6 +7,7 @@ import type { Category } from '../../types';
 import { CategoryTree } from '../../components/catalog/CategoryTree';
 import { useAuthStore } from '../../stores/authStore';
 import type { AxiosError } from 'axios';
+import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 
 const categorySchema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
@@ -23,7 +24,8 @@ export function CategoryPage() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const { hasRole } = useAuthStore();
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+  const hasRole = useAuthStore((state) => state.hasRole);
 
   const canEdit = hasRole(['ADMIN', 'WAREHOUSE']);
 
@@ -43,7 +45,7 @@ export function CategoryPage() {
   const loadCategories = async () => {
     setIsLoading(true);
     try {
-      const tree = await categoryApi.getTree();
+      const tree = await categoryApi.getAll();
       setCategories(tree);
     } catch (err) {
       setError('Error al cargar las categorías');
@@ -69,17 +71,21 @@ export function CategoryPage() {
   };
 
   const handleDelete = async (category: Category) => {
-    if (!window.confirm(`¿Está seguro de desactivar la categoría "${category.name}"?`)) {
-      return;
-    }
+    setCategoryToDelete(category);
+  };
+
+  const confirmDeleteCategory = async () => {
+    if (!categoryToDelete) return;
     try {
-      await categoryApi.delete(category.id);
-      setSuccessMsg(`Categoría "${category.name}" desactivada correctamente`);
+      await categoryApi.delete(categoryToDelete.id);
+      setSuccessMsg(`Categoría "${categoryToDelete.name}" desactivada correctamente`);
       setTimeout(() => setSuccessMsg(null), 3000);
       await loadCategories();
     } catch (err) {
       setError('Error al desactivar la categoría');
       console.error(err);
+    } finally {
+      setCategoryToDelete(null);
     }
   };
 
@@ -241,6 +247,17 @@ export function CategoryPage() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={categoryToDelete !== null}
+        title="Desactivar categoría"
+        message={`¿Está seguro de desactivar la categoría "${categoryToDelete?.name ?? ''}"?`}
+        confirmLabel="Desactivar"
+        cancelLabel="Cancelar"
+        variant="danger"
+        onConfirm={confirmDeleteCategory}
+        onCancel={() => setCategoryToDelete(null)}
+      />
     </div>
   );
 }

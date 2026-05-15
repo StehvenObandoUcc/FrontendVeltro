@@ -1,5 +1,6 @@
 import React from 'react';
 import type { SaleRow } from '../../api/dashboard';
+import { formatCurrency } from '../../utils/formatCurrency';
 
 interface LatestSalesTableProps {
   sales: SaleRow[];
@@ -116,9 +117,9 @@ export const LatestSalesTable: React.FC<LatestSalesTableProps> = ({
                   color: '#038E57',
                   fontVariantNumeric: 'tabular-nums',
                 }}
-                aria-label={`Total: $ ${sale.total}`}
+                aria-label={`Total: ${formatCurrency(sale.total)}`}
               >
-                $ {typeof sale.total === 'number' ? sale.total.toFixed(2) : sale.total}
+                {formatCurrency(sale.total)}
               </td>
               <td
                 className="px-4 py-3 text-sm"

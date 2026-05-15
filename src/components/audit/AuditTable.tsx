@@ -22,18 +22,16 @@ export const AuditTable: React.FC<AuditTableProps> = ({
   onRecordClick,
 }) => {
   const actionColors: Record<string, { bg: string; text: string }> = {
-    CREATE: { bg: '#E8F4F0', text: '#038E57' },
-    UPDATE: { bg: '#E0E7FF', text: '#4F46E5' },
-    DELETE: { bg: 'rgba(255,46,33,0.1)', text: '#FF2E21' },
+    CONFIRM: { bg: '#E8F4F0', text: '#038E57' },
+    RECEIVE: { bg: '#E0E7FF', text: '#4F46E5' },
+    ADJUST: { bg: '#FFF4E6', text: '#FF9500' },
     VOID: { bg: '#F3F4F6', text: '#6B7280' },
   };
 
-  const entityColors = {
+  const entityColors: Record<string, string> = {
     SALE: '#7C3AED',
     INVENTORY: '#4F46E5',
-    ORDER: '#06B6D4',
-    PRODUCT: '#FF9500',
-    SUPPLIER: '#EC4899',
+    PURCHASE_ORDER: '#06B6D4',
   };
 
   if (isLoading) {
@@ -111,7 +109,7 @@ export const AuditTable: React.FC<AuditTableProps> = ({
                   {record.username}
                 </td>
                 <td className="px-6 py-3 text-sm" style={{ color: '#6B7280' }}>
-                  {new Date(record.timestamp).toLocaleString()}
+                  {new Date(record.createdAt).toLocaleString()}
                 </td>
                 <td className="px-6 py-3 text-center text-sm">
                   <button

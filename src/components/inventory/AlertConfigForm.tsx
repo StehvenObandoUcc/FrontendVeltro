@@ -1,36 +1,29 @@
-import React, { useEffect } from 'react';
+﻿import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import type { SubmitHandler } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { AlertConfig } from '../../api/inventory';
-import { updateAlertConfig } from '../../api/inventory';
 
 interface AlertConfigFormProps {
   productId: number;
   productName: string;
   initialConfig: AlertConfig;
-  onSaved?: () => void;
+  onSave: (data: { criticalStock: number; minStock: number; overstockThreshold: number }) => Promise<void>;
 }
 
-// Validation schema
 const alertConfigSchema = z.object({
-  criticalStock: z.number().int().min(0, 'Must be 0 or greater'),
-  minStock: z.number().int().min(0, 'Must be 0 or greater'),
-  overstockThreshold: z.number().int().min(0, 'Must be 0 or greater'),
+  criticalStock: z.number().int().min(0, 'Debe ser 0 o mayor'),
+  minStock: z.number().int().min(0, 'Debe ser 0 o mayor'),
+  overstockThreshold: z.number().int().min(0, 'Debe ser 0 o mayor'),
 });
 
 type AlertConfigFormData = z.infer<typeof alertConfigSchema>;
 
-/**
- * AlertConfigForm - Configure alert thresholds for a product
- * Allows setting critical stock, min stock, and overstock threshold
- */
 export const AlertConfigForm: React.FC<AlertConfigFormProps> = ({
-  productId,
   productName,
   initialConfig,
-  onSaved,
+  onSave,
 }) => {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
@@ -64,23 +57,11 @@ export const AlertConfigForm: React.FC<AlertConfigFormProps> = ({
     setSubmitSuccess(false);
 
     try {
-      const config = {
-        criticalStock: data.criticalStock,
-        minStock: data.minStock,
-        overstockThreshold: data.overstockThreshold,
-      };
-
-      await updateAlertConfig(productId, config);
-
+      await onSave(data);
       setSubmitSuccess(true);
-      onSaved?.();
-
-      // Clear success message after 3 seconds
       setTimeout(() => setSubmitSuccess(false), 3000);
     } catch (error) {
-      setSubmitError(
-        error instanceof Error ? error.message : 'Failed to save configuration'
-      );
+      setSubmitError(error instanceof Error ? error.message : 'Error al guardar la configuracion');
     } finally {
       setIsSubmitting(false);
     }
@@ -88,150 +69,39 @@ export const AlertConfigForm: React.FC<AlertConfigFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <div>
-        <h3 className="text-lg font-medium mb-4" style={{ color: '#1F2937' }}>
-          Alert Configuration for {productName}
-        </h3>
-      </div>
+      <h3 className="text-lg font-medium text-[var(--text-primary)]">Configuracion de alertas para {productName}</h3>
 
-      {/* Critical Stock */}
       <div>
-        <label
-          htmlFor="criticalStock"
-          className="block text-sm font-medium mb-1"
-          style={{ color: '#1F2937' }}
-        >
-          Critical Stock Level (Alert when ≤ this quantity)
+        <label htmlFor="criticalStock" className="text-sm font-medium text-[var(--text-primary)] block mb-1">
+          Nivel critico (Alerta cuando &lt;= esta cantidad)
         </label>
-        <input
-          id="criticalStock"
-          type="number"
-          {...register('criticalStock')}
-          className="block w-full px-3 py-2 rounded-md focus:outline-none border-2 transition"
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderColor: '#E8E3DB',
-            color: '#1F2937',
-          }}
-          onFocus={(e) => {
-            (e.currentTarget as HTMLInputElement).style.borderColor = '#038E57';
-          }}
-          onBlur={(e) => {
-            (e.currentTarget as HTMLInputElement).style.borderColor = '#E8E3DB';
-          }}
-          placeholder="0"
-        />
-        {errors.criticalStock && (
-          <p className="mt-1 text-sm" style={{ color: '#FF2E21' }}>
-            {errors.criticalStock.message}
-          </p>
-        )}
+        <input id="criticalStock" type="number" {...register('criticalStock', { valueAsNumber: true })} className="input-base" placeholder="0" />
+        {errors.criticalStock && <p className="mt-1 text-sm text-[var(--critical-red)]">{errors.criticalStock.message}</p>}
       </div>
 
-      {/* Min Stock */}
       <div>
-        <label
-          htmlFor="minStock"
-          className="block text-sm font-medium mb-1"
-          style={{ color: '#1F2937' }}
-        >
-          Minimum Stock Level (Warning when ≤ this quantity)
+        <label htmlFor="minStock" className="text-sm font-medium text-[var(--text-primary)] block mb-1">
+          Nivel minimo (Advertencia cuando &lt;= esta cantidad)
         </label>
-        <input
-          id="minStock"
-          type="number"
-          {...register('minStock')}
-          className="block w-full px-3 py-2 rounded-md focus:outline-none border-2 transition"
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderColor: '#E8E3DB',
-            color: '#1F2937',
-          }}
-          onFocus={(e) => {
-            (e.currentTarget as HTMLInputElement).style.borderColor = '#038E57';
-          }}
-          onBlur={(e) => {
-            (e.currentTarget as HTMLInputElement).style.borderColor = '#E8E3DB';
-          }}
-          placeholder="0"
-        />
-        {errors.minStock && (
-          <p className="mt-1 text-sm" style={{ color: '#FF2E21' }}>
-            {errors.minStock.message}
-          </p>
-        )}
+        <input id="minStock" type="number" {...register('minStock', { valueAsNumber: true })} className="input-base" placeholder="0" />
+        {errors.minStock && <p className="mt-1 text-sm text-[var(--critical-red)]">{errors.minStock.message}</p>}
       </div>
 
-      {/* Overstock Threshold */}
       <div>
-        <label
-          htmlFor="overstockThreshold"
-          className="block text-sm font-medium mb-1"
-          style={{ color: '#1F2937' }}
-        >
-          Overstock Threshold (Alert when ≥ this quantity)
+        <label htmlFor="overstockThreshold" className="text-sm font-medium text-[var(--text-primary)] block mb-1">
+          Umbral de sobrestock (Alerta cuando &gt;= esta cantidad)
         </label>
-        <input
-          id="overstockThreshold"
-          type="number"
-          {...register('overstockThreshold')}
-          className="block w-full px-3 py-2 rounded-md focus:outline-none border-2 transition"
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderColor: '#E8E3DB',
-            color: '#1F2937',
-          }}
-          onFocus={(e) => {
-            (e.currentTarget as HTMLInputElement).style.borderColor = '#038E57';
-          }}
-          onBlur={(e) => {
-            (e.currentTarget as HTMLInputElement).style.borderColor = '#E8E3DB';
-          }}
-          placeholder="0"
-        />
-        {errors.overstockThreshold && (
-          <p className="mt-1 text-sm" style={{ color: '#FF2E21' }}>
-            {errors.overstockThreshold.message}
-          </p>
-        )}
+        <input id="overstockThreshold" type="number" {...register('overstockThreshold', { valueAsNumber: true })} className="input-base" placeholder="0" />
+        {errors.overstockThreshold && <p className="mt-1 text-sm text-[var(--critical-red)]">{errors.overstockThreshold.message}</p>}
       </div>
 
-      {/* Error message */}
-      {submitError && (
-        <div
-          className="p-4 rounded-md border-2"
-          style={{
-            backgroundColor: 'rgba(255, 46, 33, 0.1)',
-            borderColor: '#FF2E21',
-          }}
-        >
-          <p style={{ color: '#FF2E21', fontSize: '0.875rem' }}>{submitError}</p>
-        </div>
-      )}
+      {submitError && <div className="p-3 rounded-md border border-[var(--critical-red)] bg-red-50 text-sm text-[var(--critical-red)]">{submitError}</div>}
+      {submitSuccess && <div className="p-3 rounded-md border border-[var(--primary-base)] bg-green-50 text-sm text-[var(--primary-dark)]">Configuracion guardada exitosamente.</div>}
 
-      {/* Success message */}
-      {submitSuccess && (
-        <div
-          className="p-4 rounded-md border-2"
-          style={{
-            backgroundColor: '#E8F4F0',
-            borderColor: '#10B981',
-          }}
-        >
-          <p style={{ color: '#038E57', fontSize: '0.875rem' }}>
-            Configuration saved successfully!
-          </p>
-        </div>
-      )}
-
-      {/* Submit button */}
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="btn-primary w-full"
-      >
-        {isSubmitting ? 'Saving...' : 'Save Configuration'}
+      <button type="submit" disabled={isSubmitting} className="btn-primary w-full">
+        {isSubmitting ? 'Guardando...' : 'Guardar configuracion'}
       </button>
     </form>
   );
 };
+

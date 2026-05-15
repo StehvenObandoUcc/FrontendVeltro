@@ -3,7 +3,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { Supplier, CreateSupplierRequest } from '../../api/purchasing';
-import { getSuppliers, createSupplier, updateSupplier, deleteSupplier } from '../../api/purchasing';
+import { purchasingApi } from '../../api/purchasing';
+import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 
 // Validation schema matching backend CreateSupplierRequest
 const supplierSchema = z.object({
@@ -25,6 +26,7 @@ export const SupplierPage: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [supplierToDelete, setSupplierToDelete] = useState<Supplier | null>(null);
 
   const {
     register,
@@ -38,8 +40,8 @@ export const SupplierPage: React.FC = () => {
   const fetchSuppliers = async () => {
     setIsLoading(true);
     try {
-      const response = await getSuppliers();
-      setSuppliers(response.data);
+      const response = await purchasingApi.getSuppliers();
+      setSuppliers(response);
     } catch (err) {
       console.error('Failed to fetch suppliers:', err);
       setError('Error al cargar proveedores');
@@ -100,10 +102,10 @@ export const SupplierPage: React.FC = () => {
 
     try {
       if (editingSupplier) {
-        await updateSupplier(editingSupplier.id, supplierData);
+        await purchasingApi.updateSupplier(editingSupplier.id, supplierData);
         setSuccessMessage('Proveedor actualizado correctamente');
       } else {
-        await createSupplier(supplierData);
+        await purchasingApi.createSupplier(supplierData);
         setSuccessMessage('Proveedor creado correctamente');
       }
       handleCloseForm();
@@ -118,16 +120,21 @@ export const SupplierPage: React.FC = () => {
   };
 
   const handleDelete = async (supplier: Supplier) => {
-    if (!confirm(`¿Eliminar el proveedor "${supplier.name}"?`)) return;
+    setSupplierToDelete(supplier);
+  };
 
+  const confirmDeleteSupplier = async () => {
+    if (!supplierToDelete) return;
     try {
-      await deleteSupplier(supplier.id);
+      await purchasingApi.deleteSupplier(supplierToDelete.id);
       setSuccessMessage('Proveedor eliminado correctamente');
       fetchSuppliers();
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
       console.error('Failed to delete supplier:', err);
       setError('Error al eliminar el proveedor');
+    } finally {
+      setSupplierToDelete(null);
     }
   };
 
@@ -371,6 +378,18 @@ export const SupplierPage: React.FC = () => {
           </table>
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={supplierToDelete !== null}
+        title="Eliminar proveedor"
+        message={`¿Eliminar el proveedor "${supplierToDelete?.name ?? ''}"?`}
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        variant="danger"
+        onConfirm={confirmDeleteSupplier}
+        onCancel={() => setSupplierToDelete(null)}
+      />
     </div>
   );
 };
+

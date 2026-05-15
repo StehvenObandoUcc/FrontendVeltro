@@ -1,9 +1,13 @@
 {
   "name": "frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
+    "start": "node server.cjs",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "start": "serve -s dist -l $PORT",
@@ -17,6 +21,7 @@
     "@hookform/resolvers": "^3.9.0",
     "@tanstack/react-query": "^5.59.0",
     "axios": "^1.7.0",
+    "express": "^5.2.1",
     "framer-motion": "^12.38.0",
     "html5-qrcode": "^2.3.8",
     "lucide-react": "^1.14.0",
@@ -45,6 +50,7 @@
     "@types/react-scroll": "^1.8.10",
     "@vitejs/plugin-basic-ssl": "^1.1.0",
     "@vitejs/plugin-react": "^4.3.0",
+    "@vitest/coverage-v8": "^2.1.9",
     "@vitest/ui": "^2.1.0",
     "eslint": "^9.13.0",
     "eslint-plugin-react-hooks": "^5.0.0",

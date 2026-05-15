@@ -24,10 +24,9 @@ export type DetectionStatus = 'RAW' | 'PENDING' | 'SUCCESS' | 'ERROR' | 'ADDED';
 export interface MatchedProduct {
   id: number;
   name: string;
-  sku: string;
-  barcode: string;
+  sku: string | null;
+  barcode: string | null;
   salePrice: string;
-  currentStock?: number;
 }
 
 /**
@@ -56,6 +55,19 @@ export interface AiScannerConfig {
   confidenceThreshold: number;
   maxRetries: number;
   processingDelayMs: number;
+}
+
+/**
+ * Visual tracking entry produced by the IOU tracker in useYoloDetection.
+ * trackId is stable across frames (not the same as YoloBox.id which is owned by setRawDetections).
+ */
+export interface TrackedBox {
+  /** Persistent visual ID - NOT the same as YoloBox.id */
+  trackId: string;
+  /** Reference to the matched YOLO detection */
+  box: YoloBox;
+  /** performance.now() timestamp of last successful IOU match */
+  lastSeen: number;
 }
 
 /**

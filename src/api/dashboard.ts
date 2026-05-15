@@ -31,46 +31,42 @@ export interface SaleRow {
  * Get dashboard data
  * GET /api/v1/dashboard
  */
-export const getDashboard = () => {
-  return apiClient.get<DashboardResponse>('/dashboard');
+export const dashboardApi = {
+  getDashboard: async () => {
+    const response = await apiClient.get<DashboardResponse>('/dashboard');
+    return response.data;
+  },
+
+  exportReport: async (format: 'PDF' | 'EXCEL') => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(1); // First day of current month
+    
+    const startDateStr = start.toISOString().split('T')[0];
+    const endDateStr = end.toISOString().split('T')[0];
+
+    const response = await apiClient.get<Blob>(
+      `/reports/export/${format}?startDate=${startDateStr}&endDate=${endDateStr}`,
+      {
+        responseType: 'blob',
+      }
+    );
+    return response.data;
+  },
+
+  exportProfitabilityReportPdf: function() {
+    return this.exportReport('PDF');
+  },
+
+  exportProfitabilityReportExcel: function() {
+    return this.exportReport('EXCEL');
+  },
+
+  getProfitabilityReport: async (startDate: string, endDate: string) => {
+    const response = await apiClient.get(`/reports/profitability`, {
+      params: { startDate, endDate }
+    });
+    return response.data;
+  }
 };
 
-/**
- * Export profitability report as PDF
- * GET /api/v1/reports/export/PDF
- */
-export const exportProfitabilityReportPdf = () => {
-  const end = new Date();
-  const start = new Date();
-  start.setDate(1); // First day of current month
-  
-  const startDateStr = start.toISOString().split('T')[0];
-  const endDateStr = end.toISOString().split('T')[0];
-
-  return apiClient.get<Blob>(
-    `/reports/export/PDF?startDate=${startDateStr}&endDate=${endDateStr}`,
-    {
-      responseType: 'blob',
-    }
-  );
-};
-
-/**
- * Export profitability report as Excel
- * GET /api/v1/reports/export/EXCEL
- */
-export const exportProfitabilityReportExcel = () => {
-  const end = new Date();
-  const start = new Date();
-  start.setDate(1); // First day of current month
-  
-  const startDateStr = start.toISOString().split('T')[0];
-  const endDateStr = end.toISOString().split('T')[0];
-
-  return apiClient.get<Blob>(
-    `/reports/export/EXCEL?startDate=${startDateStr}&endDate=${endDateStr}`,
-    {
-      responseType: 'blob',
-    }
-  );
-};

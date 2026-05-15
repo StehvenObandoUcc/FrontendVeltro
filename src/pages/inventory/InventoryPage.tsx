@@ -1,18 +1,17 @@
-import { useState, useEffect, useRef } from 'react';
-import { Camera, ArrowLeft } from 'lucide-react';
+﻿import { useState, useEffect, useRef } from 'react';
+import { Camera, ArrowLeft, X } from 'lucide-react';
 import { AiScannerContainer } from '../../components/pos/AiScannerContainer';
-import { 
-  getInventory, 
-  recordStockEntry, 
-  recordStockExit, 
-  recordStockAdjustment,
-  getInventoryMovements,
+import { StockMovementModal } from '../../components/inventory/StockMovementModal';
+import { MovementHistoryModal } from '../../components/inventory/MovementHistoryModal';
+import { AlertConfigForm } from '../../components/inventory/AlertConfigForm';
+import { AiCountQueue, type CountQueueItem } from '../../components/inventory/AiCountQueue';
+import {
+  inventoryApi,
+  type AlertConfig,
   type InventoryItem,
   type InventoryMovement,
-  type PageResponse
+  type PageResponse,
 } from '../../api/inventory';
-import { useAiScanStore } from '../../stores/aiScanStore';
-import type { MatchedProduct } from '../../modules/types/ai.types';
 
 type ModalType = 'entry' | 'exit' | 'adjustment' | 'history' | null;
 
@@ -25,56 +24,24 @@ export function InventoryPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [showAiScanner, setShowAiScanner] = useState(false);
-  
-  // Modal state
+  const [countQueue, setCountQueue] = useState<CountQueueItem[]>([]);
+  const [isApplyingCountQueue, setIsApplyingCountQueue] = useState(false);
+  const [countQueueMessage, setCountQueueMessage] = useState<string | null>(null);
+
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [configItem, setConfigItem] = useState<InventoryItem | null>(null);
+  const [configData, setConfigData] = useState<AlertConfig | null>(null);
+  const [configLoading, setConfigLoading] = useState(false);
+
   const [modalType, setModalType] = useState<ModalType>(null);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [modalLoading, setModalLoading] = useState(false);
   const [movements, setMovements] = useState<InventoryMovement[]>([]);
-  
-  // Form state
+
   const [quantity, setQuantity] = useState('');
   const [reason, setReason] = useState('');
   const [newStock, setNewStock] = useState('');
 
-  // AI Count state
-  const { detections, updateDetectionStatus } = useAiScanStore();
-  const addedIds = useRef<Set<string>>(new Set());
-  const [countedItems, setCountedItems] = useState<Record<number, { product: MatchedProduct, count: number }>>({});
-
-  // Auto-accumulate AI detections for inventory count
-  useEffect(() => {
-    if (!showAiScanner) return;
-
-    let updated = false;
-    const newCounts = { ...countedItems };
-
-    detections
-      .filter((d) => d.status === 'SUCCESS' && d.matches.length > 0 && !addedIds.current.has(d.id))
-      .forEach((det) => {
-        addedIds.current.add(det.id);
-        const match = det.matches[0] as MatchedProduct;
-        
-        if (newCounts[match.id]) {
-          newCounts[match.id].count += 1;
-        } else {
-          newCounts[match.id] = { product: match, count: 1 };
-        }
-        
-        updateDetectionStatus(det.id, 'ADDED');
-        updated = true;
-      });
-
-    // Prune tracking set
-    const live = new Set(detections.map((d) => d.id));
-    addedIds.current = new Set([...addedIds.current].filter((id) => live.has(id)));
-
-    if (updated) {
-      setCountedItems(newCounts);
-    }
-  }, [detections, showAiScanner, countedItems, updateDetectionStatus]);
-
-  // Debounce search term
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -88,14 +55,21 @@ export function InventoryPage() {
   }, [searchTerm]);
 
   useEffect(() => {
-    loadInventory();
+    void loadInventory();
   }, [page, debouncedSearch]);
+
+  useEffect(() => {
+    if (!showAiScanner) {
+      setCountQueue([]);
+      setCountQueueMessage(null);
+    }
+  }, [showAiScanner]);
 
   const loadInventory = async () => {
     try {
       setLoading(true);
-      const response = await getInventory(page, 20, debouncedSearch || undefined);
-      const data = response.data as PageResponse<InventoryItem>;
+      const response = await inventoryApi.getInventory(page, 20, debouncedSearch || undefined);
+      const data = response as PageResponse<InventoryItem>;
       setInventory(data.content);
       setTotalPages(data.totalPages);
       setError(null);
@@ -107,24 +81,59 @@ export function InventoryPage() {
     }
   };
 
-  const openModal = async (type: ModalType, item: InventoryItem, initialQuantity?: number) => {
+  const openModal = async (type: ModalType, item: InventoryItem) => {
     setSelectedItem(item);
     setModalType(type);
-    setQuantity(initialQuantity ? initialQuantity.toString() : '');
+    setQuantity('');
     setReason('');
-    setNewStock(initialQuantity ? initialQuantity.toString() : item.currentStock.toString());
-    
+    setNewStock(item.currentStock.toString());
+
     if (type === 'history') {
       try {
         setModalLoading(true);
-        const response = await getInventoryMovements(item.productId);
-        setMovements(response.data.content);
+        const response = await inventoryApi.getInventoryMovements(item.productId);
+        setMovements(response.content);
       } catch (err) {
         console.error('Error loading movements:', err);
       } finally {
         setModalLoading(false);
       }
     }
+  };
+
+  const openConfigModal = async (item: InventoryItem) => {
+    setConfigItem(item);
+    setIsConfigModalOpen(true);
+    setConfigLoading(true);
+    try {
+      const config = await inventoryApi.getAlertConfig(item.productId);
+      setConfigData(config);
+    } catch {
+      setConfigData({
+        productId: String(item.productId),
+        criticalStock: item.minStock || 0,
+        minStock: item.minStock || 0,
+        overstockThreshold: item.maxStock || 0,
+      });
+    } finally {
+      setConfigLoading(false);
+    }
+  };
+
+  const closeConfigModal = () => {
+    setIsConfigModalOpen(false);
+    setConfigItem(null);
+    setConfigData(null);
+  };
+
+  const handleConfigSave = async (data: { criticalStock: number; minStock: number; overstockThreshold: number }) => {
+    if (!configItem) return;
+    await inventoryApi.updateAlertConfig(configItem.productId, data);
+    await inventoryApi.updateStockLimits(configItem.productId, {
+      minStock: data.minStock,
+      maxStock: data.overstockThreshold,
+    });
+    await loadInventory();
   };
 
   const closeModal = () => {
@@ -135,16 +144,16 @@ export function InventoryPage() {
 
   const handleEntry = async () => {
     if (!selectedItem || !quantity || !reason) return;
-    
+
     try {
       setModalLoading(true);
-      await recordStockEntry(selectedItem.productId, {
-        quantity: parseInt(quantity),
+      await inventoryApi.recordStockEntry(selectedItem.productId, {
+        quantity: parseInt(quantity, 10),
         reason,
       });
       await loadInventory();
       closeModal();
-    } catch (err) {
+    } catch {
       setError('Error al registrar entrada');
     } finally {
       setModalLoading(false);
@@ -153,18 +162,19 @@ export function InventoryPage() {
 
   const handleExit = async () => {
     if (!selectedItem || !quantity || !reason) return;
-    
+
     try {
       setModalLoading(true);
-      await recordStockExit(selectedItem.productId, {
-        quantity: parseInt(quantity),
+      await inventoryApi.recordStockExit(selectedItem.productId, {
+        quantity: parseInt(quantity, 10),
         reason,
       });
       await loadInventory();
       closeModal();
-    } catch (err: any) {
-      if (err.response?.status === 409 || err.response?.status === 422) {
-        setError(err.response?.data?.message || 'Stock insuficiente para esta salida');
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 422) {
+        setError('Stock insuficiente para esta salida');
       } else {
         setError('Error al registrar salida');
       }
@@ -175,25 +185,68 @@ export function InventoryPage() {
 
   const handleAdjustment = async () => {
     if (!selectedItem || !newStock || !reason) return;
-    
+
     try {
       setModalLoading(true);
-      await recordStockAdjustment(selectedItem.productId, {
-        newStock: parseInt(newStock),
+      await inventoryApi.recordStockAdjustment(selectedItem.productId, {
+        newStock: parseInt(newStock, 10),
         reason,
       });
       await loadInventory();
       closeModal();
-    } catch (err) {
+    } catch {
       setError('Error al ajustar stock');
     } finally {
       setModalLoading(false);
     }
   };
 
-  const filteredInventory = inventory.filter(item =>
-    item.productName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleDetectionConfirmed = ({ productId, productName }: { productId: number; productName: string }) => {
+    setCountQueue((prev) => {
+      const existing = prev.find((item) => item.productId === productId);
+      if (existing) {
+        setCountQueueMessage(`Cantidad actualizada: ${productName}`);
+        return prev.map((item) =>
+          item.productId === productId ? { ...item, quantity: item.quantity + 1 } : item
+        );
+      }
+      setCountQueueMessage(`Producto agregado: ${productName}`);
+      return [...prev, { productId, productName, quantity: 1 }];
+    });
+  };
+
+  const handleUpdateQueueQuantity = (productId: number, quantityValue: number) => {
+    const safeQuantity = Number.isFinite(quantityValue) && quantityValue > 0 ? Math.floor(quantityValue) : 1;
+    setCountQueue((prev) =>
+      prev.map((item) => (item.productId === productId ? { ...item, quantity: safeQuantity } : item))
+    );
+  };
+
+  const handleApplyCountQueue = async () => {
+    if (countQueue.length === 0) return;
+    setIsApplyingCountQueue(true);
+    setCountQueueMessage('Aplicando movimientos de inventario...');
+
+    const results = await Promise.allSettled(
+      countQueue.map((item) =>
+        inventoryApi.recordStockEntry(item.productId, {
+          quantity: item.quantity,
+          reason: 'Conteo IA',
+        })
+      )
+    );
+
+    const failed = results.filter((result) => result.status === 'rejected').length;
+    if (failed > 0) {
+      setCountQueueMessage(`${countQueue.length - failed} aplicados, ${failed} fallaron.`);
+    } else {
+      setCountQueueMessage('Conteo aplicado exitosamente.');
+      setCountQueue([]);
+    }
+
+    await loadInventory();
+    setIsApplyingCountQueue(false);
+  };
 
   const getStockStatus = (item: InventoryItem) => {
     const minStock = typeof item.minStock === 'number' ? item.minStock : 0;
@@ -207,43 +260,21 @@ export function InventoryPage() {
 
   const formatStockLimits = (item: InventoryItem) => {
     const minStock = typeof item.minStock === 'number' ? item.minStock : 0;
-    const maxStockLabel = typeof item.maxStock === 'number' && item.maxStock > 0 ? item.maxStock : 'Sin máximo';
+    const maxStockLabel = typeof item.maxStock === 'number' && item.maxStock > 0 ? item.maxStock : 'Sin maximo';
     return `${minStock} / ${maxStockLabel}`;
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('es-CO', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const getMovementTypeLabel = (type: string) => {
-    const labels: Record<string, { text: string; color: string }> = {
-      ENTRY: { text: 'Entrada', color: 'text-green-600' },
-      EXIT: { text: 'Salida', color: 'text-red-600' },
-      ADJUSTMENT: { text: 'Ajuste', color: 'text-blue-600' },
-      SALE: { text: 'Venta', color: 'text-purple-600' },
-    };
-    return labels[type] || { text: type, color: 'text-gray-600' };
   };
 
   return (
     <div className="p-4 lg:p-6 max-w-7xl mx-auto">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>Inventario</h1>
-          <p className="mt-1 text-sm" style={{ color: 'var(--text-secondary)' }}>Gestión de stock y movimientos</p>
+          <p className="mt-1 text-sm" style={{ color: 'var(--text-secondary)' }}>Gestion de stock y movimientos</p>
         </div>
-        
+
         <div className="flex gap-3 w-full sm:w-auto">
           {!showAiScanner ? (
             <>
-              {/* Search */}
               <div className="w-full sm:w-64">
                 <input
                   type="text"
@@ -253,25 +284,18 @@ export function InventoryPage() {
                   className="input-base"
                 />
               </div>
-              <button 
-                onClick={() => setShowAiScanner(true)}
-                className="btn-primary flex flex-row items-center gap-2 whitespace-nowrap"
-              >
+              <button onClick={() => setShowAiScanner(true)} className="btn-primary flex flex-row items-center gap-2 whitespace-nowrap">
                 <Camera className="w-4 h-4" /> Conteo IA
               </button>
             </>
           ) : (
-             <button 
-               onClick={() => setShowAiScanner(false)}
-               className="btn-secondary flex flex-row items-center gap-2"
-             >
-               <ArrowLeft className="w-4 h-4" /> Volver al Inventario
-             </button>
+            <button onClick={() => setShowAiScanner(false)} className="btn-secondary flex flex-row items-center gap-2">
+              <ArrowLeft className="w-4 h-4" /> Volver al Inventario
+            </button>
           )}
         </div>
       </div>
 
-      {/* Error */}
       {error && (
         <div className="mb-4 p-4 card border-[var(--critical-red)]" style={{ backgroundColor: 'rgba(239, 68, 68, 0.05)', borderWidth: '1px', borderColor: 'rgba(239, 68, 68, 0.2)' }}>
           <p className="text-sm font-medium" style={{ color: 'var(--critical-red)' }}>{error}</p>
@@ -281,120 +305,45 @@ export function InventoryPage() {
         </div>
       )}
 
-      {/* Loading */}
       {loading ? (
         <div className="flex justify-center items-center h-64">
           <div className="flex flex-col items-center gap-3">
-            <div 
-              className="animate-spin rounded-full h-12 w-12" 
-              style={{ 
-                borderColor: 'rgba(3, 142, 87, 0.2)',
-                borderTopColor: 'var(--primary-base)',
-                borderWidth: '3px'
-              }} 
-            />
+            <div className="animate-spin rounded-full h-12 w-12" style={{ borderColor: 'rgba(3, 142, 87, 0.2)', borderTopColor: 'var(--primary-base)', borderWidth: '3px' }} />
             <span className="text-sm font-medium tracking-wide" style={{ color: 'var(--text-tertiary)' }}>CARGANDO...</span>
           </div>
         </div>
       ) : showAiScanner ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 card p-6">
-            <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Escáner IA</h2>
-            <AiScannerContainer useCase="inventory-count" />
-          </div>
-          
-          <div className="card p-6 flex flex-col h-[600px]">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Conteo Acumulado</h2>
-              <span className="text-xs font-medium px-2 py-1 rounded bg-emerald-100 text-emerald-700">
-                {Object.values(countedItems).reduce((sum, item) => sum + item.count, 0)} items
-              </span>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto space-y-3 pr-2">
-               {Object.values(countedItems).map(item => {
-                 const invItem = inventory.find(i => i.productId === item.product.id);
-                 return (
-                   <div key={item.product.id} className="p-3 border rounded-lg bg-gray-50 flex flex-col gap-3">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <div className="font-medium text-sm text-gray-900">{item.product.name}</div>
-                          <div className="text-xs text-gray-500 mt-0.5">Stock DB: <span className="font-bold">{invItem?.currentStock ?? 0}</span></div>
-                        </div>
-                        <div className="text-lg font-bold text-emerald-600 bg-emerald-50 px-2 rounded">
-                          +{item.count}
-                        </div>
-                      </div>
-                      
-                      {invItem ? (
-                        <div className="grid grid-cols-2 gap-2 mt-1">
-                          <button 
-                            onClick={() => openModal('entry', invItem, item.count)} 
-                            className="btn-action btn-action-entry text-xs px-2 py-1.5 flex justify-center w-full"
-                          >
-                            + Entrada
-                          </button>
-                          <button 
-                            onClick={() => openModal('adjustment', invItem, item.count)} 
-                            className="btn-action btn-action-adjust text-xs px-2 py-1.5 flex justify-center w-full"
-                          >
-                            Ajustar a {item.count}
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="text-xs text-amber-600 mt-1">Producto no inicializado en inventario</div>
-                      )}
-                   </div>
-                 );
-               })}
-               
-               {Object.keys(countedItems).length === 0 && (
-                 <div className="flex flex-col items-center justify-center h-full text-center p-6 space-y-3">
-                    <Camera className="w-12 h-12 text-gray-300" />
-                    <p className="text-sm text-gray-500">
-                      Apunta la cámara a los productos para iniciar el conteo automático.
-                    </p>
-                 </div>
-               )}
-            </div>
-            
-            <div className="mt-4 pt-4 border-t">
-               <button 
-                 onClick={() => setCountedItems({})} 
-                 disabled={Object.keys(countedItems).length === 0}
-                 className="btn-secondary w-full text-sm py-2"
-               >
-                 Reiniciar Conteo
-               </button>
-            </div>
-          </div>
+        <div className="card p-6 max-w-4xl mx-auto">
+          <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Conteo de Inventario por IA</h2>
+          <AiScannerContainer useCase="inventory-count" onDetectionConfirmed={handleDetectionConfirmed} />
+          <AiCountQueue
+            queue={countQueue}
+            isApplying={isApplyingCountQueue}
+            applyMessage={countQueueMessage}
+            onUpdateQuantity={handleUpdateQueueQuantity}
+            onRemove={(productId) => setCountQueue((prev) => prev.filter((item) => item.productId !== productId))}
+            onApply={handleApplyCountQueue}
+            onClear={() => {
+              setCountQueue([]);
+              setCountQueueMessage(null);
+            }}
+          />
         </div>
       ) : (
         <>
-          {/* Table */}
           <div className="table-container bg-[var(--surface-secondary)]">
             <table className="min-w-full">
               <thead style={{ backgroundColor: 'var(--surface-tertiary)' }}>
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
-                    Producto
-                  </th>
-                  <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
-                    Stock Actual
-                  </th>
-                  <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
-                    Mín / Máx
-                  </th>
-                  <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
-                    Estado
-                  </th>
-                  <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
-                    Acciones
-                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Producto</th>
+                  <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Stock Actual</th>
+                  <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Min / Max</th>
+                  <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Estado</th>
+                  <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y" style={{ borderColor: 'var(--border-light)' }}>
-                {filteredInventory.map((item) => {
+                {inventory.map((item) => {
                   const status = getStockStatus(item);
                   return (
                     <tr key={item.id} className="hover:bg-[rgba(3,142,87,0.02)] transition-colors">
@@ -405,44 +354,17 @@ export function InventoryPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <span className="text-lg font-semibold tabular-data" style={{ color: 'var(--text-primary)' }}>{item.currentStock}</span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
-                         {formatStockLimits(item)}
-                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm" style={{ color: 'var(--text-secondary)' }}>{formatStockLimits(item)}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <span className={`badge ${status.badgeClass}`}>
-                          {status.text}
-                        </span>
+                        <span className={`badge ${status.badgeClass}`}>{status.text}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <div className="flex justify-center gap-2 flex-wrap">
-                          <button
-                            onClick={() => openModal('entry', item)}
-                            className="btn-action btn-action-entry"
-                            title="Entrada"
-                          >
-                            + Entrada
-                          </button>
-                          <button
-                            onClick={() => openModal('exit', item)}
-                            className="btn-action btn-action-exit"
-                            title="Salida"
-                          >
-                            - Salida
-                          </button>
-                          <button
-                            onClick={() => openModal('adjustment', item)}
-                            className="btn-action btn-action-adjust"
-                            title="Ajuste"
-                          >
-                            Ajustar
-                          </button>
-                          <button
-                            onClick={() => openModal('history', item)}
-                            className="btn-action btn-action-history"
-                            title="Historial"
-                          >
-                            Historial
-                          </button>
+                          <button onClick={() => openModal('entry', item)} className="btn-action btn-action-entry" title="Entrada">+ Entrada</button>
+                          <button onClick={() => openModal('exit', item)} className="btn-action btn-action-exit" title="Salida">- Salida</button>
+                          <button onClick={() => openModal('adjustment', item)} className="btn-action btn-action-adjust" title="Ajuste">Ajustar</button>
+                          <button onClick={() => openModal('history', item)} className="btn-action btn-action-history" title="Historial">Historial</button>
+                          <button onClick={() => void openConfigModal(item)} className="btn-action" title="Configurar">Configurar</button>
                         </div>
                       </td>
                     </tr>
@@ -451,214 +373,53 @@ export function InventoryPage() {
               </tbody>
             </table>
 
-            {filteredInventory.length === 0 && (
-              <div className="p-8 text-center" style={{ color: 'var(--text-tertiary)' }}>
-                No se encontraron productos en el inventario
-              </div>
+            {inventory.length === 0 && (
+              <div className="p-8 text-center" style={{ color: 'var(--text-tertiary)' }}>No se encontraron productos en el inventario</div>
             )}
           </div>
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex justify-center gap-2 mt-6">
-              <button
-                onClick={() => setPage(p => Math.max(0, p - 1))}
-                disabled={page === 0}
-                className="btn-secondary px-4 py-2"
-              >
-                Anterior
-              </button>
-              <span className="px-4 py-2 font-medium" style={{ color: 'var(--text-secondary)' }}>
-                Página {page + 1} de {totalPages}
-              </span>
-              <button
-                onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-                disabled={page >= totalPages - 1}
-                className="btn-secondary px-4 py-2"
-              >
-                Siguiente
-              </button>
+              <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0} className="btn-secondary px-4 py-2">Anterior</button>
+              <span className="px-4 py-2 font-medium" style={{ color: 'var(--text-secondary)' }}>Pagina {page + 1} de {totalPages}</span>
+              <button onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} className="btn-secondary px-4 py-2">Siguiente</button>
             </div>
           )}
         </>
       )}
 
-      {/* Modal */}
-      {modalType && selectedItem && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <div className="card w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              {/* Modal Header */}
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
-                  {modalType === 'entry' && 'Registrar Entrada'}
-                  {modalType === 'exit' && 'Registrar Salida'}
-                  {modalType === 'adjustment' && 'Ajustar Stock'}
-                  {modalType === 'history' && 'Historial de Movimientos'}
-                </h2>
-                <button
-                  onClick={closeModal}
-                  className="p-1 rounded-md transition-colors"
-                  style={{ color: 'var(--text-tertiary)' }}
-                  onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
-                  onMouseLeave={e => e.currentTarget.style.color = 'var(--text-tertiary)'}
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
+      <StockMovementModal
+        isOpen={modalType === 'entry' || modalType === 'exit' || modalType === 'adjustment'}
+        type={modalType === 'history' ? null : modalType}
+        item={selectedItem}
+        quantity={quantity}
+        reason={reason}
+        newStock={newStock}
+        loading={modalLoading}
+        onClose={closeModal}
+        onQuantityChange={setQuantity}
+        onReasonChange={setReason}
+        onNewStockChange={setNewStock}
+        onSubmit={modalType === 'entry' ? handleEntry : modalType === 'exit' ? handleExit : handleAdjustment}
+      />
+      <MovementHistoryModal isOpen={modalType === 'history'} item={selectedItem} loading={modalLoading} movements={movements} onClose={closeModal} />
 
-              <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: 'var(--surface-tertiary)' }}>
-                <p className="font-medium" style={{ color: 'var(--text-primary)' }}>{selectedItem.productName}</p>
-                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Stock actual: {selectedItem.currentStock}</p>
-              </div>
-
-              {/* Entry Form */}
-              {modalType === 'entry' && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Cantidad</label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={quantity}
-                      onChange={(e) => setQuantity(e.target.value)}
-                      className="input-base"
-                      placeholder="Cantidad a agregar"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Razón</label>
-                    <input
-                      type="text"
-                      value={reason}
-                      onChange={(e) => setReason(e.target.value)}
-                      className="input-base"
-                      placeholder="Ej: Compra a proveedor"
-                    />
-                  </div>
-                  <button
-                    onClick={handleEntry}
-                    disabled={modalLoading || !quantity || !reason}
-                    className="btn-primary w-full"
-                  >
-                    {modalLoading ? 'Procesando...' : 'Registrar Entrada'}
-                  </button>
-                </div>
-              )}
-
-              {/* Exit Form */}
-              {modalType === 'exit' && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Cantidad</label>
-                    <input
-                      type="number"
-                      min="1"
-                      max={selectedItem.currentStock}
-                      value={quantity}
-                      onChange={(e) => setQuantity(e.target.value)}
-                      className="input-base"
-                      placeholder="Cantidad a retirar"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Razón</label>
-                    <input
-                      type="text"
-                      value={reason}
-                      onChange={(e) => setReason(e.target.value)}
-                      className="input-base"
-                      placeholder="Ej: Merma, devolución"
-                    />
-                  </div>
-                  <button
-                    onClick={handleExit}
-                    disabled={modalLoading || !quantity || !reason}
-                    className="btn-danger w-full"
-                  >
-                    {modalLoading ? 'Procesando...' : 'Registrar Salida'}
-                  </button>
-                </div>
-              )}
-
-              {/* Adjustment Form */}
-              {modalType === 'adjustment' && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Nuevo Stock</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={newStock}
-                      onChange={(e) => setNewStock(e.target.value)}
-                      className="input-base"
-                      placeholder="Nueva cantidad total"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Razón del ajuste</label>
-                    <input
-                      type="text"
-                      value={reason}
-                      onChange={(e) => setReason(e.target.value)}
-                      className="input-base"
-                      placeholder="Ej: Conteo físico, corrección"
-                    />
-                  </div>
-                  <button
-                    onClick={handleAdjustment}
-                    disabled={modalLoading || !newStock || !reason}
-                    className="w-full py-3 rounded-lg font-semibold text-white transition-all"
-                    style={{ backgroundColor: '#3B82F6' }}
-                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#2563EB'}
-                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#3B82F6'}
-                  >
-                    {modalLoading ? 'Procesando...' : 'Ajustar Stock'}
-                  </button>
-                </div>
-              )}
-
-              {/* History */}
-              {modalType === 'history' && (
-                <div>
-                  {modalLoading ? (
-                    <div className="flex justify-center py-8">
-                      <div 
-                        className="animate-spin rounded-full h-8 w-8" 
-                        style={{ 
-                          borderColor: 'rgba(3, 142, 87, 0.2)',
-                          borderTopColor: 'var(--primary-base)',
-                          borderWidth: '3px'
-                        }} 
-                      />
-                    </div>
-                  ) : movements.length === 0 ? (
-                    <p className="text-center py-8" style={{ color: 'var(--text-tertiary)' }}>No hay movimientos registrados</p>
-                  ) : (
-                    <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
-                      {movements.map((mov) => {
-                        const typeInfo = getMovementTypeLabel(mov.movementType);
-                        return (
-                          <div key={mov.id} className="p-3 rounded-lg" style={{ backgroundColor: 'var(--surface-tertiary)' }}>
-                            <div className="flex justify-between items-start">
-                              <span className={`font-medium ${typeInfo.color}`}>{typeInfo.text}</span>
-                              <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{formatDate(mov.createdAt)}</span>
-                            </div>
-                            <div className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-                              {mov.previousStock} → {mov.newStock} ({mov.quantity > 0 ? '+' : ''}{mov.newStock - mov.previousStock})
-                            </div>
-                            <div className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>{mov.reason}</div>
-                            <div className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Por: {mov.createdBy}</div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+      {isConfigModalOpen && configItem && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="card w-full max-w-2xl p-6 relative">
+            <button onClick={closeConfigModal} className="absolute right-4 top-4 text-[var(--text-secondary)]" aria-label="Cerrar modal de configuracion">
+              <X className="w-5 h-5" />
+            </button>
+            {configLoading || !configData ? (
+              <div className="py-10 text-center text-sm text-[var(--text-secondary)]">Cargando configuracion...</div>
+            ) : (
+              <AlertConfigForm
+                productId={configItem.productId}
+                productName={configItem.productName}
+                initialConfig={configData}
+                onSave={handleConfigSave}
+              />
+            )}
           </div>
         </div>
       )}

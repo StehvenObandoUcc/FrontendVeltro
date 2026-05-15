@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import type { Alert } from '../../api/inventory';
-import { markAlertAsRead, resolveAlert } from '../../api/inventory';
+import { inventoryApi, type Alert } from '../../api/inventory';
 import { useAlertStore } from '../../stores/alertStore';
 import { SeverityBadge } from './SeverityBadge';
+import { SEVERITY_STYLE_MAP } from '../../constants/alertSeverityStyles';
 
 interface AlertListProps {
   alerts: Alert[];
@@ -32,7 +32,7 @@ export const AlertList: React.FC<AlertListProps> = ({
   const handleMarkAsRead = async (alertId: number) => {
     setUpdatingRead(alertId);
     try {
-      await markAlertAsRead(alertId);
+      await inventoryApi.markAlertAsRead(alertId);
       markAsReadLocal(alertId);
       if (onRefresh) {
         await onRefresh();
@@ -47,7 +47,7 @@ export const AlertList: React.FC<AlertListProps> = ({
   const handleResolve = async (alertId: number) => {
     setResolving(alertId);
     try {
-      await resolveAlert(alertId);
+      await inventoryApi.resolveAlert(alertId);
       resolveAlertLocal(alertId);
       if (onRefresh) {
         await onRefresh();
@@ -94,10 +94,10 @@ export const AlertList: React.FC<AlertListProps> = ({
           className="mt-2 text-lg font-medium"
           style={{ color: '#1F2937' }}
         >
-          No alerts
+          Sin alertas
         </h3>
         <p className="mt-1 text-sm" style={{ color: '#6B7280' }}>
-          Your inventory is in good shape!
+          Tu inventario está en buen estado.
         </p>
       </div>
     );
@@ -117,14 +117,15 @@ export const AlertList: React.FC<AlertListProps> = ({
             key={alert.id}
             className="p-4 transition-colors"
             style={{
-              backgroundColor: idx % 2 === 0 ? '#FFFFFF' : '#F9F7F2',
+              backgroundColor: SEVERITY_STYLE_MAP[alert.severity].rowBg,
+              borderLeft: SEVERITY_STYLE_MAP[alert.severity].borderLeft,
               borderBottom: idx < alerts.length - 1 ? '1px solid #E8E3DB' : 'none',
             }}
             onMouseEnter={(e) => {
-              (e.currentTarget as HTMLDivElement).style.backgroundColor = '#F9F7F2';
+              (e.currentTarget as HTMLDivElement).style.backgroundColor = SEVERITY_STYLE_MAP[alert.severity].hoverBg;
             }}
             onMouseLeave={(e) => {
-              (e.currentTarget as HTMLDivElement).style.backgroundColor = idx % 2 === 0 ? '#FFFFFF' : '#F9F7F2';
+              (e.currentTarget as HTMLDivElement).style.backgroundColor = SEVERITY_STYLE_MAP[alert.severity].rowBg;
             }}
           >
             <div className="flex items-start justify-between">
@@ -176,30 +177,32 @@ export const AlertList: React.FC<AlertListProps> = ({
                   </button>
                 )}
 
-                <button
-                  onClick={() => handleResolve(alert.id)}
-                  disabled={resolving === alert.id || updatingRead === alert.id}
-                  className="px-3 py-1 text-sm font-medium rounded transition"
-                  style={{
-                    color: '#038E57',
-                    backgroundColor: 'transparent',
-                    opacity: resolving === alert.id ? 0.5 : 1,
-                    cursor:
-                      resolving === alert.id || updatingRead === alert.id
-                        ? 'not-allowed'
-                        : 'pointer',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (resolving !== alert.id && updatingRead !== alert.id) {
-                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#E8F4F0';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
-                  }}
-                >
-                  {resolving === alert.id ? 'Resolviendo...' : 'Resolver'}
-                </button>
+                {alert.severity !== 'INFO' && (
+                  <button
+                    onClick={() => handleResolve(alert.id)}
+                    disabled={resolving === alert.id || updatingRead === alert.id}
+                    className="px-3 py-1 text-sm font-medium rounded transition"
+                    style={{
+                      color: '#038E57',
+                      backgroundColor: 'transparent',
+                      opacity: resolving === alert.id ? 0.5 : 1,
+                      cursor:
+                        resolving === alert.id || updatingRead === alert.id
+                          ? 'not-allowed'
+                          : 'pointer',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (resolving !== alert.id && updatingRead !== alert.id) {
+                        (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#E8F4F0';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
+                    }}
+                  >
+                    {resolving === alert.id ? 'Resolviendo...' : 'Resolver'}
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -229,10 +232,10 @@ export const AlertList: React.FC<AlertListProps> = ({
               (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#FFFFFF';
             }}
           >
-            Previous
+            Anterior
           </button>
           <span className="text-sm" style={{ color: '#6B7280' }}>
-            Page {currentPage + 1} of {totalPages}
+            Página {currentPage + 1} de {totalPages}
           </span>
           <button
             onClick={() => onPageChange(currentPage + 1)}
@@ -254,7 +257,7 @@ export const AlertList: React.FC<AlertListProps> = ({
               (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#FFFFFF';
             }}
           >
-            Next
+            Siguiente
           </button>
         </div>
       )}

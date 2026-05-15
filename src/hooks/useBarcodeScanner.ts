@@ -9,14 +9,6 @@ export type CameraFeedbackState =
   | 'not-found'
   | 'camera-error';
 
-interface UseBarcodeScannerOptions {
-  readerId: string;
-  onDecode: (barcode: string) => Promise<void> | void;
-  enabled?: boolean;
-  startDelayMs?: number;
-  stopOnDecode?: boolean;
-}
-
 const CAMERA_START_CONFIG = { facingMode: 'environment' };
 const BARCODE_SCANNER_CONFIG = {
   fps: 10,
@@ -35,16 +27,28 @@ const BARCODE_SCANNER_CONFIG = {
   },
 };
 
+interface UseBarcodeScannerOptions {
+  readerId: string;
+  onDecode: (barcode: string) => Promise<void> | void;
+  enabled?: boolean;
+  startDelayMs?: number;
+  dedupeMs?: number;
+  stopOnDecode?: boolean;
+  startErrorMessage?: string;
+}
+
 export function useBarcodeScanner({
   readerId,
   onDecode,
   enabled = true,
   startDelayMs = 80,
+  dedupeMs = 3000,
   stopOnDecode = false,
+  startErrorMessage = 'No se pudo iniciar la cámara. Verifica permisos del navegador.',
 }: UseBarcodeScannerOptions) {
   const [cameraReady, setCameraReady] = useState(false);
-  const [lastBarcode, setLastBarcode] = useState<string | null>(null);
   const [cameraFeedback, setCameraFeedback] = useState<CameraFeedbackState>('idle');
+  const [lastBarcode, setLastBarcode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const scannerRef = useRef<Html5Qrcode | null>(null);
@@ -68,14 +72,14 @@ export function useBarcodeScanner({
     };
   }, []);
 
-  const setTransientFeedback = useCallback((value: CameraFeedbackState) => {
+  const setTransientFeedback = useCallback((state: CameraFeedbackState) => {
     if (feedbackTimerRef.current) {
       clearTimeout(feedbackTimerRef.current);
       feedbackTimerRef.current = null;
     }
 
-    setCameraFeedback(value);
-    if (value === 'product-added' || value === 'not-found') {
+    setCameraFeedback(state);
+    if (state === 'product-added' || state === 'not-found') {
       feedbackTimerRef.current = setTimeout(() => {
         if (isMountedRef.current) {
           setCameraFeedback('scanning');
@@ -130,8 +134,8 @@ export function useBarcodeScanner({
   }, []);
 
   const startScanner = useCallback(async () => {
-    const readerElement = document.getElementById(readerId);
-    if (!readerElement) return;
+    const readerEl = document.getElementById(readerId);
+    if (!readerEl) return;
     if (isStartingRef.current || isStoppingRef.current || scannerRef.current) return;
 
     if (stopPromiseRef.current) {
@@ -144,7 +148,7 @@ export function useBarcodeScanner({
     setCameraReady(false);
     setCameraFeedback('starting');
     setError(null);
-    readerElement.innerHTML = '';
+    readerEl.innerHTML = '';
 
     const scanner = new Html5Qrcode(readerId, {
       verbose: true,
@@ -159,12 +163,14 @@ export function useBarcodeScanner({
     });
     scannerRef.current = scanner;
 
-    const onSuccess = async (decodedText: string) => {
+    const qrCodeSuccessCallback = async (decodedText: string) => {
       const now = Date.now();
-      const isSameRecentCode =
-        decodedText === lastScannedCodeRef.current && now - lastScannedTimeRef.current <= 3000;
+      const isNewCode =
+        decodedText &&
+        (decodedText !== lastScannedCodeRef.current ||
+          now - lastScannedTimeRef.current > dedupeMs);
 
-      if (!decodedText || isSameRecentCode || isHandlingScanRef.current) return;
+      if (!isNewCode || isHandlingScanRef.current) return;
 
       isHandlingScanRef.current = true;
       lastScannedCodeRef.current = decodedText;
@@ -182,10 +188,18 @@ export function useBarcodeScanner({
     };
 
     try {
+      const isPortrait = window.innerHeight > window.innerWidth;
       await scanner.start(
         CAMERA_START_CONFIG,
-        BARCODE_SCANNER_CONFIG,
-        onSuccess,
+        {
+          ...BARCODE_SCANNER_CONFIG,
+          videoConstraints: {
+            width: { ideal: isPortrait ? 720 : 1280 },
+            height: { ideal: isPortrait ? 1280 : 720 },
+            facingMode: 'environment',
+          },
+        },
+        qrCodeSuccessCallback,
         () => {
           // noop
         }
@@ -206,12 +220,12 @@ export function useBarcodeScanner({
 
       setCameraReady(false);
       setCameraFeedback('camera-error');
-      setError('No se pudo iniciar la camara. Revisa permisos del navegador.');
+      setError(startErrorMessage);
       await stopScanner();
     } finally {
       isStartingRef.current = false;
     }
-  }, [onDecode, readerId, stopOnDecode, stopScanner]);
+  }, [dedupeMs, onDecode, readerId, startErrorMessage, stopOnDecode, stopScanner]);
 
   useEffect(() => {
     if (!enabled) {
@@ -220,27 +234,27 @@ export function useBarcodeScanner({
       return;
     }
 
-    const timeoutId = setTimeout(() => {
+    const t = setTimeout(() => {
       void startScanner();
     }, startDelayMs);
 
     return () => {
-      clearTimeout(timeoutId);
+      clearTimeout(t);
       void stopScanner();
     };
   }, [enabled, startDelayMs, startScanner, stopScanner]);
 
   useEffect(() => {
     if (lastBarcode) {
-      const timeoutId = setTimeout(() => setLastBarcode(null), 3000);
-      return () => clearTimeout(timeoutId);
+      const t = setTimeout(() => setLastBarcode(null), dedupeMs);
+      return () => clearTimeout(t);
     }
-  }, [lastBarcode]);
+  }, [dedupeMs, lastBarcode]);
 
   useEffect(() => {
     if (error) {
-      const timeoutId = setTimeout(() => setError(null), 5000);
-      return () => clearTimeout(timeoutId);
+      const t = setTimeout(() => setError(null), 5000);
+      return () => clearTimeout(t);
     }
   }, [error]);
 
@@ -250,8 +264,9 @@ export function useBarcodeScanner({
     lastBarcode,
     error,
     setError,
+    setCameraFeedback,
+    setTransientFeedback,
     startScanner,
     stopScanner,
-    setTransientFeedback,
   };
 }

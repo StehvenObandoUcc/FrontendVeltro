@@ -1,69 +1,92 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
+import axios from 'axios';
+import { inventoryApi } from '../api/inventory';
 import { useAlertStore } from '../stores/alertStore';
 import { useAuthStore } from '../stores/authStore';
-import { getAlerts, getUnreadAlertCount, type Alert } from '../api/inventory';
 
-export const useAlerts = (pollInterval: number = 30000) => {
-  const { setActiveAlerts, setUnreadCount, addAlert } = useAlertStore();
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const previousCountRef = useRef<number>(0);
+const POLL_INTERVAL_MS = 30_000;
+
+export const useAlerts = () => {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const setUnreadCount = useAlertStore((state) => state.setUnreadCount);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelledRef = useRef(false);
+
+  const fetchUnreadCount = useCallback(async (): Promise<boolean> => {
+    if (cancelledRef.current) {
+      return false;
+    }
+
+    try {
+      const { count } = await inventoryApi.getUnreadAlertCount();
+      if (!cancelledRef.current) {
+        setUnreadCount(count);
+      }
+      return false;
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status;
+        if (status === 401 || status === 403) {
+          cancelledRef.current = true;
+          if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+          }
+          return true;
+        }
+      }
+      return false;
+    }
+  }, [setUnreadCount]);
 
   useEffect(() => {
-    // Don't poll if user is not authenticated
     if (!isAuthenticated) {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
-      }
       return;
     }
 
-    const fetchAlerts = async () => {
-      try {
-        const [alertsResponse, unreadResponse] = await Promise.all([
-          getAlerts(0),
-          getUnreadAlertCount(),
-        ]);
+    cancelledRef.current = false;
 
-        const currentAlerts = alertsResponse.data.content.filter((a: Alert) => !a.resolved);
-        const unreadCount = unreadResponse.data.count;
+    const scheduleNext = () => {
+      if (cancelledRef.current) {
+        return;
+      }
 
-        // Check if new critical alert appeared
-        const criticalCount = currentAlerts.filter(
-          (a: Alert) => a.severity === 'CRITICAL' && !a.read
-        ).length;
-
-        if (criticalCount > 0 && unreadCount > previousCountRef.current) {
-          const newAlerts = currentAlerts.filter(
-            (a: Alert) => a.severity === 'CRITICAL' && !a.read
-          );
-          newAlerts.forEach((alert: Alert) => {
-            console.log('Critical Alert:', alert.message);
-          });
+      timeoutRef.current = setTimeout(() => {
+        void runPollCycle();
+      }, POLL_INTERVAL_MS);
+    };
+    const runPollCycle = async () => {
+      if (cancelledRef.current) {
+        return;
+      }
+      if (document.visibilityState === 'visible') {
+        const shouldStop = await fetchUnreadCount();
+        if (shouldStop) {
+          return;
         }
+      }
+      scheduleNext();
+    };
 
-        previousCountRef.current = unreadCount;
-        setActiveAlerts(currentAlerts);
-        setUnreadCount(unreadCount);
-      } catch (error) {
-        console.error('Error fetching alerts:', error);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && !cancelledRef.current) {
+        void fetchUnreadCount();
       }
     };
 
-    // Initial fetch
-    fetchAlerts();
-
-    // Set up polling
-    pollingIntervalRef.current = setInterval(fetchAlerts, pollInterval);
+    void (async () => {
+      await fetchUnreadCount();
+      scheduleNext();
+    })();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
+      cancelledRef.current = true;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
       }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [pollInterval, setActiveAlerts, setUnreadCount, isAuthenticated]);
-
-  return { addAlert };
+  }, [isAuthenticated, fetchUnreadCount]);
 };

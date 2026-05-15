@@ -102,7 +102,7 @@ apiClient.interceptors.response.use(
       return apiClient(originalRequest);
     } catch (refreshError) {
       processQueue(refreshError, null);
-      // Refresh falló → logout
+      // Refresh failed → logout
       useAuthStore.getState().logout();
       window.location.href = '/login';
       return Promise.reject(refreshError);

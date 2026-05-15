@@ -1,6 +1,8 @@
 import { Link, useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
+import { useAlerts } from '../../hooks';
+import type { UserRole } from '../../types';
 import { AlertBadge } from '../inventory';
 import {
   LayoutDashboard,
@@ -18,6 +20,7 @@ import {
 } from 'lucide-react';
 
 export function MainLayout() {
+  useAlerts();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -28,7 +31,7 @@ export function MainLayout() {
     navigate('/login', { replace: true });
   };
 
-  const getRoleLabel = (role: string): string => {
+  const getRoleLabel = (role: UserRole): string => {
     switch (role) {
       case 'ADMIN': return 'Administrador';
       case 'CASHIER': return 'Cajero';
@@ -168,13 +171,27 @@ export function MainLayout() {
 
         {/* User Context Footer */}
         <div className="p-4" style={{ borderTop: '1px solid rgba(255,255,255,0.1)', backgroundColor: 'rgba(0,0,0,0.2)' }}>
-          <div className="flex items-center justify-between mb-3">
+          <Link to="/app/profile" className="flex items-center justify-between mb-3 group cursor-pointer" onClick={() => setSidebarOpen(false)}>
             <div>
-              <p className="text-sm font-medium text-white">{user?.username}</p>
-              <p className="text-xs text-gray-400 mt-0.5">{getRoleLabel(user?.role || '')}</p>
+              <p className="text-sm font-medium text-white group-hover:text-[var(--primary-lighter)] transition-colors">{user?.username}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{getRoleLabel(user?.role as UserRole)}</p>
+              {user?.role !== 'ADMIN' && (
+                <div className="mt-2 space-y-0.5">
+                  {user?.businessName && (
+                    <p className="text-[10px] text-gray-400">
+                      Tienda: <span className="text-white font-medium">{user.businessName}</span>
+                    </p>
+                  )}
+                  {user?.adminName && (
+                    <p className="text-[10px] text-gray-400">
+                      Jefe: <span className="text-white font-medium">{user.adminName}</span>
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--primary-base)', boxShadow: '0 0 8px var(--primary-base)' }} />
-          </div>
+          </Link>
           <button
             onClick={handleLogout}
             className="w-full py-2 px-3 rounded text-xs font-semibold text-gray-300 transition-colors"

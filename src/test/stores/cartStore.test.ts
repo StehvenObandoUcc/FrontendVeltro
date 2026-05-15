@@ -1,19 +1,28 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useCartStore } from '../../stores/cartStore';
+import type { Product } from '../../types';
 
 // Helper to create test products
-const createTestProduct = (id: string, name: string, price: string = '10.00') => ({
+const createTestProduct = (id: number, name: string, salePrice: string = '10.00'): Product => ({
   id,
   name,
-  price,
   barcode: `BARCODE${id}`,
   sku: `SKU${id}`,
-  costPrice: (parseFloat(price) / 2).toFixed(2),
-  category: { id: 'cat1', name: 'Test Category' },
+  description: null,
+  costPrice: (parseFloat(salePrice) / 2).toFixed(2),
+  salePrice,
+  categoryId: 1,
+  categoryName: 'Test Category',
+  active: true,
+  createdAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: null,
+  minStockInfo: null,
+  minStockWarning: null,
+  minStockCritical: null,
 });
 
 describe('cartStore', () => {
-  let store: any;
+  let store: ReturnType<typeof useCartStore.getState>;
 
   beforeEach(() => {
     // Reset store before each test
@@ -23,25 +32,33 @@ describe('cartStore', () => {
   describe('add', () => {
     it('should add a new product to the cart', () => {
       const product = {
-        id: '1',
+        id: 1,
         name: 'Test Product',
-        price: '10.00',
+        salePrice: '10.00',
         barcode: 'TEST123',
         sku: 'SKU001',
+        description: null,
         costPrice: '5.00',
-        category: { id: 'cat1', name: 'Category 1' },
-      };
+        categoryId: 1,
+        categoryName: 'Category 1',
+        active: true,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: null,
+        minStockInfo: null,
+        minStockWarning: null,
+        minStockCritical: null,
+      } satisfies Product;
 
       useCartStore.getState().add(product, 1);
       store = useCartStore.getState();
 
       expect(store.items).toHaveLength(1);
-      expect(store.items[0].productId).toBe('1');
+      expect(store.items[0].productId).toBe(1);
       expect(store.items[0].quantity).toBe(1);
     });
 
     it('should increment quantity if product already exists', () => {
-      const product = createTestProduct('1', 'Test Product');
+      const product = createTestProduct(1, 'Test Product');
 
       useCartStore.getState().add(product, 2);
       useCartStore.getState().add(product, 3);
@@ -52,8 +69,8 @@ describe('cartStore', () => {
     });
 
     it('should handle multiple different products', () => {
-      const product1 = createTestProduct('1', 'Product 1', '10.00');
-      const product2 = createTestProduct('2', 'Product 2', '20.00');
+      const product1 = createTestProduct(1, 'Product 1', '10.00');
+      const product2 = createTestProduct(2, 'Product 2', '20.00');
 
       useCartStore.getState().add(product1, 1);
       useCartStore.getState().add(product2, 2);
@@ -66,38 +83,38 @@ describe('cartStore', () => {
 
   describe('remove', () => {
     it('should remove a product from the cart', () => {
-      const product = createTestProduct('1', 'Test Product');
+      const product = createTestProduct(1, 'Test Product');
 
       useCartStore.getState().add(product, 1);
       store = useCartStore.getState();
       expect(store.items).toHaveLength(1);
 
-      store.remove('1');
+      store.remove(1);
       store = useCartStore.getState();
       expect(store.items).toHaveLength(0);
     });
 
     it('should not throw if product not found', () => {
-      expect(() => useCartStore.getState().remove('nonexistent')).not.toThrow();
+      expect(() => useCartStore.getState().remove(999)).not.toThrow();
     });
   });
 
   describe('updateQty', () => {
     it('should update product quantity', () => {
-      const product = createTestProduct('1', 'Test Product');
+      const product = createTestProduct(1, 'Test Product');
 
       useCartStore.getState().add(product, 1);
-      useCartStore.getState().updateQty('1', 5);
+      useCartStore.getState().updateQty(1, 5);
       store = useCartStore.getState();
 
       expect(store.items[0].quantity).toBe(5);
     });
 
     it('should remove product if quantity is 0 or less', () => {
-      const product = createTestProduct('1', 'Test Product');
+      const product = createTestProduct(1, 'Test Product');
 
       useCartStore.getState().add(product, 5);
-      useCartStore.getState().updateQty('1', 0);
+      useCartStore.getState().updateQty(1, 0);
       store = useCartStore.getState();
 
       expect(store.items).toHaveLength(0);
@@ -106,7 +123,7 @@ describe('cartStore', () => {
 
   describe('getTotal', () => {
     it('should calculate correct total for single item', () => {
-      const product = createTestProduct('1', 'Test Product', '10.50');
+      const product = createTestProduct(1, 'Test Product', '10.50');
 
       useCartStore.getState().add(product, 2);
       const total = useCartStore.getState().getTotal();
@@ -115,8 +132,8 @@ describe('cartStore', () => {
     });
 
     it('should calculate correct total for multiple items', () => {
-      const product1 = createTestProduct('1', 'Product 1', '10.00');
-      const product2 = createTestProduct('2', 'Product 2', '20.00');
+      const product1 = createTestProduct(1, 'Product 1', '10.00');
+      const product2 = createTestProduct(2, 'Product 2', '20.00');
 
       useCartStore.getState().add(product1, 1);
       useCartStore.getState().add(product2, 1);
@@ -128,13 +145,13 @@ describe('cartStore', () => {
     it('should return 0 for empty cart', () => {
       const total = useCartStore.getState().getTotal();
 
-      expect(total).toBe('0.0000');
+      expect(total).toBe('0.00');
     });
   });
 
   describe('clear', () => {
     it('should clear all items from the cart', () => {
-      const product = createTestProduct('1', 'Test Product');
+      const product = createTestProduct(1, 'Test Product');
 
       useCartStore.getState().add(product, 5);
       store = useCartStore.getState();
@@ -143,14 +160,14 @@ describe('cartStore', () => {
       store.clear();
       store = useCartStore.getState();
       expect(store.items).toHaveLength(0);
-      expect(store.getTotal()).toBe('0.0000');
+      expect(store.getTotal()).toBe('0.00');
     });
   });
 
   describe('getItemCount', () => {
     it('should return correct item count', () => {
-      const product1 = createTestProduct('1', 'Product 1', '10.00');
-      const product2 = createTestProduct('2', 'Product 2', '20.00');
+      const product1 = createTestProduct(1, 'Product 1', '10.00');
+      const product2 = createTestProduct(2, 'Product 2', '20.00');
 
       useCartStore.getState().add(product1, 3);
       useCartStore.getState().add(product2, 2);
@@ -161,7 +178,7 @@ describe('cartStore', () => {
 
   describe('getSubtotal', () => {
     it('should calculate correct subtotal for item', () => {
-      const product = createTestProduct('1', 'Test Product', '15.50');
+      const product = createTestProduct(1, 'Test Product', '15.50');
 
       useCartStore.getState().add(product, 3);
       store = useCartStore.getState();

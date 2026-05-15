@@ -9,8 +9,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useAiScanStore } from '../stores/aiScanStore';
-import { aiDetectFrame } from '../api/pos';
-import type { MatchedProduct } from '../modules/types/ai.types';
+import { posApi } from '../api/pos';
 
 const API_COOLDOWN_MS    = 1000;  // 1s between backend calls
 
@@ -83,30 +82,23 @@ export const useAiScanQueue = (
         );
         if (!blob || blob.size === 0) throw new Error('Empty blob');
 
-        console.log(`[Queue] Crop: original=${w}×${h}px → sent=${cropW}×${cropH}px | blob=${blob.size} bytes`);
+
 
         // ── Send to backend POST /api/v1/scanner/ai ──────────────────────────
-        const { data } = await aiDetectFrame(blob, `crop_${candidate.id.slice(0, 8)}.jpg`);
+        const data = await posApi.aiDetectFrame(blob, `crop_${candidate.id.slice(0, 8)}.jpg`);
 
         if (data?.length && data[0].matches?.length) {
-          const matches: MatchedProduct[] = data[0].matches.map((p: any) => ({
-            id:           p.id,
-            name:         p.name,
-            sku:          p.sku ?? '',
-            barcode:      p.barcode ?? '',
-            salePrice:    p.salePrice?.toString() ?? '0',
-            currentStock: undefined,
-          }));
-          console.log(`[Queue] ✅ Match: ${matches[0].name} (CLIP verified)`);
+          const matches = data[0].matches;
+
           updateMatches(candidate.id, matches);
         } else {
-          console.log('[Queue] No match found for candidate', candidate.id.slice(0, 8));
+
           updateStatus(candidate.id, 'ERROR');
         }
       } catch (err) {
         const status = (err as { response?: { status?: number } })?.response?.status;
         if (status === 404 || status === 0) {
-          console.log('[Queue] No CLIP match found');
+          // No match found - expected case, no logging needed
         } else {
           console.error('[Queue] Backend call failed:', err);
         }
@@ -118,8 +110,7 @@ export const useAiScanQueue = (
     };
 
     process();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [detections, aiEnabled]);
+  }, [detections, aiEnabled, setIsProcessing, updateStatus, updateMatches, videoRef]);
 
   return {};
 };

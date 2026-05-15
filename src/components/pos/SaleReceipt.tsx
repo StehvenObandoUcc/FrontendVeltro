@@ -1,6 +1,7 @@
 import React from 'react';
 import { CircleCheck } from 'lucide-react';
 import type { SaleResponse } from '../../api/pos';
+import { formatCurrency } from '../../utils/formatCurrency';
 
 interface SaleReceiptProps {
   isOpen: boolean;
@@ -30,8 +31,10 @@ export const SaleReceipt: React.FC<SaleReceiptProps> = ({
   const paymentMethodLabel: Record<string, string> = {
     CASH: 'Efectivo',
     CARD: 'Tarjeta',
-    NEQUI: 'Nequi',
-    DAVIPLATA: 'Daviplata',
+    TRANSFER: 'Transferencia',
+    YAPE: 'Yape',
+    PLIN: 'Plin',
+    MIXED: 'Mixto',
   };
 
   const itemCount = saleData.details?.reduce((sum, d) => sum + d.quantity, 0) ?? 0;
@@ -42,7 +45,7 @@ export const SaleReceipt: React.FC<SaleReceiptProps> = ({
         {/* Header */}
         <div className="bg-green-600 text-white px-6 py-4 text-center">
           <CircleCheck className="w-8 h-8 mx-auto mb-2" />
-          <h2 className="text-xl font-bold">Venta Confirmada!</h2>
+          <h2 className="text-xl font-bold">¡Venta Confirmada!</h2>
         </div>
 
         {/* Receipt Content */}
@@ -59,17 +62,17 @@ export const SaleReceipt: React.FC<SaleReceiptProps> = ({
 
           {/* Items */}
           <div className="space-y-2">
-            <h3 className="font-bold text-gray-900">Articulos:</h3>
+            <h3 className="font-bold text-gray-900">Artículos:</h3>
             {saleData.details?.map((item, index) => (
               <div key={index} className="flex justify-between text-xs">
                 <div>
                   <p className="font-medium">{item.productName}</p>
                   <p className="text-gray-500">
-                    {item.quantity}x $ {parseFloat(item.unitPrice).toFixed(2)}
+                    {item.quantity}x {formatCurrency(item.unitPrice)}
                   </p>
                 </div>
                 <p className="font-semibold">
-                  $ {parseFloat(item.subtotal).toFixed(2)}
+                  {formatCurrency(item.subtotal)}
                 </p>
               </div>
             ))}
@@ -79,22 +82,22 @@ export const SaleReceipt: React.FC<SaleReceiptProps> = ({
           <div className="border-t pt-3 space-y-2">
             <div className="flex justify-between">
               <span className="text-gray-600">Cantidad:</span>
-              <span className="font-semibold">{itemCount} items</span>
+              <span className="font-semibold">{itemCount} productos</span>
             </div>
             <div className="flex justify-between text-base font-bold text-green-600 border-t pt-2">
               <span>Total:</span>
-              <span>$ {parseFloat(saleData.total).toFixed(2)}</span>
+              <span>{formatCurrency(saleData.total)}</span>
             </div>
             {saleData.amountReceived && (
               <>
                 <div className="flex justify-between text-xs">
                   <span className="text-gray-600">Recibido:</span>
-                  <span>$ {parseFloat(saleData.amountReceived).toFixed(2)}</span>
+                  <span>{formatCurrency(saleData.amountReceived)}</span>
                 </div>
                 {saleData.change && (
                   <div className="flex justify-between text-xs">
                     <span className="text-gray-600">Cambio:</span>
-                    <span>$ {parseFloat(saleData.change).toFixed(2)}</span>
+                    <span>{formatCurrency(saleData.change)}</span>
                   </div>
                 )}
               </>
@@ -103,7 +106,7 @@ export const SaleReceipt: React.FC<SaleReceiptProps> = ({
 
           {/* Payment Method */}
           <div className="bg-blue-50 p-3 rounded text-center">
-            <p className="text-xs text-gray-600 mb-1">Metodo de pago:</p>
+            <p className="text-xs text-gray-600 mb-1">Método de pago:</p>
             <p className="font-semibold text-gray-900">
               {saleData.paymentMethod ? paymentMethodLabel[saleData.paymentMethod] || saleData.paymentMethod : 'N/A'}
             </p>

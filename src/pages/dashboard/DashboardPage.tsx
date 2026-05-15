@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { AxiosError } from 'axios';
-import { getDashboard } from '../../api/dashboard';
+import { dashboardApi } from '../../api/dashboard';
 import type { DashboardResponse } from '../../api/dashboard';
 import type { ApiError } from '../../types';
 import {
@@ -33,8 +33,8 @@ export const DashboardPage: React.FC = () => {
       setError(null);
 
       try {
-        const response = await getDashboard();
-        setData(response.data);
+        const response = await dashboardApi.getDashboard();
+        setData(response);
       } catch (err) {
         const axiosError = err as AxiosError<ApiError>;
         setError(

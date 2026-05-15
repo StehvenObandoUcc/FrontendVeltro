@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useCartStore } from '../../stores/cartStore';
 import type { CreateSaleRequest } from '../../api/pos';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { formatCurrency } from '../../utils/formatCurrency';
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -19,12 +20,26 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   submitError = null,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
-  const { items, getTotal } = useCartStore();
+  const items = useCartStore((s) => s.items);
+  const getTotal = useCartStore((s) => s.getTotal);
   const [paymentMethod, setPaymentMethod] = useState<
-    'CASH' | 'CARD' | 'NEQUI' | 'DAVIPLATA'
+    'CASH' | 'CARD' | 'YAPE' | 'PLIN' | 'TRANSFER' | 'MIXED'
   >('CASH');
   const [notes, setNotes] = useState('');
+  const [amountReceived, setAmountReceived] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+
+  // Payment characteristics states
+  const [cardDigits, setCardDigits] = useState('');
+  const [cardType, setCardType] = useState('VISA');
+  const [bankName, setBankName] = useState('BCP');
+  const [operationCode, setOperationCode] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+
+  // Mixed payment states
+  const [mixedCashAmount, setMixedCashAmount] = useState('');
+  const [mixedOtherAmount, setMixedOtherAmount] = useState('');
+  const [mixedMethod, setMixedMethod] = useState<'CARD' | 'TRANSFER' | 'YAPE' | 'PLIN'>('YAPE');
 
   useFocusTrap(modalRef, onClose, isOpen);
 
@@ -39,6 +54,15 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
       setError(null);
       setNotes('');
       setPaymentMethod('CASH');
+      setAmountReceived('');
+      setCardDigits('');
+      setCardType('VISA');
+      setBankName('BCP');
+      setOperationCode('');
+      setPhoneNumber('');
+      setMixedCashAmount('');
+      setMixedOtherAmount('');
+      setMixedMethod('YAPE');
     }
   }, [isOpen]);
 
@@ -47,9 +71,103 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
       setError(null);
 
       if (items.length === 0) {
-        setError('El carrito esta vacio');
+        setError('El carrito está vacío');
         return;
       }
+
+      let paymentDetailsStr = '';
+      if (paymentMethod === 'CASH') {
+        if (!amountReceived) {
+          setError('El monto recibido es obligatorio para pagos en efectivo');
+          return;
+        }
+        const receivedVal = parseFloat(amountReceived);
+        if (isNaN(receivedVal) || receivedVal < parseFloat(total)) {
+          setError('El monto recibido debe ser mayor o igual al total de la venta');
+          return;
+        }
+      } else if (paymentMethod === 'CARD') {
+        if (!cardDigits) {
+          setError('Los últimos 4 dígitos de la tarjeta son obligatorios');
+          return;
+        }
+        if (cardDigits.length !== 4 || isNaN(parseInt(cardDigits))) {
+          setError('Los dígitos de la tarjeta deben ser exactamente 4 números');
+          return;
+        }
+        paymentDetailsStr = `Tarjeta: ${cardType} terminada en ${cardDigits}`;
+      } else if (paymentMethod === 'TRANSFER') {
+        if (!operationCode) {
+          setError('El código de operación es obligatorio');
+          return;
+        }
+        paymentDetailsStr = `Transferencia Bancaria: ${bankName} | Op: ${operationCode}`;
+      } else if (paymentMethod === 'YAPE') {
+        if (!operationCode) {
+          setError('El código de operación es obligatorio');
+          return;
+        }
+        paymentDetailsStr = `Yape: ${phoneNumber ? 'Cel: ' + phoneNumber : ''} | Op: ${operationCode}`;
+      } else if (paymentMethod === 'PLIN') {
+        if (!operationCode) {
+          setError('El código de operación es obligatorio');
+          return;
+        }
+        paymentDetailsStr = `Plin: ${phoneNumber ? 'Cel: ' + phoneNumber : ''} | Op: ${operationCode}`;
+      } else if (paymentMethod === 'MIXED') {
+        const cashVal = parseFloat(mixedCashAmount);
+        const otherVal = parseFloat(mixedOtherAmount);
+        if (isNaN(cashVal) || cashVal < 0) {
+          setError('El monto en efectivo debe ser un número no negativo');
+          return;
+        }
+        if (isNaN(otherVal) || otherVal < 0) {
+          setError('El monto del otro método debe ser un número no negativo');
+          return;
+        }
+        if (Math.abs(cashVal + otherVal - parseFloat(total)) > 0.01) {
+          setError(`La suma de los montos (${formatCurrency(cashVal + otherVal)}) debe coincidir con el total (${formatCurrency(total)})`);
+          return;
+        }
+
+        let mixedDetails = '';
+        if (mixedMethod === 'CARD') {
+          if (!cardDigits) {
+            setError('Los últimos 4 dígitos de la tarjeta son obligatorios');
+            return;
+          }
+          if (cardDigits.length !== 4 || isNaN(parseInt(cardDigits))) {
+            setError('Los dígitos de la tarjeta deben ser exactamente 4 números');
+            return;
+          }
+          mixedDetails = `Tarjeta ${cardType} (dígitos: ${cardDigits})`;
+        } else if (mixedMethod === 'TRANSFER') {
+          if (!operationCode) {
+            setError('El código de operación es obligatorio');
+            return;
+          }
+          mixedDetails = `Transferencia ${bankName} (Op: ${operationCode})`;
+        } else if (mixedMethod === 'YAPE') {
+          if (!operationCode) {
+            setError('El código de operación es obligatorio');
+            return;
+          }
+          mixedDetails = `Yape${phoneNumber ? ' Cel: ' + phoneNumber : ''} (Op: ${operationCode})`;
+        } else if (mixedMethod === 'PLIN') {
+          if (!operationCode) {
+            setError('El código de operación es obligatorio');
+            return;
+          }
+          mixedDetails = `Plin${phoneNumber ? ' Cel: ' + phoneNumber : ''} (Op: ${operationCode})`;
+        }
+        paymentDetailsStr = `Pago Mixto - Efectivo: ${formatCurrency(cashVal)} + ${mixedMethod}: ${formatCurrency(otherVal)} (${mixedDetails})`;
+      }
+
+      const finalNotes = notes
+        ? `${notes}\nDetalle de Pago: ${paymentDetailsStr}`
+        : paymentDetailsStr
+        ? `Detalle de Pago: ${paymentDetailsStr}`
+        : undefined;
 
       const saleData: CreateSaleRequest = {
         items: items.map((item) => ({
@@ -57,13 +175,14 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           quantity: item.quantity,
         })),
         paymentMethod,
-        notes: notes || undefined,
+        notes: finalNotes,
+        amountReceived: paymentMethod === 'CASH' ? parseFloat(amountReceived) : undefined,
       };
 
       await onConfirm(saleData);
     } catch (err) {
       const errorMsg =
-        err instanceof Error ? err.message : 'Error al confirmar venta';
+        err instanceof Error ? err.message : 'Error al confirmar la venta';
       setError(errorMsg);
     }
   };
@@ -79,7 +198,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
     >
       <div
         ref={modalRef}
-        className="mx-4 max-h-96 w-full max-w-md overflow-y-auto rounded-lg bg-white shadow-xl"
+        className="mx-4 max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg bg-white shadow-xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-modal-title"
@@ -94,16 +213,16 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
 
         <div className="space-y-4 p-6" id="confirm-modal-description">
           <div className="rounded border bg-gray-50 p-4">
-            <h3 className="mb-2 text-sm font-semibold">Items a vender:</h3>
-            <ul className="space-y-1 text-sm text-gray-700" aria-label="Items in cart">
+            <h3 className="mb-2 text-sm font-semibold">Productos a vender:</h3>
+            <ul className="space-y-1 text-sm text-gray-700" aria-label="Productos en el carrito">
               {items.map((item) => (
                 <li key={item.productId} className="flex justify-between">
                   <span>{item.product.name}</span>
                   <span
                     className="font-medium"
-                    aria-label={`${item.quantity} items at $ ${parseFloat(item.product.salePrice).toFixed(2)} each`}
+                    aria-label={`${item.quantity} productos a ${formatCurrency(item.product.salePrice)} cada uno`}
                   >
-                    {item.quantity}x $ {parseFloat(item.product.salePrice).toFixed(2)}
+                    {item.quantity}x {formatCurrency(item.product.salePrice)}
                   </span>
                 </li>
               ))}
@@ -115,9 +234,9 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
               <span className="text-lg font-bold">Total:</span>
               <span
                 className="text-2xl font-bold text-green-600"
-                aria-label={`Sale total: $ ${parseFloat(total).toFixed(2)}`}
+                aria-label={`Total de la venta: ${formatCurrency(total)}`}
               >
-                $ {parseFloat(total).toFixed(2)}
+                {formatCurrency(total)}
               </span>
             </div>
           </div>
@@ -127,26 +246,284 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
               htmlFor="payment-method"
               className="mb-2 block text-sm font-medium text-gray-700"
             >
-              Metodo de pago
+              Método de pago
             </label>
             <select
               id="payment-method"
               value={paymentMethod}
               onChange={(e) =>
                 setPaymentMethod(
-                  e.target.value as 'CASH' | 'CARD' | 'NEQUI' | 'DAVIPLATA'
+                  e.target.value as 'CASH' | 'CARD' | 'YAPE' | 'PLIN' | 'TRANSFER' | 'MIXED'
                 )
               }
               className="w-full rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-              aria-label="Select payment method for transaction"
-              title="Cash, Card, Nequi, or Daviplata"
+              aria-label="Seleccione el método de pago para la transacción"
+              title="Método de pago disponible"
             >
               <option value="CASH">Efectivo</option>
               <option value="CARD">Tarjeta</option>
-              <option value="NEQUI">Nequi</option>
-              <option value="DAVIPLATA">Daviplata</option>
+              <option value="TRANSFER">Transferencia</option>
+              <option value="YAPE">Yape</option>
+              <option value="PLIN">Plin</option>
+              <option value="MIXED">Mixto</option>
             </select>
           </div>
+
+          {paymentMethod === 'CASH' && (
+            <div className="space-y-2 border-l-4 border-blue-500 bg-blue-50/50 p-3 rounded-r-md">
+              <label
+                htmlFor="amount-received"
+                className="block text-sm font-semibold text-gray-700 text-left"
+              >
+                Efectivo recibido (obligatorio)
+              </label>
+              <input
+                id="amount-received"
+                type="number"
+                step="any"
+                min={total}
+                value={amountReceived}
+                onChange={(e) => setAmountReceived(e.target.value)}
+                placeholder={`Ej: ${parseFloat(total).toFixed(0)}`}
+                className="w-full rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none text-sm"
+                aria-label="Ingrese el monto recibido en efectivo del cliente"
+                title="Monto recibido en efectivo"
+                required
+              />
+              {amountReceived && parseFloat(amountReceived) >= parseFloat(total) && (
+                <p className="mt-1 text-sm font-semibold text-green-600 text-left">
+                  Vuelto (Cambio): {formatCurrency(parseFloat(amountReceived) - parseFloat(total))}
+                </p>
+              )}
+            </div>
+          )}
+
+          {paymentMethod === 'CARD' && (
+            <div className="space-y-3 border-l-4 border-purple-500 bg-purple-50/30 p-4 rounded-r-md text-left">
+              <h4 className="text-sm font-bold text-purple-800">Detalles de Tarjeta</h4>
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-gray-600">Franquicia / Tipo de Tarjeta</label>
+                <select
+                  value={cardType}
+                  onChange={(e) => setCardType(e.target.value)}
+                  className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none bg-white"
+                >
+                  <option value="VISA">Visa</option>
+                  <option value="MASTERCARD">Mastercard</option>
+                  <option value="AMEX">American Express</option>
+                  <option value="DINERS">Diners Club</option>
+                  <option value="OTROS">Otros</option>
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-gray-600">Últimos 4 dígitos (obligatorio)</label>
+                <input
+                  type="text"
+                  maxLength={4}
+                  value={cardDigits}
+                  onChange={(e) => setCardDigits(e.target.value.replace(/\D/g, ''))}
+                  placeholder="Ej: 1234"
+                  className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+                  required
+                />
+              </div>
+            </div>
+          )}
+
+          {paymentMethod === 'TRANSFER' && (
+            <div className="space-y-3 border-l-4 border-indigo-500 bg-indigo-50/30 p-4 rounded-r-md text-left">
+              <h4 className="text-sm font-bold text-indigo-800">Detalles de Transferencia</h4>
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-gray-600">Banco de Destino</label>
+                <select
+                  value={bankName}
+                  onChange={(e) => setBankName(e.target.value)}
+                  className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none bg-white"
+                >
+                  <option value="BCP">Banco de Crédito (BCP)</option>
+                  <option value="BBVA">BBVA</option>
+                  <option value="INTERBANK">Interbank</option>
+                  <option value="SCOTIABANK">Scotiabank</option>
+                  <option value="BANCO_NACION">Banco de la Nación</option>
+                  <option value="OTROS">Otros</option>
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-gray-600">Código de Referencia / Operación</label>
+                <input
+                  type="text"
+                  value={operationCode}
+                  onChange={(e) => setOperationCode(e.target.value)}
+                  placeholder="Ej: TXN-98765"
+                  className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+                  required
+                />
+              </div>
+            </div>
+          )}
+
+          {(paymentMethod === 'YAPE' || paymentMethod === 'PLIN') && (
+            <div className="space-y-3 border-l-4 border-pink-500 bg-pink-50/30 p-4 rounded-r-md text-left">
+              <h4 className="text-sm font-bold text-pink-800">Detalles de Billetera ({paymentMethod})</h4>
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-gray-600">Número de Celular (opcional)</label>
+                <input
+                  type="text"
+                  maxLength={9}
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
+                  placeholder="Ej: 987654321"
+                  className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-gray-600">Código de Operación (obligatorio)</label>
+                <input
+                  type="text"
+                  value={operationCode}
+                  onChange={(e) => setOperationCode(e.target.value)}
+                  placeholder="Ej: 123456"
+                  className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+                  required
+                />
+              </div>
+            </div>
+          )}
+
+          {paymentMethod === 'MIXED' && (
+            <div className="space-y-4 border-l-4 border-yellow-500 bg-yellow-50/30 p-4 rounded-r-md text-left">
+              <h4 className="text-sm font-bold text-yellow-800">Pago Mixto</h4>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-gray-600">Efectivo recibido</label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={mixedCashAmount}
+                    onChange={(e) => {
+                      setMixedCashAmount(e.target.value);
+                      const cash = parseFloat(e.target.value) || 0;
+                      const rest = Math.max(0, parseFloat(total) - cash);
+                      setMixedOtherAmount(rest.toFixed(2));
+                    }}
+                    placeholder="Monto"
+                    className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-gray-600">Segundo método</label>
+                  <select
+                    value={mixedMethod}
+                    onChange={(e) => setMixedMethod(e.target.value as 'CARD' | 'TRANSFER' | 'YAPE' | 'PLIN')}
+                    className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none bg-white"
+                  >
+                    <option value="YAPE">Yape</option>
+                    <option value="PLIN">Plin</option>
+                    <option value="CARD">Tarjeta</option>
+                    <option value="TRANSFER">Transferencia</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="bg-white p-3 rounded border border-yellow-200">
+                <span className="text-xs font-semibold text-gray-500 block mb-0.5">
+                  Monto en {mixedMethod === 'CARD' ? 'Tarjeta' : mixedMethod === 'TRANSFER' ? 'Transferencia' : mixedMethod}:
+                </span>
+                <span className="text-lg font-bold text-yellow-600">{formatCurrency(mixedOtherAmount || '0')}</span>
+              </div>
+
+              {/* Sub-inputs conditional for the second mixed method */}
+              <div className="pt-2 border-t border-yellow-200 space-y-3">
+                {mixedMethod === 'CARD' && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold text-gray-600">Franquicia de Tarjeta</label>
+                      <select
+                        value={cardType}
+                        onChange={(e) => setCardType(e.target.value)}
+                        className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none bg-white"
+                      >
+                        <option value="VISA">Visa</option>
+                        <option value="MASTERCARD">Mastercard</option>
+                        <option value="AMEX">American Express</option>
+                        <option value="OTROS">Otros</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold text-gray-600">Últimos 4 dígitos</label>
+                      <input
+                        type="text"
+                        maxLength={4}
+                        value={cardDigits}
+                        onChange={(e) => setCardDigits(e.target.value.replace(/\D/g, ''))}
+                        placeholder="Ej: 1234"
+                        className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {mixedMethod === 'TRANSFER' && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold text-gray-600">Banco de Destino</label>
+                      <select
+                        value={bankName}
+                        onChange={(e) => setBankName(e.target.value)}
+                        className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none bg-white"
+                      >
+                        <option value="BCP">BCP</option>
+                        <option value="BBVA">BBVA</option>
+                        <option value="INTERBANK">Interbank</option>
+                        <option value="OTROS">Otros</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold text-gray-600">Código de Referencia / Operación</label>
+                      <input
+                        type="text"
+                        value={operationCode}
+                        onChange={(e) => setOperationCode(e.target.value)}
+                        placeholder="Ej: Op-12345"
+                        className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {(mixedMethod === 'YAPE' || mixedMethod === 'PLIN') && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold text-gray-600">Número de Celular (opcional)</label>
+                      <input
+                        type="text"
+                        maxLength={9}
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
+                        placeholder="Ej: 987654321"
+                        className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold text-gray-600">Código de Operación</label>
+                      <input
+                        type="text"
+                        value={operationCode}
+                        onChange={(e) => setOperationCode(e.target.value)}
+                        placeholder="Ej: 123456"
+                        className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           <div>
             <label
@@ -159,11 +536,11 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
               id="sale-notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Ej: Cliente solicito embalaje especial"
+              placeholder="Ej: Cliente solicitó embalaje especial"
               className="w-full resize-none rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
               rows={2}
-              aria-label="Add optional notes for this sale"
-              title="Enter any special notes or instructions for this transaction"
+              aria-label="Agregar notas opcionales para esta venta"
+              title="Ingrese notas o instrucciones especiales para esta transacción"
             />
           </div>
 
@@ -183,8 +560,8 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
             onClick={onClose}
             disabled={isLoading}
             className="flex-1 rounded bg-gray-300 px-4 py-2 font-medium text-gray-800 transition hover:bg-gray-400 disabled:cursor-not-allowed disabled:opacity-50"
-            aria-label="Cancel sale confirmation and close dialog"
-            title="Close this dialog (Escape key)"
+            aria-label="Cancelar confirmación de venta y cerrar diálogo"
+            title="Cerrar este diálogo (Tecla Escape)"
           >
             Cancelar
           </button>
@@ -192,8 +569,8 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
             onClick={handleConfirm}
             disabled={isLoading || items.length === 0}
             className="flex-1 rounded bg-green-600 px-4 py-2 font-medium text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
-            aria-label={`Confirm and process sale of $ ${parseFloat(total).toFixed(2)}`}
-            title="Complete this transaction"
+            aria-label={`Confirmar y procesar venta de ${formatCurrency(total)}`}
+            title="Completar esta transacción"
           >
             {isLoading ? 'Procesando...' : 'Confirmar'}
           </button>

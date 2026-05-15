@@ -22,23 +22,15 @@ const registerSchema = z
       .max(64, 'La contraseña no puede exceder 64 caracteres')
       .refine((value) => !/\s/.test(value), 'La contraseña no puede contener espacios'),
     confirmPassword: z.string().min(1, 'Confirme su contraseña'),
-    role: z.enum(['ADMIN', 'WAREHOUSE', 'CASHIER'], {
-      required_error: 'Seleccione un rol',
-      invalid_type_error: 'Seleccione un rol'
-    }),
+    role: z.literal('ADMIN').default('ADMIN'),
     businessName: z
       .string()
       .min(2, 'El nombre del negocio debe tener al menos 2 caracteres')
-      .max(100, 'El nombre del negocio no puede exceder 100 caracteres')
-      .optional(),
+      .max(100, 'El nombre del negocio no puede exceder 100 caracteres'),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Las contraseñas no coinciden',
     path: ['confirmPassword'],
-  })
-  .refine((data) => data.role !== 'ADMIN' || (data.businessName && data.businessName.length >= 2), {
-    message: 'El nombre del negocio es requerido para administradores',
-    path: ['businessName'],
   });
 
 type RegisterFormData = z.infer<typeof registerSchema>;
@@ -61,7 +53,6 @@ export function RegisterPage() {
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -69,8 +60,6 @@ export function RegisterPage() {
       role: 'ADMIN',
     },
   });
-
-  const selectedRole = watch('role');
 
   const onSubmit = async (data: RegisterFormData) => {
     setError(null);
@@ -212,48 +201,23 @@ export function RegisterPage() {
           </div>
 
           <div className="flex flex-col gap-1.5 mb-4">
-            <label htmlFor="role" className="text-sm font-semibold text-gray-700">
-              Tipo de cuenta
+            <label htmlFor="businessName" className="text-sm font-semibold text-gray-700">
+              Nombre del negocio
             </label>
-            <select
-              id="role"
-              {...register('role')}
+            <input
+              id="businessName"
+              type="text"
+              {...register('businessName')}
               className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 outline-none focus:bg-white focus:ring-2 focus:ring-[#038E57]/20 focus:border-[#038E57] transition-all duration-200"
-            >
-              <option value="ADMIN">Administrador</option>
-              <option value="WAREHOUSE">Almacen</option>
-              <option value="CASHIER">Cajero</option>
-            </select>
-            {errors.role && (
-              <p className="text-xs font-medium text-red-500 mt-1">{errors.role.message}</p>
+              placeholder="Mi tienda"
+            />
+            {errors.businessName && (
+              <p className="text-xs font-medium text-red-500 mt-1">{errors.businessName.message}</p>
             )}
             <p className="text-xs text-gray-500 mt-1">
-              {selectedRole === 'ADMIN' && 'Acceso completo: usuarios, reportes, inventario, ventas y auditoria.'}
-              {selectedRole === 'WAREHOUSE' && 'Gestion de productos, proveedores, ordenes de compra e inventario.'}
-              {selectedRole === 'CASHIER' && 'Punto de venta, escaneo de productos y consulta de stock.'}
+              Este sera el nombre de tu negocio en el sistema.
             </p>
           </div>
-
-          {selectedRole === 'ADMIN' && (
-            <div className="flex flex-col gap-1.5 mb-4">
-              <label htmlFor="businessName" className="text-sm font-semibold text-gray-700">
-                Nombre del negocio
-              </label>
-              <input
-                id="businessName"
-                type="text"
-                {...register('businessName')}
-                className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 outline-none focus:bg-white focus:ring-2 focus:ring-[#038E57]/20 focus:border-[#038E57] transition-all duration-200"
-                placeholder="Mi tienda"
-              />
-              {errors.businessName && (
-                <p className="text-xs font-medium text-red-500 mt-1">{errors.businessName.message}</p>
-              )}
-              <p className="text-xs text-gray-500 mt-1">
-                Este sera el nombre de tu negocio en el sistema.
-              </p>
-            </div>
-          )}
 
           {error && (
             <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200">

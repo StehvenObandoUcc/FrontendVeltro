@@ -6,9 +6,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import type { AxiosError } from 'axios';
-import { authApi } from '../../api/auth';
-import { useAuthStore } from '../../stores/authStore';
-import type { ApiError } from '../../types';
+import { useAuth } from '../../hooks/useAuth';
+import type { ApiError, UserRole } from '../../types';
 
 const loginSchema = z.object({
   username: z
@@ -27,7 +26,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { setAuth } = useAuthStore();
+  const { login } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -46,15 +45,7 @@ export function LoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await authApi.login(data);
-      const user = {
-        id: response.id ?? 0,
-        username: response.username,
-        email: response.email ?? '',
-        role: response.role,
-        businessId: response.businessId,
-      };
-      setAuth(user, response.accessToken, response.refreshToken);
+      const response = await login(data);
 
       const redirectPath = getRedirectPathByRole(response.role);
       navigate(from !== '/' ? from : redirectPath, { replace: true });
@@ -74,7 +65,7 @@ export function LoginPage() {
     }
   };
 
-  const getRedirectPathByRole = (role: string): string => {
+  const getRedirectPathByRole = (role: UserRole): string => {
     switch (role) {
       case 'ADMIN':
         return '/app/dashboard';
@@ -82,8 +73,6 @@ export function LoginPage() {
         return '/app/pos';
       case 'WAREHOUSE':
         return '/app/inventory';
-      default:
-        return '/';
     }
   };
 

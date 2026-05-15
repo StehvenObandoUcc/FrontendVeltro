@@ -18,19 +18,17 @@ export const AuditDetailModal: React.FC<AuditDetailModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  const actionColors = {
-    CREATE: { bg: '#E8F4F0', border: '#10B981', text: '#038E57' },
-    UPDATE: { bg: '#E0E7FF', border: '#4F46E5', text: '#4F46E5' },
-    DELETE: { bg: 'rgba(255,46,33,0.1)', border: '#FF2E21', text: '#FF2E21' },
+  const actionColors: Record<string, { bg: string; border: string; text: string }> = {
+    CONFIRM: { bg: '#E8F4F0', border: '#10B981', text: '#038E57' },
+    RECEIVE: { bg: '#E0E7FF', border: '#4F46E5', text: '#4F46E5' },
+    ADJUST: { bg: '#FFF4E6', border: '#FF9500', text: '#FF9500' },
     VOID: { bg: '#F3F4F6', border: '#6B7280', text: '#6B7280' },
   };
 
-  const entityColors = {
+  const entityColors: Record<string, { bg: string; border: string; text: string }> = {
     SALE: { bg: '#F3E8FF', border: '#7C3AED', text: '#7C3AED' },
     INVENTORY: { bg: '#E0E7FF', border: '#4F46E5', text: '#4F46E5' },
-    ORDER: { bg: '#CFFAFE', border: '#06B6D4', text: '#06B6D4' },
-    PRODUCT: { bg: '#FFF4E6', border: '#FF9500', text: '#FF9500' },
-    SUPPLIER: { bg: '#FCE7F3', border: '#EC4899', text: '#EC4899' },
+    PURCHASE_ORDER: { bg: '#CFFAFE', border: '#06B6D4', text: '#06B6D4' },
   };
 
   return (
@@ -88,7 +86,7 @@ export const AuditDetailModal: React.FC<AuditDetailModalProps> = ({
                 User
               </label>
               <p className="mt-1 text-sm" style={{ color: '#1F2937' }}>
-                {record.username} ({record.userId})
+                {record.username}
               </p>
             </div>
 
@@ -97,18 +95,16 @@ export const AuditDetailModal: React.FC<AuditDetailModalProps> = ({
                 Timestamp
               </label>
               <p className="mt-1 text-sm" style={{ color: '#1F2937' }}>
-                {new Date(record.timestamp).toLocaleString()}
+                {new Date(record.createdAt).toLocaleString()}
               </p>
             </div>
 
-            {record.reason && (
+            {record.ipAddress && (
               <div className="col-span-2">
                 <label className="text-sm font-medium" style={{ color: '#6B7280' }}>
-                  Reason
+                  IP Address
                 </label>
-                <p className="mt-1 text-sm p-2 rounded" style={{ color: '#1F2937', backgroundColor: '#FFF9E6', border: '1px solid #FFAC00' }}>
-                  {record.reason}
-                </p>
+                <p className="mt-1 text-sm" style={{ color: '#1F2937' }}>{record.ipAddress}</p>
               </div>
             )}
           </div>
@@ -119,8 +115,8 @@ export const AuditDetailModal: React.FC<AuditDetailModalProps> = ({
               Changes Made
             </h3>
             <DiffViewer
-              previousData={record.previousData}
-              newData={record.newData}
+              previousData={record.previousData ? JSON.parse(record.previousData) : {}}
+              newData={record.newData ? JSON.parse(record.newData) : {}}
             />
           </div>
         </div>

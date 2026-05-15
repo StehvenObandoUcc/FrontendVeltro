@@ -241,3 +241,124 @@ El frontend no se modifica en este documento. La idea es usar esta division para
 - Frontend: React + TypeScript + Vite.
 - Estructura: modular por dominio.
 - Proposito de este archivo: servir como mapa de analisis.
+
+---
+
+## Mejoras Implementadas (Partes 1-8)
+
+Esta seccion documenta las mejoras aplicadas al codebase como resultado de los analisis por partes.
+
+### Parte 1 — Bootstrap y Enrutamiento
+
+| Hallazgo | Accion | Estado |
+|---|---|---|
+| Lazy loading de paginas | Implementado en App.tsx con `lazy()` y `Suspense` | ✅ |
+| Doble Suspense (global + rutas protegidas) | Correccion del flujo de carga | ✅ |
+
+### Parte 2 — Capa De API
+
+| Hallazgo | Accion | Estado |
+|---|---|---|
+| `err: any` → `err: unknown` | Tipado seguro en catch blocks | ✅ |
+| Imports con `import type` | Uso consistente de type-only imports | ✅ |
+| Inline response types en auth.ts | Extraidos a `ApiSuccessResponse` y `CreateWorkerResponse` | ✅ |
+
+### Parte 3 — Estado Global
+
+| Hallazgo | Accion | Estado |
+|---|---|---|
+| `useCartStore()` sin selectores | Corregido con selectors para evitar re-renders | ✅ |
+| Selectores en `alertStore` | Uso correcto de `useAlertStore((s) => ...)` | ✅ |
+
+### Parte 4 — Hooks Reutilizables
+
+| Hallazgo | Accion | Estado |
+|---|---|---|
+| `useCartStore()` re-renders | Selector pattern aplicado en POSPage | ✅ |
+| `console.log` de debug | Eliminados en hooks AI | ✅ |
+
+### Parte 5 — Componentes Por Dominio
+
+| Hallazgo | Accion | Estado |
+|---|---|---|
+| ConfirmDialog reutilizable | Creado en `components/common/` | ✅ |
+| `window.confirm()` nativo | Reemplazado por `ConfirmDialog` en POSPage, SupplierPage, CategoryPage | ✅ |
+
+### Parte 6 — Paginas
+
+| Hallazgo | Accion | Estado |
+|---|---|---|
+| `InventoryPage` mega-componente (557L) | Extraidos `StockMovementModal` y `MovementHistoryModal` | ✅ |
+| `filteredInventory` doble filtrado | Eliminado — usa `inventory` directamente | ✅ |
+| `console.log` en ProductFormPage | Eliminado | ✅ |
+| Comentarios en espanol en ProductFormPage | Traducidos a ingles | ✅ |
+| `PricingSection.tsx` codigo muerto | Eliminado (218 lineas, 0 imports) | ✅ |
+| `AuditListPage` UI text en ingles | Corregido a espanol | ✅ |
+| `confirm()` nativo | Reemplazado por `ConfirmDialog` | ✅ |
+| Hardcoded styles en WorkersPage | Design tokens aplicados | ✅ |
+| `formatDate` duplicada | Extraida a `utils/format.ts` | ✅ |
+| Lazy imports inconsistentes en App.tsx | Barrel exports utilizados | ✅ |
+| `getRoleLabel(role: string)` | Tipado a `UserRole` en WorkersPage y MainLayout | ✅ |
+| `getRedirectPathByRole(role: string)` | Tipado a `UserRole` en LoginPage | ✅ |
+
+### Parte 7 — Tipos Y Contratos
+
+| Hallazgo | Accion | Estado |
+|---|---|---|
+| `ApiResponse<T>` tipo muerto | Eliminado | ✅ |
+| `Inventory` tipo muerto | Eliminado | ✅ |
+| `LoginResponse`/`RefreshResponse` duplicados | Unificados con `AuthTokenResponse` base + aliases | ✅ |
+| `Worker.role: string` → `UserRole` | Cascade completo (types, authApi, WorkersPage) | ✅ |
+| Inline response types en auth.ts | `ApiSuccessResponse` y `CreateWorkerResponse` compartidos | ✅ |
+| Comentarios de seccion sin JSDoc | Migrados a JSDoc blocks | ✅ |
+| `DetectMatch` duplicado de `MatchedProduct` | Alias `type DetectMatch = MatchedProduct` | ✅ |
+
+### Parte 8 — Pruebas
+
+| Hallazgo | Accion | Estado |
+|---|---|---|
+| MSW routes purchasing incorrectas | Corregidas 7 rutas (`purchasing/orders` → `purchase-orders`) | ✅ |
+| MSW routes alerts incorrectas | Corregidas 2 rutas (`inventory/alerts` → `/alerts`) | ✅ |
+| MSW routes POS incorrectas | Corregidas (`pos/sales` → `/sales/quick`) | ✅ |
+| Endpoints POS ficticios | Eliminados handlers y tests para `GET /pos/sales` y `GET /pos/sales/:id` | ✅ |
+| MSW Login response shape incorrecta | Alinearada con `LoginResponse` real (flat, no wrapper `user`) | ✅ |
+| MSW Refresh response incompleta | Agregados campos faltantes (`tokenType`, `expiresIn`, etc.) | ✅ |
+| MSW Dashboard response shape diverge | Corregidos tipos (`todaySales: string`, `cashierId`, `todaySalesCount`, etc.) | ✅ |
+| 2 tests RBAC placeholder | Eliminados (`expect(true).toBe(true)`) + TODO comment | ✅ |
+| `: any` types en tests | Reemplazados con tipos especificos | ✅ |
+| Cobertura instalada | `coverage-v8` configurado | ✅ |
+
+---
+
+## Resumen de Archivos Modificados por Parte
+
+| Parte | Archivos principales tocados |
+|---|---|
+| 2 | `api/auth.ts`, `api/client.ts` |
+| 3 | `stores/cartStore.ts`, `stores/alertStore.ts` |
+| 4 | `hooks/useAiScanQueue.ts` |
+| 5 | `components/common/ConfirmDialog.tsx` (NEW), `pages/pos/POSPage.tsx`, `pages/purchasing/SupplierPage.tsx`, `pages/catalog/CategoryPage.tsx` |
+| 6 | `pages/inventory/InventoryPage.tsx`, `components/inventory/StockMovementModal.tsx` (NEW), `components/inventory/MovementHistoryModal.tsx` (NEW), `pages/catalog/ProductFormPage.tsx`, `pages/audit/AuditListPage.tsx`, `pages/settings/WorkersPage.tsx`, `pages/ErrorPages.tsx`, `utils/format.ts` (NEW), `App.tsx`, `pages/landing/PricingSection.tsx` (DELETED) |
+| 7 | `types/index.ts`, `api/pos.ts`, `hooks/useAiScanQueue.ts`, `api/auth.ts`, `pages/auth/LoginPage.tsx`, `components/layout/MainLayout.tsx` |
+| 8 | `test/mswHandlers.ts`, `test/integration.test.ts`, `test/stores/cartStore.test.ts`, `package.json` |
+
+---
+
+## Hallazgos Pendientes (No Bloqueantes)
+
+| # | Descripcion | Prioridad | Notas |
+|---|---|---|---|
+| P1 | Cobertura global ~3% | Baja | Deuda tecnica documentada en Part 8 |
+| P2 | `eslint-disable` en 2 archivos (AiScannerContainer, DetectionOverlay) | Baja | Justificados por dependencias de useEffect |
+| P3 | Tests para `authStore`, `WorkersPage`, `InventoryPage` no existen | Baja | Documentado en Part 8 H10 |
+
+---
+
+## Reglas de Idioma Aplicadas
+
+| Tipo | Idioma | Ejemplo |
+|---|---|---|
+| Codigo (variables, funciones, hooks, componentes) | Ingles | `handleRoleChange`, `useCartStore`, `getRoleLabel` |
+| Comentarios JSDoc | Ingles | `/** Shared token response returned by login and refresh endpoints. */` |
+| UI strings (textos, placeholders, alerts) | Espanol | "Cajero", "Administrador", "Esta seguro de desactivar..." |
+| Documentacion externa | Espanol | Este archivo, plans, handoffs |

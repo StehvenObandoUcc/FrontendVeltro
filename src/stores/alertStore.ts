@@ -1,20 +1,17 @@
 import { create } from 'zustand';
-import type { Alert, AlertSeverity } from '../api/inventory';
+import type { Alert } from '../api/inventory';
 
 interface AlertStoreState {
   activeAlerts: Alert[];
   unreadCount: number;
   setActiveAlerts: (alerts: Alert[]) => void;
   setUnreadCount: (count: number) => void;
-  addAlert: (alert: Alert) => void;
   markAsReadLocal: (alertId: number) => void;
   resolveAlertLocal: (alertId: number) => void;
   clearAll: () => void;
-  getUnreadAlerts: () => Alert[];
-  getAlertsBySeverity: (severity: AlertSeverity) => Alert[];
 }
 
-export const useAlertStore = create<AlertStoreState>((set, get) => ({
+export const useAlertStore = create<AlertStoreState>((set) => ({
   activeAlerts: [],
   unreadCount: 0,
 
@@ -24,23 +21,6 @@ export const useAlertStore = create<AlertStoreState>((set, get) => ({
 
   setUnreadCount: (count) => {
     set({ unreadCount: Math.max(0, count) });
-  },
-
-  addAlert: (alert) => {
-    set((state) => {
-      const exists = state.activeAlerts.some((item) => item.id === alert.id);
-      if (exists) {
-        return {
-          activeAlerts: state.activeAlerts.map((item) =>
-            item.id === alert.id ? alert : item
-          ),
-        };
-      }
-
-      return {
-        activeAlerts: [alert, ...state.activeAlerts],
-      };
-    });
   },
 
   markAsReadLocal: (alertId) => {
@@ -74,13 +54,5 @@ export const useAlertStore = create<AlertStoreState>((set, get) => ({
 
   clearAll: () => {
     set({ activeAlerts: [], unreadCount: 0 });
-  },
-
-  getUnreadAlerts: () => {
-    return get().activeAlerts.filter((a) => !a.read);
-  },
-
-  getAlertsBySeverity: (severity: AlertSeverity) => {
-    return get().activeAlerts.filter((a) => a.severity === severity);
   },
 }));

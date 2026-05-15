@@ -1,14 +1,19 @@
 import React from 'react';
 import { Trash2 } from 'lucide-react';
 import { useCartStore, type CartItem } from '../../stores/cartStore';
+import { formatCurrency } from '../../utils/formatCurrency';
 
 interface CartTableProps {
   onQuantityChange?: (productId: number, quantity: number) => void;
 }
 
 export const CartTable: React.FC<CartTableProps> = ({ onQuantityChange }) => {
-  const { items, remove, updateQty, getTotal, getSubtotal, getItemCount } =
-    useCartStore();
+  const items = useCartStore((s) => s.items);
+  const remove = useCartStore((s) => s.remove);
+  const updateQty = useCartStore((s) => s.updateQty);
+  const getTotal = useCartStore((s) => s.getTotal);
+  const getSubtotal = useCartStore((s) => s.getSubtotal);
+  const getItemCount = useCartStore((s) => s.getItemCount);
 
   const handleQuantityChange = (productId: number, value: string) => {
     const qty = parseInt(value, 10);
@@ -26,9 +31,9 @@ export const CartTable: React.FC<CartTableProps> = ({ onQuantityChange }) => {
     return (
       <div className="p-6 sm:p-8 rounded-lg border-2 border-dashed text-center" style={{ backgroundColor: '#F9F7F2', borderColor: '#E8E3DB' }}>
         <p className="text-base font-medium" style={{ color: '#1F2937' }}>
-          Carrito vacio
+          Carrito vacío
         </p>
-        <p className="text-sm mt-2" style={{ color: '#6B7280' }} aria-label="Instructions to add products">
+        <p className="text-sm mt-2" style={{ color: '#6B7280' }} aria-label="Instrucciones para agregar productos">
           Escanea productos para agregarlos al carrito
         </p>
       </div>
@@ -45,14 +50,14 @@ export const CartTable: React.FC<CartTableProps> = ({ onQuantityChange }) => {
               <div className="min-w-0 flex-1">
                 <p className="font-medium text-sm truncate" style={{ color: '#1F2937' }}>{item.product.name}</p>
                 <p className="text-xs mt-0.5" style={{ color: '#038E57', fontVariantNumeric: 'tabular-nums' }}>
-                  $ {parseFloat(item.product.salePrice).toFixed(0)} c/u
+                  {formatCurrency(item.product.salePrice)} c/u
                 </p>
               </div>
               <button
                 onClick={() => handleRemove(item.productId)}
                 className="p-1.5 rounded transition flex-shrink-0"
                 style={{ backgroundColor: '#FF2E21', color: '#FFFFFF' }}
-                aria-label={`Remove ${item.product.name} from cart`}
+                aria-label={`Eliminar ${item.product.name} del carrito`}
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -67,11 +72,11 @@ export const CartTable: React.FC<CartTableProps> = ({ onQuantityChange }) => {
                   onChange={(e) => handleQuantityChange(item.productId, e.target.value)}
                   className="w-14 text-center text-sm rounded px-1.5 py-1 border"
                   style={{ backgroundColor: '#FFFFFF', borderColor: '#E8E3DB', color: '#1F2937' }}
-                  aria-label={`Quantity for ${item.product.name}`}
+                  aria-label={`Cantidad para ${item.product.name}`}
                 />
               </div>
               <span className="font-semibold text-sm" style={{ color: '#038E57', fontVariantNumeric: 'tabular-nums' }}>
-                $ {parseFloat(getSubtotal(item)).toFixed(0)}
+                {formatCurrency(getSubtotal(item))}
               </span>
             </div>
           </div>
@@ -80,7 +85,7 @@ export const CartTable: React.FC<CartTableProps> = ({ onQuantityChange }) => {
 
       {/* Desktop table layout */}
       <div className="flex-1 overflow-x-auto overflow-y-auto hidden sm:block">
-        <table className="w-full" aria-label="Shopping cart items" style={{ borderCollapse: 'collapse' }}>
+        <table className="w-full" aria-label="Productos en el carrito de compras" style={{ borderCollapse: 'collapse' }}>
           <thead className="sticky top-0" style={{ backgroundColor: '#F9F7F2', borderBottom: '1px solid #E8E3DB' }}>
             <tr>
               <th className="px-3 py-2.5 text-left text-sm font-semibold" scope="col" style={{ color: '#1F2937' }}>
@@ -96,7 +101,7 @@ export const CartTable: React.FC<CartTableProps> = ({ onQuantityChange }) => {
                 Subtotal
               </th>
               <th className="px-2 py-2.5 text-center text-sm font-semibold w-12" scope="col" style={{ color: '#1F2937' }}>
-                <span className="sr-only">Accion</span>
+                <span className="sr-only">Acción</span>
               </th>
             </tr>
           </thead>
@@ -126,8 +131,8 @@ export const CartTable: React.FC<CartTableProps> = ({ onQuantityChange }) => {
                       borderColor: '#E8E3DB',
                       color: '#1F2937',
                     }}
-                    aria-label={`Quantity for ${item.product.name}`}
-                    title={`Change quantity for ${item.product.name}`}
+                    aria-label={`Cantidad para ${item.product.name}`}
+                    title={`Cambiar cantidad para ${item.product.name}`}
                     onFocus={(e) => {
                       e.currentTarget.style.borderColor = '#038E57';
                       e.currentTarget.style.boxShadow = 'inset 0 0 0 2px rgba(3, 142, 87, 0.1)';
@@ -139,10 +144,10 @@ export const CartTable: React.FC<CartTableProps> = ({ onQuantityChange }) => {
                   />
                 </td>
                 <td className="px-3 py-2.5 text-right text-sm font-medium whitespace-nowrap" style={{ color: '#1F2937', fontVariantNumeric: 'tabular-nums' }}>
-                  $ {parseFloat(item.product.salePrice).toFixed(0)}
+                  {formatCurrency(item.product.salePrice)}
                 </td>
                 <td className="px-3 py-2.5 text-right font-semibold text-sm whitespace-nowrap hidden md:table-cell" style={{ color: '#038E57', fontVariantNumeric: 'tabular-nums' }}>
-                  $ {parseFloat(getSubtotal(item)).toFixed(0)}
+                  {formatCurrency(getSubtotal(item))}
                 </td>
                 <td className="px-2 py-2.5 text-center">
                   <button
@@ -158,8 +163,8 @@ export const CartTable: React.FC<CartTableProps> = ({ onQuantityChange }) => {
                     onMouseLeave={(e) => {
                       e.currentTarget.style.filter = 'brightness(1)';
                     }}
-                    aria-label={`Remove ${item.product.name} from cart`}
-                    title={`Delete ${item.product.name}`}
+                    aria-label={`Eliminar ${item.product.name} del carrito`}
+                    title={`Eliminar ${item.product.name}`}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -173,8 +178,8 @@ export const CartTable: React.FC<CartTableProps> = ({ onQuantityChange }) => {
       {/* Summary */}
       <div className="border-t p-3 sm:p-4 space-y-2" style={{ backgroundColor: '#F9F7F2', borderColor: '#E8E3DB' }}>
         <div className="flex justify-between text-sm">
-          <span style={{ color: '#6B7280' }}>Items:</span>
-          <span className="font-semibold" style={{ color: '#1F2937', fontVariantNumeric: 'tabular-nums' }} aria-label={`${getItemCount()} items in cart`}>
+          <span style={{ color: '#6B7280' }}>Productos:</span>
+          <span className="font-semibold" style={{ color: '#1F2937', fontVariantNumeric: 'tabular-nums' }} aria-label={`${getItemCount()} productos en el carrito`}>
             {getItemCount()}
           </span>
         </div>
@@ -182,8 +187,8 @@ export const CartTable: React.FC<CartTableProps> = ({ onQuantityChange }) => {
           <span className="font-semibold" style={{ color: '#1F2937' }}>
             Total:
           </span>
-          <span className="text-lg font-bold" style={{ color: '#038E57', fontVariantNumeric: 'tabular-nums' }} aria-label={`Cart total: $ ${parseFloat(getTotal()).toFixed(0)}`}>
-            $ {parseFloat(getTotal()).toFixed(0)}
+          <span className="text-lg font-bold" style={{ color: '#038E57', fontVariantNumeric: 'tabular-nums' }} aria-label={`Total del carrito: ${formatCurrency(getTotal())}`}>
+            {formatCurrency(getTotal())}
           </span>
         </div>
       </div>

@@ -7,8 +7,8 @@ interface AuditFiltersProps {
   onReset: () => void;
 }
 
-const ACTIONS: AuditAction[] = ['CREATE', 'UPDATE', 'DELETE', 'VOID'];
-const ENTITIES: AuditEntity[] = ['SALE', 'INVENTORY', 'ORDER', 'PRODUCT', 'SUPPLIER'];
+const ACTIONS: AuditAction[] = ['CONFIRM', 'VOID', 'RECEIVE', 'ADJUST'];
+const ENTITIES: AuditEntity[] = ['SALE', 'PURCHASE_ORDER', 'INVENTORY'];
 
 /**
  * AuditFilters - Component for filtering audit records

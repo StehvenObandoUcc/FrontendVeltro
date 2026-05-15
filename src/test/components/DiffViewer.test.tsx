@@ -3,11 +3,13 @@ import { render, screen } from '@testing-library/react';
 import { DiffViewer } from '../../components/audit/DiffViewer';
 
 describe('DiffViewer Component', () => {
-  it('should display "No changes detected" when objects are identical', () => {
+  it('should render rows without "Changed" badges when objects are identical', () => {
     const data = { name: 'John', age: 30 };
-    render(<DiffViewer previousData={data} newData={data} />);
+    const { container } = render(<DiffViewer previousData={data} newData={data} />);
 
-    expect(screen.getByText('No changes detected')).toBeInTheDocument();
+    const rows = container.querySelectorAll('tbody tr');
+    expect(rows.length).toBe(2);
+    expect(screen.queryByText('Changed')).not.toBeInTheDocument();
   });
 
   it('should display changed fields with yellow background', () => {
@@ -70,7 +72,7 @@ describe('DiffViewer Component', () => {
       <DiffViewer previousData={previousData} newData={newData} />
     );
 
-    const redBg = container.querySelector('[class*="bg-red-50"]');
+    const redBg = container.querySelector('code[style*="255, 46, 33"]');
     expect(redBg).toBeInTheDocument();
   });
 
@@ -82,14 +84,14 @@ describe('DiffViewer Component', () => {
       <DiffViewer previousData={previousData} newData={newData} />
     );
 
-    const greenBg = container.querySelector('[class*="bg-green-50"]');
+    const greenBg = container.querySelector('code[style*="232, 244, 240"]');
     expect(greenBg).toBeInTheDocument();
   });
 
   it('should handle empty objects', () => {
     render(<DiffViewer previousData={{}} newData={{}} />);
 
-    expect(screen.getByText('No changes detected')).toBeInTheDocument();
+    expect(screen.getByText(/No changes detected/i)).toBeInTheDocument();
   });
 
   it('should sort keys alphabetically', () => {

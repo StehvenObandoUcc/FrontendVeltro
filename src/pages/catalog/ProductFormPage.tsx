@@ -52,6 +52,12 @@ function parseThresholdValue(value?: string): number {
   return parseInt(value || '0', 10) || 0;
 }
 
+const formatFormPrice = (price?: string | null): string => {
+  if (!price) return '';
+  const parsed = parseFloat(price);
+  return Number.isNaN(parsed) ? '' : parsed.toFixed(2);
+};
+
 async function normalizeToJpeg(file: File): Promise<File> {
   if (file.type === 'image/jpeg' || file.type === 'image/jpg') return file;
 
@@ -186,8 +192,8 @@ export function ProductFormPage() {
         barcode: product.barcode || '',
         sku: product.sku || '',
         description: product.description || '',
-        costPrice: product.costPrice,
-        salePrice: product.salePrice,
+        costPrice: formatFormPrice(product.costPrice),
+        salePrice: formatFormPrice(product.salePrice),
         categoryId: product.categoryId?.toString() || '',
         minStockInfo: alertConfig?.overstockThreshold?.toString() ?? product.minStockInfo?.toString() ?? '0',
         minStockWarning: alertConfig?.minStock?.toString() ?? product.minStockWarning?.toString() ?? '0',
@@ -203,30 +209,24 @@ export function ProductFormPage() {
 
   const syncThresholds = async (productId: number, thresholds: ThresholdsPayload) => {
     try {
-      const syncResults = await Promise.allSettled([
-        inventoryApi.updateAlertConfig(productId, {
-          criticalStock: thresholds.critical,
-          minStock: thresholds.warning,
-          overstockThreshold: thresholds.overstock,
-        }),
-        inventoryApi.updateStockLimits(productId, {
-          minStock: thresholds.warning,
-          maxStock: thresholds.overstock,
-        }),
-      ]);
+      // Sequential execution to prevent database transaction collisions / optimistic locking conflicts (HTTP 409)
+      await inventoryApi.updateAlertConfig(productId, {
+        criticalStock: thresholds.critical,
+        minStock: thresholds.warning,
+        overstockThreshold: thresholds.overstock,
+      });
 
-      if (syncResults.some((result) => result.status === 'rejected')) {
-        setPendingSync({ productId, thresholds });
-        setError('Se guardo el producto, pero no se pudieron guardar los umbrales. Por favor, intente de nuevo.');
-        return false;
-      }
+      await inventoryApi.updateStockLimits(productId, {
+        minStock: thresholds.warning,
+        maxStock: thresholds.overstock,
+      });
 
       setPendingSync(null);
       return true;
     } catch (err) {
       console.error('Error syncing thresholds:', err);
       setPendingSync({ productId, thresholds });
-      setError('Se guardo el producto, pero fallo la comunicacion con el servidor. Por favor, intente de nuevo.');
+      setError('Se guardo el producto, pero no se pudieron guardar los umbrales. Por favor, intente de nuevo.');
       return false;
     }
   };

@@ -197,7 +197,7 @@ describe('ProductFormPage', () => {
 
     await waitFor(() => {
       expect(inventoryApiMock.updateAlertConfig).toHaveBeenCalledTimes(2);
-      expect(inventoryApiMock.updateStockLimits).toHaveBeenCalledTimes(2);
+      expect(inventoryApiMock.updateStockLimits).toHaveBeenCalledTimes(1);
       expect(productApiMock.create).toHaveBeenCalledTimes(1);
       expect(productApiMock.update).not.toHaveBeenCalled();
       expect(mockNavigate).toHaveBeenCalledWith('/app/catalog/products');

@@ -20,35 +20,25 @@ import { useAiScanStore } from '../stores/aiScanStore';
 import type { TrackedBox, YoloBox } from '../modules/types/ai.types';
 
 // ── Tuning constants ───────────────────────────────────────────────────────────
-const MODEL_PATH         = '/model/yolov8n.onnx';
+const MODEL_PATH         = '/model/yolov11.onnx';
 const INFER_INTERVAL_MS  = 250;   // ~4 FPS inference cadence
 const STORE_DISPATCH_MS  = 800;   // setRawDetections throttle (useAiScanQueue)
 const TRACK_IOU_THRESH   = 0.30;  // IOU threshold for visual tracker
 const TRACK_STALE_MS     = 500;   // Remove track after 500 ms of no match
-const CONF_THRESH        = 0.25;
+const CONF_THRESH        = 0.50;
 const IOU_THRESH         = 0.45;  // NMS threshold
 const MAX_DETS           = 20;
 const BOX_PADDING        = 12;
-const INPUT_SIZE         = 640;   // Fixed — yolov8n.onnx has static 640×640 input
+const INPUT_SIZE         = 640;   // Fixed — yolov11.onnx has static 640×640 input
 
-// COCO class names (index = class id)
-const COCO_NAMES = [
-  'person','bicycle','car','motorcycle','airplane','bus','train','truck','boat',
-  'traffic light','fire hydrant','stop sign','parking meter','bench','bird','cat',
-  'dog','horse','sheep','cow','elephant','bear','zebra','giraffe','backpack',
-  'umbrella','handbag','tie','suitcase','frisbee','skis','snowboard','sports ball',
-  'kite','baseball bat','baseball glove','skateboard','surfboard','tennis racket',
-  'bottle','wine glass','cup','fork','knife','spoon','bowl','banana','apple',
-  'sandwich','orange','broccoli','carrot','hot dog','pizza','donut','cake',
-  'chair','couch','potted plant','bed','dining table','toilet','tv','laptop',
-  'mouse','remote','keyboard','cell phone','microwave','oven','toaster','sink',
-  'refrigerator','book','clock','vase','scissors','teddy bear','hair drier','toothbrush',
+// Custom YOLOv11 class names (index = class id)
+const YOLO_CLASSES = [
+  'bottle',
+  'box',
+  'can',
+  'fresh',
+  'bag'
 ];
-
-// Classes that are NOT products — skip them to avoid false detections
-const IGNORED_CLASSES = new Set([
-  0, 1, 2, 3, 4, 5, 6, 7, 8, 13, 56, 57, 59, 60, 61, 62, 70, 71, 72,
-]);
 
 // ── Internal IOU helper ────────────────────────────────────────────────────────
 function computeIou(a: YoloBox, b: YoloBox): number {
@@ -216,14 +206,14 @@ export const useYoloDetection = (
               if (prob > maxConf) { maxConf = prob; maxClass = c; }
             }
 
-            if (maxConf < CONF_THRESH || IGNORED_CLASSES.has(maxClass)) continue;
+            if (maxConf < CONF_THRESH) continue;
 
             const cx = isBoxFirst ? data[i * numAttribs]     : data[0 * numBoxes + i];
             const cy = isBoxFirst ? data[i * numAttribs + 1] : data[1 * numBoxes + i];
             const bw = isBoxFirst ? data[i * numAttribs + 2] : data[2 * numBoxes + i];
             const bh = isBoxFirst ? data[i * numAttribs + 3] : data[3 * numBoxes + i];
 
-            const cocoName = COCO_NAMES[maxClass] ?? `cls${maxClass}`;
+            const className = YOLO_CLASSES[maxClass] ?? `cls${maxClass}`;
             raw.push({
               id:         crypto.randomUUID(),
               x:          Math.max(0, (cx - bw / 2 - dx) / scale - BOX_PADDING),
@@ -231,7 +221,7 @@ export const useYoloDetection = (
               width:      bw / scale + BOX_PADDING * 2,
               height:     bh / scale + BOX_PADDING * 2,
               confidence: maxConf,
-              className:  cocoName,
+              className:  className,
               status:     'RAW',
               matches:    [],
             });

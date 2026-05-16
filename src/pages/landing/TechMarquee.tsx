@@ -9,7 +9,7 @@ const technologies = [
   "Zustand",
   "Framer Motion",
   "PostgreSQL",
-  "YOLOv8n AI Vision"
+  "YOLOv11n + SAM 2 AI Vision"
 ];
 
 export const TechMarquee = () => {

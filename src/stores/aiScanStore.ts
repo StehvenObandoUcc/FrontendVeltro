@@ -8,6 +8,7 @@
 
 import { create } from 'zustand';
 import type { ScanMode, AiUseCase, YoloBox, DetectionStatus, MatchedProduct, TrackedBox } from '../modules/types/ai.types';
+import { samMaskCache } from '../workers/samMaskCache';
 
 export type { TrackedBox } from '../modules/types/ai.types';
 
@@ -18,6 +19,10 @@ interface AiScanState {
   isProcessing: boolean;
   selectedDetectionIds: string[];
 
+  // SAM 2 States
+  segmentationStatus: Record<string, 'pending' | 'ready' | 'error'>;
+  samGlobalError: boolean;
+
   // Data Store
   detections: YoloBox[];
   /** Visual tracking state  Eupdated by useYoloDetection IOU tracker, consumed by DetectionOverlay */
@@ -27,6 +32,10 @@ interface AiScanState {
   setScanMode: (mode: ScanMode) => void;
   setAiUseCase: (useCase: AiUseCase) => void;
   setIsProcessing: (processing: boolean) => void;
+  
+  // SAM 2 Actions
+  setSegmentationStatus: (detectionId: string, status: 'pending' | 'ready' | 'error') => void;
+  setSamGlobalError: (hasError: boolean) => void;
 
   // Atomic Detection Actions
   /**
@@ -63,6 +72,8 @@ export const useAiScanStore = create<AiScanState>((set) => ({
   detections: [],
   trackedBoxes: [],
   selectedDetectionIds: [],
+  segmentationStatus: {},
+  samGlobalError: false,
 
   // Global Mode Actions
   setScanMode: (mode) => set({ scanMode: mode }),
@@ -109,6 +120,16 @@ export const useAiScanStore = create<AiScanState>((set) => ({
     ),
   })),
 
+  // SAM 2 Actions
+  setSegmentationStatus: (detectionId, status) => set((state) => ({
+    segmentationStatus: {
+      ...state.segmentationStatus,
+      [detectionId]: status,
+    },
+  })),
+
+  setSamGlobalError: (hasError) => set({ samGlobalError: hasError }),
+
   // Selection Actions
   selectDetection: (id) => set((state) => ({
     selectedDetectionIds: state.selectedDetectionIds.includes(id)
@@ -127,17 +148,25 @@ export const useAiScanStore = create<AiScanState>((set) => ({
   clearSelection: () => set({ selectedDetectionIds: [] }),
 
   // Utility Actions
-  clearDetections: () => set({ 
-    detections: [], 
-    trackedBoxes: [],
-    selectedDetectionIds: [],
-  }),
+  clearDetections: () => {
+    samMaskCache.clear();
+    set({ 
+      detections: [], 
+      trackedBoxes: [],
+      selectedDetectionIds: [],
+      segmentationStatus: {},
+    });
+  },
 
-  resetAiState: () => set({
-    detections: [],
-    trackedBoxes: [],
-    selectedDetectionIds: [],
-    isProcessing: false,
-  }),
+  resetAiState: () => {
+    samMaskCache.clear();
+    set({
+      detections: [],
+      trackedBoxes: [],
+      selectedDetectionIds: [],
+      segmentationStatus: {},
+      isProcessing: false,
+    });
+  },
 }));
 

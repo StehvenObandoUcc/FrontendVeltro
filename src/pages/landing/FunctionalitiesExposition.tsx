@@ -51,7 +51,7 @@ export const FunctionalitiesExposition = () => {
                 <h3 className="text-3xl font-bold text-white">POS Ultra-Rápido con IA</h3>
               </div>
               <p className="text-lg text-slate-400 mb-6 leading-relaxed">
-                Ejecutamos un modelo <strong className="text-slate-200">YOLOv8n directamente en tu navegador</strong> usando Edge Computing (ONNX Runtime Web).
+                Ejecutamos un modelo <strong className="text-slate-200">YOLOv11n directamente en tu navegador</strong> usando Edge Computing (ONNX Runtime Web).
               </p>
               <p className="text-lg text-slate-400 leading-relaxed">
                 Al escanear un producto sin código de barras, Veltro realiza un <em>tracking</em> visual en tiempo real a 60 FPS y utiliza búsqueda semántica (<strong className="text-slate-200">CLIP</strong>) para identificarlo al instante, todo sin enviar pesados videos al servidor.

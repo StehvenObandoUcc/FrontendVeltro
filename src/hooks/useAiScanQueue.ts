@@ -10,8 +10,9 @@
 import { useEffect, useRef } from 'react';
 import { useAiScanStore } from '../stores/aiScanStore';
 import { posApi } from '../api/pos';
+import { samMaskCache } from '../workers/samMaskCache';
 
-const API_COOLDOWN_MS    = 1000;  // 1s between backend calls
+const API_COOLDOWN_MS    = 2000;  // 2s between backend calls
 
 export const useAiScanQueue = (
   videoRef: React.RefObject<HTMLVideoElement>,
@@ -76,6 +77,48 @@ export const useAiScanQueue = (
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(video, x, y, w, h, 0, 0, cropW, cropH);
+
+        const mask = samMaskCache.getMask(candidate.id);
+        if (mask) {
+          const videoW = video.videoWidth;
+          const videoH = video.videoHeight;
+          const scaleSam = Math.min(1024 / videoW, 1024 / videoH);
+          const dxSam = (1024 - videoW * scaleSam) / 2;
+          const dySam = (1024 - videoH * scaleSam) / 2;
+
+          const imageData = ctx.getImageData(0, 0, cropW, cropH);
+          const pixels = imageData.data;
+
+          for (let py = 0; py < cropH; py++) {
+            for (let px = 0; px < cropW; px++) {
+              // Map crop coordinates back to original video dimensions
+              const vx = x + (px * w) / cropW;
+              const vy = y + (py * h) / cropH;
+
+              // Map original video coordinates to SAM 2 mask coordinates
+              const mx = Math.floor(vx * scaleSam + dxSam);
+              const my = Math.floor(vy * scaleSam + dySam);
+
+              if (mx >= 0 && mx < 1024 && my >= 0 && my < 1024) {
+                const maskVal = mask.maskData[my * 1024 + mx];
+                if (maskVal === 0) {
+                  // Background pixel -> set to white (R, G, B = 255)
+                  const idx = (py * cropW + px) * 4;
+                  pixels[idx] = 255;     // R
+                  pixels[idx + 1] = 255; // G
+                  pixels[idx + 2] = 255; // B
+                }
+              } else {
+                // Out of mask bounds -> treat as background -> set to white
+                const idx = (py * cropW + px) * 4;
+                pixels[idx] = 255;
+                pixels[idx + 1] = 255;
+                pixels[idx + 2] = 255;
+              }
+            }
+          }
+          ctx.putImageData(imageData, 0, 0);
+        }
 
         const blob = await new Promise<Blob | null>((res) =>
           crop.toBlob((b) => res(b), 'image/jpeg', 0.92)

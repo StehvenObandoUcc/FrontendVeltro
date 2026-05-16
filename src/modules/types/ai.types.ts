@@ -78,3 +78,10 @@ export const DEFAULT_AI_SCANNER_CONFIG: AiScannerConfig = {
   maxRetries: 3,
   processingDelayMs: 2000, // Cooldown between API calls
 };
+
+export interface SegmentationMask {
+  detectionId: string;
+  maskData: Uint8Array; // Binary mask data
+  maskWidth: number;
+  maskHeight: number;
+}

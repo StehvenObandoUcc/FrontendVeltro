@@ -71,6 +71,16 @@ export const DetectionOverlay: React.FC<DetectionOverlayProps> = ({ canvasRef })
         ctx.lineWidth   = 2.5;
         ctx.strokeRect(box.x, box.y, box.width, box.height);
 
+        // Check if SAM 2 segmentation is active and draw inner border
+        const segStatus = useAiScanStore.getState().segmentationStatus[stored?.id ?? box.id];
+        if (segStatus === 'ready') {
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.lineWidth   = 1;
+          ctx.setLineDash([4, 4]);
+          ctx.strokeRect(box.x + 3, box.y + 3, box.width - 6, box.height - 6);
+          ctx.setLineDash([]);
+        }
+
         // Draw label background + text
         ctx.font = 'bold 13px Inter, system-ui, sans-serif';
         const tw = ctx.measureText(label).width;

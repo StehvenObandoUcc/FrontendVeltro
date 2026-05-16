@@ -6,6 +6,8 @@ import { useYoloDetection } from '../../hooks/useYoloDetection';
 import { useAiScanQueue } from '../../hooks/useAiScanQueue';
 import { useCameraStream } from '../../hooks/useCameraStream';
 import { DetectionOverlay } from './DetectionOverlay';
+import { useSamSegmentation } from '../../hooks/useSamSegmentation';
+import { SegmentationOverlay } from './SegmentationOverlay';
 
 interface ConfirmedProduct {
   productId: number;
@@ -31,14 +33,13 @@ export const AiScannerContainer: React.FC<Props> = ({
 
   const [toast, setToast] = useState<string | null>(null);
 
-  const {
-    scanMode,
-    setAiUseCase,
-    detections,
-    isProcessing,
-    updateDetectionStatus,
-    clearDetections,
-  } = useAiScanStore();
+  const scanMode = useAiScanStore((s) => s.scanMode);
+  const setAiUseCase = useAiScanStore((s) => s.setAiUseCase);
+  const detections = useAiScanStore((s) => s.detections);
+  const isProcessing = useAiScanStore((s) => s.isProcessing);
+  const updateDetectionStatus = useAiScanStore((s) => s.updateDetectionStatus);
+  const clearDetections = useAiScanStore((s) => s.clearDetections);
+  const samGlobalError = useAiScanStore((s) => s.samGlobalError);
 
   const { add: addToCart } = useCartStore();
   const isAiMode = scanMode === 'ai';
@@ -62,6 +63,8 @@ export const AiScannerContainer: React.FC<Props> = ({
   const { modelLoaded, modelError } = useYoloDetection(videoRef, canvasRef, cameraActive && isAiMode);
 
   useAiScanQueue(videoRef, isAiMode);
+
+  useSamSegmentation(videoRef, cameraActive && isAiMode && !samGlobalError);
 
   useEffect(() => {
     if (useCase !== 'pos-sell') return;
@@ -150,6 +153,7 @@ export const AiScannerContainer: React.FC<Props> = ({
     <div className="space-y-3">
       <div className="relative w-full overflow-hidden rounded-xl bg-black" style={{ aspectRatio: '4 / 3' }}>
         <video ref={videoRef} className="absolute inset-0 w-full h-full object-cover" playsInline muted />
+        {isAiMode && !samGlobalError && <SegmentationOverlay videoRef={videoRef} />}
         <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-cover pointer-events-none" />
         {isAiMode && <DetectionOverlay canvasRef={canvasRef} />}
 

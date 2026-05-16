@@ -7,6 +7,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { authApi } from '../../api/auth';
 import type { ApiError, UserRole } from '../../types';
 import { Lock, Building2, UserCircle, Mail, KeyRound, ChevronDown, ChevronUp, CheckCircle2, AlertCircle } from 'lucide-react';
+import { PasswordInput } from '../../components/common/PasswordInput';
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, 'La contraseña actual es requerida'),
@@ -246,53 +247,35 @@ export function ProfilePage() {
             )}
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 max-w-md mt-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-semibold text-[var(--text-secondary)]">
-                  Contraseña actual
-                </label>
-                <input
-                  type="password"
-                  autoComplete="current-password"
-                  {...register('currentPassword')}
-                  className="input-base"
-                  placeholder="••••••••"
-                />
-                {errors.currentPassword && (
-                  <p className="text-xs font-medium text-red-500">{errors.currentPassword.message}</p>
-                )}
-              </div>
+              <PasswordInput
+                id="currentPassword"
+                label="Contraseña actual"
+                autoComplete="current-password"
+                maxLength={20}
+                placeholder="••••••••"
+                error={errors.currentPassword?.message}
+                {...register('currentPassword')}
+              />
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-semibold text-[var(--text-secondary)]">
-                  Nueva contraseña
-                </label>
-                <input
-                  type="password"
-                  autoComplete="new-password"
-                  {...register('newPassword')}
-                  className="input-base"
-                  placeholder="Mínimo 8 caracteres"
-                />
-                {errors.newPassword && (
-                  <p className="text-xs font-medium text-red-500">{errors.newPassword.message}</p>
-                )}
-              </div>
+              <PasswordInput
+                id="newPassword"
+                label="Nueva contraseña"
+                autoComplete="new-password"
+                maxLength={20}
+                placeholder="Mínimo 8 caracteres"
+                error={errors.newPassword?.message}
+                {...register('newPassword')}
+              />
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-semibold text-[var(--text-secondary)]">
-                  Confirmar nueva contraseña
-                </label>
-                <input
-                  type="password"
-                  autoComplete="new-password"
-                  {...register('confirmPassword')}
-                  className="input-base"
-                  placeholder="Repite tu nueva contraseña"
-                />
-                {errors.confirmPassword && (
-                  <p className="text-xs font-medium text-red-500">{errors.confirmPassword.message}</p>
-                )}
-              </div>
+              <PasswordInput
+                id="confirmPassword"
+                label="Confirmar nueva contraseña"
+                autoComplete="new-password"
+                maxLength={20}
+                placeholder="Repite tu nueva contraseña"
+                error={errors.confirmPassword?.message}
+                {...register('confirmPassword')}
+              />
 
               <div className="flex justify-end pt-2">
                 <button

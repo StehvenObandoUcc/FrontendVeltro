@@ -8,25 +8,26 @@ import { useNavigate, Link } from 'react-router-dom';
 import type { AxiosError } from 'axios';
 import { authApi } from '../../api/auth';
 import type { ApiError } from '../../types';
+import { PasswordInput } from '../../components/common/PasswordInput';
 
 const registerSchema = z
   .object({
     username: z
       .string()
       .min(3, 'El usuario debe tener al menos 3 caracteres')
-      .max(50, 'El usuario no puede exceder 50 caracteres'),
+      .max(20, 'El usuario no puede exceder 20 caracteres'),
     email: z.string().email('Ingrese un email valido'),
     password: z
       .string()
       .min(8, 'La contraseña debe tener al menos 8 caracteres')
-      .max(64, 'La contraseña no puede exceder 64 caracteres')
+      .max(20, 'La contraseña no puede exceder 20 caracteres')
       .refine((value) => !/\s/.test(value), 'La contraseña no puede contener espacios'),
     confirmPassword: z.string().min(1, 'Confirme su contraseña'),
     role: z.literal('ADMIN').default('ADMIN'),
     businessName: z
       .string()
       .min(2, 'El nombre del negocio debe tener al menos 2 caracteres')
-      .max(100, 'El nombre del negocio no puede exceder 100 caracteres'),
+      .max(50, 'El nombre del negocio no puede exceder 50 caracteres'),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Las contraseñas no coinciden',
@@ -138,7 +139,7 @@ export function RegisterPage() {
               id="username"
               type="text"
               autoComplete="username"
-              maxLength={50}
+              maxLength={20}
               {...register('username')}
               className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 outline-none focus:bg-white focus:ring-2 focus:ring-[#038E57]/20 focus:border-[#038E57] transition-all duration-200"
               placeholder="tu_usuario"
@@ -165,40 +166,25 @@ export function RegisterPage() {
             )}
           </div>
 
-          <div className="flex flex-col gap-1.5 mb-4">
-            <label htmlFor="password" className="text-sm font-semibold text-gray-700">
-              Contraseña
-            </label>
-            <input
-              id="password"
-              type="password"
-              autoComplete="new-password"
-              maxLength={64}
-              {...register('password')}
-              className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 outline-none focus:bg-white focus:ring-2 focus:ring-[#038E57]/20 focus:border-[#038E57] transition-all duration-200"
-              placeholder="Minimo 8 caracteres"
-            />
-            {errors.password && (
-              <p className="text-xs font-medium text-red-500 mt-1">{errors.password.message}</p>
-            )}
-          </div>
+          <PasswordInput
+            id="password"
+            label="Contraseña"
+            autoComplete="new-password"
+            maxLength={20}
+            placeholder="Minimo 8 caracteres"
+            error={errors.password?.message}
+            {...register('password')}
+          />
 
-          <div className="flex flex-col gap-1.5 mb-4">
-            <label htmlFor="confirmPassword" className="text-sm font-semibold text-gray-700">
-              Confirmar contraseña
-            </label>
-            <input
-              id="confirmPassword"
-              type="password"
-              autoComplete="new-password"
-              {...register('confirmPassword')}
-              className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 outline-none focus:bg-white focus:ring-2 focus:ring-[#038E57]/20 focus:border-[#038E57] transition-all duration-200"
-              placeholder="Repite tu contraseña"
-            />
-            {errors.confirmPassword && (
-              <p className="text-xs font-medium text-red-500 mt-1">{errors.confirmPassword.message}</p>
-            )}
-          </div>
+          <PasswordInput
+            id="confirmPassword"
+            label="Confirmar contraseña"
+            autoComplete="new-password"
+            maxLength={20}
+            placeholder="Repite tu contraseña"
+            error={errors.confirmPassword?.message}
+            {...register('confirmPassword')}
+          />
 
           <div className="flex flex-col gap-1.5 mb-4">
             <label htmlFor="businessName" className="text-sm font-semibold text-gray-700">
@@ -208,6 +194,7 @@ export function RegisterPage() {
               id="businessName"
               type="text"
               {...register('businessName')}
+              maxLength={50}
               className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 outline-none focus:bg-white focus:ring-2 focus:ring-[#038E57]/20 focus:border-[#038E57] transition-all duration-200"
               placeholder="Mi tienda"
             />

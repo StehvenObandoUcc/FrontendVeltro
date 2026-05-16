@@ -1,8 +1,16 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { inventoryApi, type Alert } from '../../api/inventory';
 import { useAlertStore } from '../../stores/alertStore';
 import { SeverityBadge } from './SeverityBadge';
 import { SEVERITY_STYLE_MAP } from '../../constants/alertSeverityStyles';
+
+// Alert type → target route, with defensive fallback
+const ALERT_RESOLVE_ROUTE: Record<string, string> = {
+  LOW_STOCK: '/app/purchasing',
+  OUT_OF_STOCK: '/app/inventory',
+  OVERSTOCK: '/app/inventory',
+};
 
 interface AlertListProps {
   alerts: Alert[];
@@ -28,6 +36,7 @@ export const AlertList: React.FC<AlertListProps> = ({
   const [resolving, setResolving] = useState<number | null>(null);
   const markAsReadLocal = useAlertStore((state) => state.markAsReadLocal);
   const resolveAlertLocal = useAlertStore((state) => state.resolveAlertLocal);
+  const navigate = useNavigate();
 
   const handleMarkAsRead = async (alertId: number) => {
     setUpdatingRead(alertId);
@@ -44,14 +53,18 @@ export const AlertList: React.FC<AlertListProps> = ({
     }
   };
 
-  const handleResolve = async (alertId: number) => {
-    setResolving(alertId);
+  const handleResolve = async (alert: Alert) => {
+    setResolving(alert.id);
     try {
-      await inventoryApi.resolveAlert(alertId);
-      resolveAlertLocal(alertId);
+      await inventoryApi.resolveAlert(alert.id);
+      resolveAlertLocal(alert.id);
       if (onRefresh) {
         await onRefresh();
       }
+
+      // Navigate based on alert type, with fallback to /app/inventory
+      const targetRoute = ALERT_RESOLVE_ROUTE[alert.type] ?? '/app/inventory';
+      navigate(targetRoute);
     } catch (error) {
       console.error('Failed to resolve alert:', error);
     } finally {
@@ -179,7 +192,7 @@ export const AlertList: React.FC<AlertListProps> = ({
 
                 {alert.severity !== 'INFO' && (
                   <button
-                    onClick={() => handleResolve(alert.id)}
+                    onClick={() => handleResolve(alert)}
                     disabled={resolving === alert.id || updatingRead === alert.id}
                     className="px-3 py-1 text-sm font-medium rounded transition"
                     style={{

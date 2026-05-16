@@ -16,8 +16,8 @@ const API_COOLDOWN_MS    = 2000;  // 2s between backend calls
 
 export const useAiScanQueue = (
   videoRef: React.RefObject<HTMLVideoElement>,
-  aiEnabled = true,
 ) => {
+  const aiEnabled           = useAiScanStore((s) => s.aiEnabled);
   const detections         = useAiScanStore((s) => s.detections);
   const setIsProcessing    = useAiScanStore((s) => s.setIsProcessing);
   const updateStatus       = useAiScanStore((s) => s.updateDetectionStatus);
@@ -134,6 +134,7 @@ export const useAiScanQueue = (
           const matches = data[0].matches;
 
           updateMatches(candidate.id, matches);
+          updateStatus(candidate.id, 'SUCCESS');
         } else {
 
           updateStatus(candidate.id, 'ERROR');

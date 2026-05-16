@@ -173,12 +173,12 @@ export function MainLayout() {
         <div className="p-4" style={{ borderTop: '1px solid rgba(255,255,255,0.1)', backgroundColor: 'rgba(0,0,0,0.2)' }}>
           <Link to="/app/profile" className="flex items-center justify-between mb-3 group cursor-pointer" onClick={() => setSidebarOpen(false)}>
             <div>
-              <p className="text-sm font-medium text-white group-hover:text-[var(--primary-lighter)] transition-colors">{user?.username}</p>
+              <p className="text-sm font-medium text-white group-hover:text-[var(--primary-lighter)] transition-colors truncate max-w-[140px]">{user?.username}</p>
               <p className="text-xs text-gray-400 mt-0.5">{getRoleLabel(user?.role as UserRole)}</p>
               {user?.role !== 'ADMIN' && (
                 <div className="mt-2 space-y-0.5">
                   {user?.businessName && (
-                    <p className="text-[10px] text-gray-400">
+                    <p className="text-[10px] text-gray-400 truncate max-w-[140px]">
                       Tienda: <span className="text-white font-medium">{user.businessName}</span>
                     </p>
                   )}

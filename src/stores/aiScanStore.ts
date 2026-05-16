@@ -16,6 +16,7 @@ interface AiScanState {
   // Global modes
   scanMode: ScanMode;
   aiUseCase: AiUseCase;
+  aiEnabled: boolean;
   isProcessing: boolean;
   selectedDetectionIds: string[];
 
@@ -31,6 +32,7 @@ interface AiScanState {
   // Mode Actions
   setScanMode: (mode: ScanMode) => void;
   setAiUseCase: (useCase: AiUseCase) => void;
+  setAiEnabled: (enabled: boolean) => void;
   setIsProcessing: (processing: boolean) => void;
   
   // SAM 2 Actions
@@ -68,6 +70,7 @@ export const useAiScanStore = create<AiScanState>((set) => ({
   // Initial State
   scanMode: 'barcode',
   aiUseCase: 'pos-sell',
+  aiEnabled: false,
   isProcessing: false,
   detections: [],
   trackedBoxes: [],
@@ -78,12 +81,20 @@ export const useAiScanStore = create<AiScanState>((set) => ({
   // Global Mode Actions
   setScanMode: (mode) => set({ scanMode: mode }),
   setAiUseCase: (useCase) => set({ aiUseCase: useCase }),
+  setAiEnabled: (enabled) => set({ aiEnabled: enabled }),
   setIsProcessing: (processing) => set({ isProcessing: processing }),
 
   // Atomic Detection Actions
   setTrackedBoxes: (boxes) => set({ trackedBoxes: boxes }),
 
   setRawDetections: (newBoxes) => set((state) => {
+    const PRESERVED_STATUSES = new Set(['SUCCESS', 'PENDING', 'ERROR', 'ADDED']);
+
+    // Detections with terminal/processing status are never removed by YOLO updates
+    const preservedDetections = state.detections.filter((d) =>
+      PRESERVED_STATUSES.has(d.status)
+    );
+
     const updatedDetections = newBoxes.map((newBox) => {
       // Use IoU to match new boxes to existing ones across frames.
       // This is stable even when the box shifts slightly due to camera jitter.
@@ -105,7 +116,11 @@ export const useAiScanStore = create<AiScanState>((set) => ({
       return newBox; // New box  Efresh RAW status with new UUID
     });
 
-    return { detections: updatedDetections };
+    // Avoid duplicates: new detections overwrite preserved ones if they share an ID
+    const newIds = new Set(updatedDetections.map((d) => d.id));
+    const preserved = preservedDetections.filter((d) => !newIds.has(d.id));
+
+    return { detections: [...updatedDetections, ...preserved] };
   }),
 
   updateDetectionStatus: (id, status) => set((state) => ({

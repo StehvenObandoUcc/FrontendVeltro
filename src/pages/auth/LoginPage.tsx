@@ -8,16 +8,17 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import type { AxiosError } from 'axios';
 import { useAuth } from '../../hooks/useAuth';
 import type { ApiError, UserRole } from '../../types';
+import { PasswordInput } from '../../components/common/PasswordInput';
 
 const loginSchema = z.object({
   username: z
     .string()
     .min(1, 'El usuario es requerido')
-    .max(50, 'El usuario no puede exceder 50 caracteres'),
+    .max(20, 'El usuario no puede exceder 20 caracteres'),
   password: z
     .string()
     .min(1, 'La contraseña es requerida')
-    .max(64, 'La contraseña no puede exceder 64 caracteres')
+    .max(20, 'La contraseña no puede exceder 20 caracteres')
     .refine((value) => !/\s/.test(value), 'La contraseña no puede contener espacios'),
 });
 
@@ -105,7 +106,7 @@ export function LoginPage() {
               id="username"
               type="text"
               autoComplete="username"
-              maxLength={50}
+              maxLength={20}
               {...register('username')}
               className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 outline-none focus:bg-white focus:ring-2 focus:ring-[#038E57]/20 focus:border-[#038E57] transition-all duration-200"
               placeholder="tu_usuario"
@@ -115,23 +116,15 @@ export function LoginPage() {
             )}
           </div>
 
-          <div className="flex flex-col gap-1.5 mb-4">
-            <label htmlFor="password" className="text-sm font-semibold text-gray-700">
-              Contraseña
-            </label>
-            <input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              maxLength={64}
-              {...register('password')}
-              className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 outline-none focus:bg-white focus:ring-2 focus:ring-[#038E57]/20 focus:border-[#038E57] transition-all duration-200"
-              placeholder="........"
-            />
-            {errors.password && (
-              <p className="text-xs font-medium text-red-500 mt-1">{errors.password.message}</p>
-            )}
-          </div>
+          <PasswordInput
+            id="password"
+            label="Contraseña"
+            autoComplete="current-password"
+            maxLength={20}
+            placeholder="........"
+            error={errors.password?.message}
+            {...register('password')}
+          />
 
           {error && (
             <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200">

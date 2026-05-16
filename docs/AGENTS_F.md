@@ -30,6 +30,7 @@ Veltro es una aplicacion frontend en React + TypeScript enfocada en ERP/POS. El 
 - `main.tsx`: arranque de React.
 - `App.tsx`: router principal y layout base.
 - `GlobalErrorBoundary.tsx`: captura de errores globales.
+- `globals.css` / `index.css`: estilos globales.
 - `api/`: clientes HTTP y endpoints.
 - `stores/`: estado global con Zustand.
 - `hooks/`: hooks reutilizables.
@@ -37,6 +38,8 @@ Veltro es una aplicacion frontend en React + TypeScript enfocada en ERP/POS. El 
 - `pages/`: pantallas completas.
 - `types/` y `modules/types/`: contratos TypeScript.
 - `test/`: pruebas unitarias e integracion.
+- `constants/`: constantes compartidas.
+- `utils/`: funciones utilitarias.
 
 ## Analisis Del Codigo Por Partes
 
@@ -115,6 +118,8 @@ Archivos:
 - `useFocusTrap.ts`
 - `useAiScanQueue.ts`
 - `useYoloDetection.ts`
+- `useBarcodeScanner.ts`
+- `useCameraStream.ts`
 - `index.ts`
 
 Que revisar:
@@ -133,6 +138,7 @@ Carpeta:
 Subcarpetas:
 
 - `auth/`
+- `common/`
 - `layout/`
 - `catalog/`
 - `pos/`
@@ -153,6 +159,10 @@ Que revisar:
 Carpeta:
 
 - `src/pages/`
+
+Archivos base:
+
+- `ErrorPages.tsx`
 
 Subcarpetas:
 
@@ -206,6 +216,9 @@ Archivos relevantes:
 - `api/client.test.ts`
 - `stores/cartStore.test.ts`
 - `components/*/*.test.tsx`
+- `hooks/*/*.test.ts`
+- `pages/*/*.test.tsx`
+- `utils/*/*.test.ts`
 
 Que revisar:
 

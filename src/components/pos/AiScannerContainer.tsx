@@ -35,6 +35,7 @@ export const AiScannerContainer: React.FC<Props> = ({
 
   const scanMode = useAiScanStore((s) => s.scanMode);
   const setAiUseCase = useAiScanStore((s) => s.setAiUseCase);
+  const setAiEnabled = useAiScanStore((s) => s.setAiEnabled);
   const detections = useAiScanStore((s) => s.detections);
   const isProcessing = useAiScanStore((s) => s.isProcessing);
   const updateDetectionStatus = useAiScanStore((s) => s.updateDetectionStatus);
@@ -62,9 +63,15 @@ export const AiScannerContainer: React.FC<Props> = ({
 
   const { modelLoaded, modelError } = useYoloDetection(videoRef, canvasRef, cameraActive && isAiMode);
 
-  useAiScanQueue(videoRef, isAiMode);
+  useAiScanQueue(videoRef);
 
   useSamSegmentation(videoRef, cameraActive && isAiMode && !samGlobalError);
+
+  // Lifecycle: enable AI when this container mounts, disable on unmount
+  useEffect(() => {
+    setAiEnabled(true);
+    return () => setAiEnabled(false);
+  }, [setAiEnabled]);
 
   useEffect(() => {
     if (useCase !== 'pos-sell') return;

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Camera, ArrowLeft, X } from 'lucide-react';
 import { AiScannerContainer } from '../../components/pos/AiScannerContainer';
 import { StockMovementModal } from '../../components/inventory/StockMovementModal';
@@ -12,6 +12,7 @@ import {
   type InventoryMovement,
   type PageResponse,
 } from '../../api/inventory';
+import { useAiScanStore } from '../../stores/aiScanStore';
 
 type ModalType = 'entry' | 'exit' | 'adjustment' | 'history' | null;
 
@@ -284,7 +285,11 @@ export function InventoryPage() {
                   className="input-base"
                 />
               </div>
-              <button onClick={() => setShowAiScanner(true)} className="btn-primary flex flex-row items-center gap-2 whitespace-nowrap">
+              <button onClick={() => {
+                setShowAiScanner(true);
+                useAiScanStore.getState().setScanMode('ai');
+                useAiScanStore.getState().setAiEnabled(true);
+              }} className="btn-primary flex flex-row items-center gap-2 whitespace-nowrap">
                 <Camera className="w-4 h-4" /> Conteo IA
               </button>
             </>

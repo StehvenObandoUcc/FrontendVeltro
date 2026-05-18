@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User, UserRole } from '../types';
+import { useAiScanStore } from './aiScanStore';
 
 interface AuthState {
   user: User | null;
@@ -36,6 +37,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
+        useAiScanStore.getState().resetAiState();
         set({
           user: null,
           accessToken: null,

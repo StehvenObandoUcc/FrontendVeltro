@@ -29,16 +29,33 @@ const CONF_THRESH        = 0.50;
 const IOU_THRESH         = 0.45;  // NMS threshold
 const MAX_DETS           = 20;
 const BOX_PADDING        = 12;
-const INPUT_SIZE         = 640;   // Fixed — yolov11.onnx has static 640×640 input
+const INPUT_SIZE         = 640;   // Fixed — yolo11s.onnx has static 640×640 input
 
-// Custom YOLOv11 class names (index = class id)
+// Full COCO 80-class names (index = class id)
 const YOLO_CLASSES = [
-  'bottle',
-  'box',
-  'can',
-  'fresh',
-  'bag'
+  'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat',
+  'traffic light', 'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat',
+  'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'backpack',
+  'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball',
+  'kite', 'baseball bat', 'baseball glove', 'skateboard', 'surfboard', 'tennis racket',
+  'bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple',
+  'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake',
+  'chair', 'couch', 'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop',
+  'mouse', 'remote', 'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink',
+  'refrigerator', 'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush',
 ];
+
+// Only detect these COCO class IDs — all others are silently ignored
+const ALLOWED_CLASS_IDS = new Set([
+  39,  // bottle
+  41,  // cup
+  73,  // book
+  67,  // cell phone
+  65,  // remote
+  24,  // backpack
+  26,  // handbag
+  28,  // suitcase
+]);
 
 // ── Internal IOU helper ────────────────────────────────────────────────────────
 function computeIou(a: YoloBox, b: YoloBox): number {
@@ -207,6 +224,9 @@ export const useYoloDetection = (
             }
 
             if (maxConf < CONF_THRESH) continue;
+
+            // Skip classes not in the allowed whitelist
+            if (!ALLOWED_CLASS_IDS.has(maxClass)) continue;
 
             const cx = isBoxFirst ? data[i * numAttribs]     : data[0 * numBoxes + i];
             const cy = isBoxFirst ? data[i * numAttribs + 1] : data[1 * numBoxes + i];

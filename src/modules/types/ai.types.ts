@@ -85,3 +85,23 @@ export interface SegmentationMask {
   maskWidth: number;
   maskHeight: number;
 }
+
+/**
+ * Payload sent from Main Thread to YOLO Worker
+ */
+export interface YoloWorkerRequest {
+  type: 'INIT' | 'DETECT';
+  buffer?: ArrayBuffer;
+  width?: number;
+  height?: number;
+}
+
+/**
+ * Payload sent from YOLO Worker to Main Thread
+ */
+export interface YoloWorkerResponse {
+  type: 'INIT_SUCCESS' | 'INIT_ERROR' | 'DETECT_SUCCESS' | 'ERROR';
+  error?: string;
+  detections?: YoloBox[];
+  trackedBoxes?: TrackedBox[];
+}

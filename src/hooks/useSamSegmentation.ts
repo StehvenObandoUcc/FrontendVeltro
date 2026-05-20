@@ -40,6 +40,7 @@ export const useSamSegmentation = (
       } else if (e.data.type === 'ERROR' || e.data.type === 'CRITICAL_ERROR') {
         console.error('[SAM Worker] Error received:', e.data.error);
         useAiScanStore.getState().setSamGlobalError(true);
+        useAiScanStore.getState().setSegmentationAvailable(false);
       }
     };
 
@@ -47,6 +48,7 @@ export const useSamSegmentation = (
     workerRef.current.onerror = (err) => {
       console.error('[SAM Worker] Critical Web Worker error:', err);
       useAiScanStore.getState().setSamGlobalError(true);
+      useAiScanStore.getState().setSegmentationAvailable(false);
     };
 
     // 5. Transient subscription (prevents destructive main-thread re-renders)

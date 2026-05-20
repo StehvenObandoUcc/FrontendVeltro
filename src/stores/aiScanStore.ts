@@ -23,6 +23,7 @@ interface AiScanState {
   // SAM 2 States
   segmentationStatus: Record<string, 'pending' | 'ready' | 'error'>;
   samGlobalError: boolean;
+  segmentationAvailable: boolean;
 
   // Data Store
   detections: YoloBox[];
@@ -38,6 +39,7 @@ interface AiScanState {
   // SAM 2 Actions
   setSegmentationStatus: (detectionId: string, status: 'pending' | 'ready' | 'error') => void;
   setSamGlobalError: (hasError: boolean) => void;
+  setSegmentationAvailable: (available: boolean) => void;
 
   // Atomic Detection Actions
   /**
@@ -77,6 +79,7 @@ export const useAiScanStore = create<AiScanState>((set) => ({
   selectedDetectionIds: [],
   segmentationStatus: {},
   samGlobalError: false,
+  segmentationAvailable: false,
 
   // Global Mode Actions
   setScanMode: (mode) => set({ scanMode: mode }),
@@ -144,6 +147,8 @@ export const useAiScanStore = create<AiScanState>((set) => ({
   })),
 
   setSamGlobalError: (hasError) => set({ samGlobalError: hasError }),
+
+  setSegmentationAvailable: (available) => set({ segmentationAvailable: available }),
 
   // Selection Actions
   selectDetection: (id) => set((state) => ({

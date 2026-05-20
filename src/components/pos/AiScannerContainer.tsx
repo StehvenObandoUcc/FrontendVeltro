@@ -8,6 +8,7 @@ import { useCameraStream } from '../../hooks/useCameraStream';
 import { DetectionOverlay } from './DetectionOverlay';
 import { useSamSegmentation } from '../../hooks/useSamSegmentation';
 import { SegmentationOverlay } from './SegmentationOverlay';
+import { ModelControlBar } from './ModelControlBar';
 
 interface ConfirmedProduct {
   productId: number;
@@ -159,6 +160,7 @@ export const AiScannerContainer: React.FC<Props> = ({
   return (
     <div className="space-y-3">
       <div className="relative w-full overflow-hidden rounded-xl bg-black" style={{ aspectRatio: '4 / 3' }}>
+        <ModelControlBar />
         <video ref={videoRef} className="absolute inset-0 w-full h-full object-cover" playsInline muted />
         {isAiMode && !samGlobalError && <SegmentationOverlay videoRef={videoRef} />}
         <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-cover pointer-events-none" />

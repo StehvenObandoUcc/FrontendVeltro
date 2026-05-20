@@ -16,11 +16,7 @@ export async function segmentWithAI(imageFile: Blob, coordX: number, coordY: num
 
   try {
     // Petición al backend Spring Boot (Proxy), no a DigitalOcean directamente
-    const response = await apiClient.post('/scanner/segment', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await apiClient.post('/scanner/segment', formData);
 
     const data = response.data;
     if (data.estado === "éxito" && data.mascara_base64) {

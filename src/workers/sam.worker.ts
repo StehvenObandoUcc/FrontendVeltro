@@ -10,8 +10,8 @@ let encoderInputName = 'input_image';   // will be overridden after load
 let encoderOutputName = 'image_embeddings'; // will be overridden after load
 
 // Mean and Std for standard ImageNet normalization
-const MEAN = [0.485, 0.456, 0.406];
-const STD = [0.229, 0.224, 0.225];
+// const MEAN = [0.485, 0.456, 0.406];
+// const STD = [0.229, 0.224, 0.225];
 
 const INPUT_SIZE = 1024;
 

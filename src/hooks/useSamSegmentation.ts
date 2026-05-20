@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useAiScanStore } from '../stores/aiScanStore';
 import { samMaskCache } from '../workers/samMaskCache';
+import { segmentWithAI } from '../api/aiScannerApi';
 
 const PROCESS_INTERVAL_MS = 3000; // 3 seconds throttle for SAM 2 encoder execution
 
@@ -8,7 +9,6 @@ export const useSamSegmentation = (
   videoRef: React.RefObject<HTMLVideoElement>,
   active: boolean,
 ) => {
-  const workerRef = useRef<Worker>();
   const offscreenRef = useRef<HTMLCanvasElement | null>(null);
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
   const lastProcessTimeRef = useRef<number>(0);
@@ -29,27 +29,7 @@ export const useSamSegmentation = (
     offscreenRef.current = os;
     ctxRef.current = os.getContext('2d', { willReadFrequently: true });
 
-    // 2. Initialize worker
-    workerRef.current = new Worker(new URL('../workers/sam.worker.ts', import.meta.url), { type: 'module' });
-
-    // 3. Receive masks from worker and save to vanilla memory cache
-    workerRef.current.onmessage = (e) => {
-      if (e.data.type === 'MASK_READY') {
-        samMaskCache.setMask(e.data.boxId, e.data.mask);
-        useAiScanStore.getState().setSegmentationStatus(e.data.boxId, 'ready');
-      } else if (e.data.type === 'ERROR' || e.data.type === 'CRITICAL_ERROR') {
-        console.error('[SAM Worker] Error received:', e.data.error);
-        useAiScanStore.getState().setSamGlobalError(true);
-        useAiScanStore.getState().setSegmentationAvailable(false);
-      }
-    };
-
-    // 4. Catch worker crashes
-    workerRef.current.onerror = (err) => {
-      console.error('[SAM Worker] Critical Web Worker error:', err);
-      useAiScanStore.getState().setSamGlobalError(true);
-      useAiScanStore.getState().setSegmentationAvailable(false);
-    };
+    // 2. Worker logic removed; we use Backend Proxy instead
 
     // 5. Transient subscription (prevents destructive main-thread re-renders)
     const unsubscribe = useAiScanStore.subscribe((state) => {
@@ -86,33 +66,58 @@ export const useSamSegmentation = (
       ctx.drawImage(video, 0, 0, w, h, dxSam, dySam, dwSam, dhSam);
 
       try {
-        const imgData = ctx.getImageData(0, 0, 1024, 1024);
-        const pixels = imgData.data; // Uint8ClampedArray
+        osCanvas.toBlob(async (blob) => {
+          if (!blob) return;
 
-        // Update Zustand flags to pending for these boxes
-        boxesNeedingMask.forEach((box) => {
-          useAiScanStore.getState().setSegmentationStatus(box.id, 'pending');
-        });
+          // Update Zustand flags to pending for these boxes
+          boxesNeedingMask.forEach((box) => {
+            useAiScanStore.getState().setSegmentationStatus(box.id, 'pending');
+          });
 
-        // Send to worker transferring the array buffer
-        workerRef.current?.postMessage(
-          {
-            type: 'PROCESS_BOXES',
-            pixels,
-            boxes: boxesNeedingMask,
-            videoWidth: w,
-            videoHeight: h,
-          },
-          [pixels.buffer]
-        );
+          // Call API for each box
+          for (const box of boxesNeedingMask) {
+            // Map box center from video coords to 1024x1024 padded canvas coords
+            const centerX = box.x + box.width / 2;
+            const centerY = box.y + box.height / 2;
+            const coordX = Math.round(centerX * scaleSam + dxSam);
+            const coordY = Math.round(centerY * scaleSam + dySam);
+
+            try {
+              const maskBase64 = await segmentWithAI(blob, coordX, coordY);
+              
+              if (maskBase64) {
+                const rawBase64 = maskBase64.replace(/^data:image\/.*;base64,/, "");
+                const binaryString = atob(rawBase64);
+                const len = binaryString.length;
+                const maskData = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    maskData[i] = binaryString.charCodeAt(i);
+                }
+                
+                samMaskCache.setMask(box.id, {
+                  detectionId: box.id,
+                  maskData,
+                  maskWidth: 1024,
+                  maskHeight: 1024
+                });
+                useAiScanStore.getState().setSegmentationStatus(box.id, 'ready');
+              } else {
+                useAiScanStore.getState().setSegmentationStatus(box.id, 'error');
+              }
+            } catch (err) {
+              console.error(`Error procesando máscara para la caja ${box.id}`, err);
+              useAiScanStore.getState().setSegmentationStatus(box.id, 'error');
+            }
+          }
+        }, 'image/jpeg', 0.8);
+
       } catch (err) {
-        console.error('[SAM Hook] Failed to extract image data or post message:', err);
+        console.error('[SAM Hook] Failed to extract image data or call API:', err);
       }
     });
 
     return () => {
       unsubscribe();
-      workerRef.current?.terminate();
       samMaskCache.clear();
     };
   }, [active, videoRef]);

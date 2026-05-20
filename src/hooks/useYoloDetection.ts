@@ -12,7 +12,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useAiScanStore } from '../stores/aiScanStore';
-import type { TrackedBox, YoloBox, YoloWorkerRequest, YoloWorkerResponse } from '../modules/types/ai.types';
+import type { YoloWorkerRequest, YoloWorkerResponse } from '../modules/types/ai.types';
 
 // ── Tuning constants ───────────────────────────────────────────────────────────
 const INFER_INTERVAL_MS  = 250;   // ~4 FPS inference cadence

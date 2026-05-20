@@ -17,6 +17,9 @@ interface StockMovementModalProps {
   onSubmit: () => void;
 }
 
+/** Permite solo dígitos enteros positivos (sin e, -, ., espacios). */
+const onlyDigits = (value: string) => value.replace(/[^0-9]/g, '');
+
 export function StockMovementModal({
   isOpen,
   type,
@@ -70,12 +73,14 @@ export function StockMovementModal({
               <div>
                 <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Cantidad</label>
                 <input
-                  type="number"
-                  min="1"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={quantity}
-                  onChange={(e) => onQuantityChange(e.target.value)}
+                  onChange={(e) => onQuantityChange(onlyDigits(e.target.value))}
                   className="input-base"
                   placeholder="Cantidad a agregar"
+                  maxLength={7}
                 />
               </div>
               <div>
@@ -86,6 +91,7 @@ export function StockMovementModal({
                   onChange={(e) => onReasonChange(e.target.value)}
                   className="input-base"
                   placeholder="Ej: Compra a proveedor"
+                  maxLength={500}
                 />
               </div>
               <button
@@ -103,13 +109,14 @@ export function StockMovementModal({
               <div>
                 <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Cantidad</label>
                 <input
-                  type="number"
-                  min="1"
-                  max={item.currentStock}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={quantity}
-                  onChange={(e) => onQuantityChange(e.target.value)}
+                  onChange={(e) => onQuantityChange(onlyDigits(e.target.value))}
                   className="input-base"
                   placeholder="Cantidad a retirar"
+                  maxLength={7}
                 />
               </div>
               <div>
@@ -120,6 +127,7 @@ export function StockMovementModal({
                   onChange={(e) => onReasonChange(e.target.value)}
                   className="input-base"
                   placeholder="Ej: Merma, devolución"
+                  maxLength={500}
                 />
               </div>
               <button
@@ -137,12 +145,14 @@ export function StockMovementModal({
               <div>
                 <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Nuevo Stock</label>
                 <input
-                  type="number"
-                  min="0"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={newStock}
-                  onChange={(e) => onNewStockChange(e.target.value)}
+                  onChange={(e) => onNewStockChange(onlyDigits(e.target.value))}
                   className="input-base"
                   placeholder="Nueva cantidad total"
+                  maxLength={7}
                 />
               </div>
               <div>
@@ -153,6 +163,7 @@ export function StockMovementModal({
                   onChange={(e) => onReasonChange(e.target.value)}
                   className="input-base"
                   placeholder="Ej: Conteo físico, corrección"
+                  maxLength={500}
                 />
               </div>
               <button

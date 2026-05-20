@@ -237,9 +237,23 @@ export function InventoryPage() {
       )
     );
 
-    const failed = results.filter((result) => result.status === 'rejected').length;
-    if (failed > 0) {
-      setCountQueueMessage(`${countQueue.length - failed} aplicados, ${failed} fallaron.`);
+    const rejectedItems = results
+      .map((result, index) => ({ result, index }))
+      .filter(({ result }) => result.status === 'rejected');
+
+    if (rejectedItems.length > 0) {
+      const failedQueue = rejectedItems.map(({ index }) => countQueue[index]);
+      const hasMaxStockError = rejectedItems.some(({ result }) => {
+        const err = (result as PromiseRejectedResult).reason;
+        return err?.response?.status === 422;
+      });
+
+      if (hasMaxStockError) {
+        setCountQueueMessage(`${countQueue.length - failedQueue.length} aplicados, ${failedQueue.length} fallaron (Límite de stock máximo excedido).`);
+      } else {
+        setCountQueueMessage(`${countQueue.length - failedQueue.length} aplicados, ${failedQueue.length} fallaron.`);
+      }
+      setCountQueue(failedQueue);
     } else {
       setCountQueueMessage('Conteo aplicado exitosamente.');
       setCountQueue([]);

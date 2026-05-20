@@ -12,6 +12,7 @@ export const useSamSegmentation = (
   const offscreenRef = useRef<HTMLCanvasElement | null>(null);
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
   const lastProcessTimeRef = useRef<number>(0);
+  const consecutiveErrorsRef = useRef<number>(0);
 
   useEffect(() => {
     if (!active) {
@@ -101,12 +102,19 @@ export const useSamSegmentation = (
                   maskHeight: 1024
                 });
                 useAiScanStore.getState().setSegmentationStatus(box.id, 'ready');
+                consecutiveErrorsRef.current = 0; // Reset errors on success
               } else {
                 useAiScanStore.getState().setSegmentationStatus(box.id, 'error');
+                consecutiveErrorsRef.current += 1;
               }
             } catch (err) {
               console.error(`Error procesando máscara para la caja ${box.id}`, err);
               useAiScanStore.getState().setSegmentationStatus(box.id, 'error');
+              consecutiveErrorsRef.current += 1;
+            }
+            
+            if (consecutiveErrorsRef.current >= 3) {
+              useAiScanStore.getState().setSamGlobalError(true);
             }
           }
         }, 'image/jpeg', 0.8);

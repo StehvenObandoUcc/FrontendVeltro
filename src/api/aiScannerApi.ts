@@ -8,6 +8,8 @@ import { apiClient } from './client';
  * @param coordY Coordenada Y relativa al recorte
  * @returns Base64 de la máscara si es exitoso, undefined en caso de error
  */
+const SAM_STATUS_SUCCESS = new Set(['éxito', 'exito']);
+
 export async function segmentWithAI(imageFile: Blob, coordX: number, coordY: number): Promise<string | undefined> {
   const formData = new FormData();
   formData.append("file", imageFile);
@@ -19,7 +21,7 @@ export async function segmentWithAI(imageFile: Blob, coordX: number, coordY: num
     const response = await apiClient.post('/scanner/segment', formData);
 
     const data = response.data;
-    if (data.estado === "éxito" && data.mascara_base64) {
+    if (SAM_STATUS_SUCCESS.has(data.estado) && data.mascara_base64) {
       return data.mascara_base64;
     } else {
         console.warn("Backend retornó estado fallido para segmentación SAM:", data);

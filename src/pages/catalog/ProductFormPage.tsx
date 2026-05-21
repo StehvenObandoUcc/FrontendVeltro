@@ -16,10 +16,10 @@ import type { Category } from '../../types';
  * but acts as the overstock threshold.
  */
 const productSchema = z.object({
-  name: z.string().min(1, 'El nombre es requerido'),
-  barcode: z.string().optional(),
-  sku: z.string().optional(),
-  description: z.string().optional(),
+  name: z.string().min(1, 'El nombre es requerido').max(200, 'Maximo 200 caracteres'),
+  barcode: z.string().max(100, 'Maximo 100 caracteres').optional(),
+  sku: z.string().max(100, 'Maximo 100 caracteres').optional(),
+  description: z.string().max(500, 'Maximo 500 caracteres').optional(),
   costPrice: z.string().min(1, 'El precio de costo es requerido'),
   salePrice: z.string().min(1, 'El precio de venta es requerido'),
   categoryId: z.string().optional(),
@@ -511,6 +511,7 @@ export function ProductFormPage() {
             {...register('name')}
             className="input-base"
             placeholder="Ej. Teclado Mecanico Keychron"
+            maxLength={200}
           />
           {errors.name && (
             <p className="mt-1.5 text-sm font-medium text-red-500">{errors.name.message}</p>
@@ -530,6 +531,7 @@ export function ProductFormPage() {
               })}
               className="input-base font-mono text-sm"
               placeholder="Ej: 7750000000000"
+              maxLength={100}
             />
           </div>
 
@@ -545,6 +547,7 @@ export function ProductFormPage() {
               })}
               className="input-base font-mono text-sm"
               placeholder="Codigo interno"
+              maxLength={100}
             />
           </div>
         </div>
@@ -559,6 +562,7 @@ export function ProductFormPage() {
             {...register('description')}
             className="input-base resize-none"
             placeholder="Descripcion detallada del producto..."
+            maxLength={500}
           />
         </div>
 

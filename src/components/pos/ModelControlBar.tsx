@@ -6,7 +6,7 @@ export const ModelControlBar: React.FC = () => {
   const { aiEnabled, setAiEnabled, segmentationAvailable } = useAiScanStore();
 
   return (
-    <div className="absolute top-4 left-0 right-0 flex justify-center z-50 pointer-events-none">
+    <div className="absolute bottom-4 right-4 flex justify-end z-50 pointer-events-none">
       <div className="bg-gray-900/80 backdrop-blur-md rounded-2xl p-2 flex items-center gap-3 shadow-xl border border-white/10 pointer-events-auto">
         
         {/* YOLO Toggle */}

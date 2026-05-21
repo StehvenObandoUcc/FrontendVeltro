@@ -24,7 +24,10 @@ const poItemSchema = z.object({
 const purchaseOrderSchema = z.object({
   supplierId: z.string().min(1, 'Supplier is required'),
   notes: z.string().max(1000, 'Notes must not exceed 1000 characters').optional(),
-  expectedDeliveryDate: z.string().optional(),
+  expectedDeliveryDate: z.string().optional().refine((val) => {
+    if (!val) return true;
+    return new Date(val) > new Date();
+  }, { message: 'La fecha de entrega debe ser en el futuro' }),
   items: z.array(poItemSchema).min(1, 'At least one item is required'),
 });
 
@@ -201,6 +204,7 @@ export const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
             type="date"
             {...register('expectedDeliveryDate')}
             className="block w-full px-3 py-2 rounded-md focus:outline-none"
+            min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
             style={{
               border: '1px solid #E8E3DB',
               color: '#1F2937',
@@ -213,6 +217,9 @@ export const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
               e.currentTarget.style.borderColor = '#E8E3DB';
             }}
           />
+          {errors.expectedDeliveryDate && (
+            <p className="mt-1 text-sm" style={{ color: '#FF2E21' }}>{errors.expectedDeliveryDate.message}</p>
+          )}
         </div>
         <div>
           <label className="block text-sm font-medium mb-1" style={{ color: '#1F2937' }}>

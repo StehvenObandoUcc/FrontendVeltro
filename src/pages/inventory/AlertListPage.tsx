@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { inventoryApi, type Alert } from '../../api/inventory';
 import { AlertList } from '../../components/inventory';
 import { useAlertStore } from '../../stores/alertStore';
@@ -65,7 +65,7 @@ export const AlertListPage: React.FC = () => {
   const handleResolveAll = async () => {
     if (!canResolveAll || activeAlerts.length === 0) return;
 
-    const confirmed = window.confirm('Esta accion resolvera todas las alertas activas del negocio actual.');
+    const confirmed = window.confirm('Esta acción eliminará todas las notificaciones activas del negocio actual.');
     if (!confirmed) return;
 
     setBulkActionError(null);
@@ -103,7 +103,7 @@ export const AlertListPage: React.FC = () => {
               disabled={isBulkActionLoading || activeAlerts.length === 0}
               className="btn-primary"
             >
-              {isBulkActionLoading ? 'Procesando...' : 'Resolver todas'}
+              {isBulkActionLoading ? 'Procesando...' : 'Eliminar Notificaciones'}
             </button>
           )}
         </div>

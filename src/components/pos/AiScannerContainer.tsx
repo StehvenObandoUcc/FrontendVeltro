@@ -6,9 +6,12 @@ import { useYoloDetection } from '../../hooks/useYoloDetection';
 import { useAiScanQueue } from '../../hooks/useAiScanQueue';
 import { useCameraStream } from '../../hooks/useCameraStream';
 import { DetectionOverlay } from './DetectionOverlay';
-import { useSamSegmentation } from '../../hooks/useSamSegmentation';
 import { SegmentationOverlay } from './SegmentationOverlay';
 import { ModelControlBar } from './ModelControlBar';
+import { SamTapOverlay } from './SamTapOverlay';
+import { useSamHealthCheck } from '../../hooks/useSamHealthCheck';
+import { useSamTapSegmentation } from '../../hooks/useSamTapSegmentation';
+import { samMaskCache } from '../../workers/samMaskCache';
 
 interface ConfirmedProduct {
   productId: number;
@@ -42,15 +45,22 @@ export const AiScannerContainer: React.FC<Props> = ({
   const updateDetectionStatus = useAiScanStore((s) => s.updateDetectionStatus);
   const clearDetections = useAiScanStore((s) => s.clearDetections);
   const samGlobalError = useAiScanStore((s) => s.samGlobalError);
+  const segmentationAvailable = useAiScanStore((s) => s.segmentationAvailable);
+  const activeAiModel = useAiScanStore((s) => s.activeAiModel);
+  const clearSamTaps = useAiScanStore((s) => s.clearSamTaps);
+  const samTapEntries = useAiScanStore((s) => s.samTapEntries);
 
   const { add: addToCart } = useCartStore();
   const isAiMode = scanMode === 'ai';
+  const isYoloMode = activeAiModel === 'yolo';
+  const isSamMode = activeAiModel === 'sam';
 
   const onCameraStop = useCallback(() => {
     clearDetections();
+    clearSamTaps();
     confirmedIds.current.clear();
     rejectedProducts.current.clear();
-  }, [clearDetections]);
+  }, [clearDetections, clearSamTaps]);
 
   const {
     cameraActive,
@@ -62,20 +72,41 @@ export const AiScannerContainer: React.FC<Props> = ({
     onStop: onCameraStop,
   });
 
-  const { modelLoaded, modelError } = useYoloDetection(videoRef, canvasRef, cameraActive && isAiMode);
-
+  // ── YOLO pipeline (only in YOLOv11 mode) ──────────────────────────────
+  const { modelLoaded, modelError } = useYoloDetection(
+    videoRef, canvasRef, cameraActive && isAiMode && isYoloMode,
+  );
   useAiScanQueue(videoRef);
 
-  useSamSegmentation(videoRef, cameraActive && isAiMode && !samGlobalError);
+  // ── SAM health check (always active — determines if SAM pill is enabled) ──
+  useSamHealthCheck();
 
-  // Lifecycle: enable AI when this container mounts, disable on unmount
+  // ── SAM tap pipeline (only in SAM mode) ────────────────────────────────
+  useSamTapSegmentation(
+    videoRef,
+    cameraActive && isAiMode && isSamMode && segmentationAvailable && !samGlobalError,
+  );
+
+  // ── aiEnabled lifecycle: true in YOLO mode only (gates useAiScanQueue) ──
   useEffect(() => {
-    setAiEnabled(true);
+    setAiEnabled(isYoloMode);
     return () => setAiEnabled(false);
-  }, [setAiEnabled]);
+  }, [isYoloMode, setAiEnabled]);
 
+  // ── Clear other mode's state on switch ─────────────────────────────────
   useEffect(() => {
-    if (useCase !== 'pos-sell') return;
+    if (isYoloMode) {
+      clearSamTaps();
+      samMaskCache.clear();
+    }
+    if (isSamMode) {
+      clearDetections();
+    }
+  }, [activeAiModel, isYoloMode, isSamMode, clearSamTaps, clearDetections]);
+
+  // ── YOLO auto-add to cart (pos-sell only, YOLO mode only) ──────────────
+  useEffect(() => {
+    if (useCase !== 'pos-sell' || !isYoloMode) return;
 
     detections
       .filter((d) => d.status === 'SUCCESS' && d.matches.length > 0 && !addedIds.current.has(d.id))
@@ -90,7 +121,22 @@ export const AiScannerContainer: React.FC<Props> = ({
 
     const live = new Set(detections.map((d) => d.id));
     addedIds.current = new Set([...addedIds.current].filter((id) => live.has(id)));
-  }, [detections, addToCart, updateDetectionStatus, useCase]);
+  }, [detections, addToCart, updateDetectionStatus, useCase, isYoloMode]);
+
+  // ── SAM auto-add to cart (pos-sell only, SAM mode only) ────────────────
+  useEffect(() => {
+    if (useCase !== 'pos-sell' || !isSamMode) return;
+
+    samTapEntries
+      .filter((e) => e.status === 'matched' && e.matchedProduct && !addedIds.current.has(e.id))
+      .forEach((entry) => {
+        addedIds.current.add(entry.id);
+        const product = entry.matchedProduct!;
+        addToCart(product, 1);
+        setToast(product.name);
+        setTimeout(() => setToast(null), 3000);
+      });
+  }, [samTapEntries, addToCart, useCase, isSamMode]);
 
   const getValidMatch = (detectionId: string) => {
     const det = detections.find((d) => d.id === detectionId);
@@ -162,9 +208,16 @@ export const AiScannerContainer: React.FC<Props> = ({
       <div className="relative w-full overflow-hidden rounded-xl bg-black" style={{ aspectRatio: '4 / 3' }}>
         <ModelControlBar />
         <video ref={videoRef} className="absolute inset-0 w-full h-full object-cover" playsInline muted />
-        {isAiMode && !samGlobalError && <SegmentationOverlay videoRef={videoRef} />}
-        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-cover pointer-events-none" />
-        {isAiMode && <DetectionOverlay canvasRef={canvasRef} />}
+
+        {/* YOLO overlays — only in YOLOv11 mode */}
+        {isAiMode && isYoloMode && (
+          <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-cover pointer-events-none" />
+        )}
+        {isAiMode && isYoloMode && <DetectionOverlay canvasRef={canvasRef} />}
+
+        {/* SAM overlays — only in SAM mode */}
+        {isAiMode && isSamMode && <SamTapOverlay videoRef={videoRef} />}
+        {isAiMode && isSamMode && !samGlobalError && <SegmentationOverlay videoRef={videoRef} />}
 
         {!cameraActive && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-10">
@@ -172,7 +225,7 @@ export const AiScannerContainer: React.FC<Props> = ({
           </div>
         )}
 
-        {cameraActive && isAiMode && !modelLoaded && !modelError && (
+        {cameraActive && isAiMode && isYoloMode && !modelLoaded && !modelError && (
           <div className="absolute bottom-3 inset-x-0 flex justify-center z-10">
             <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 text-white text-xs">
               <Loader2 className="w-3 h-3 animate-spin" />
@@ -181,7 +234,7 @@ export const AiScannerContainer: React.FC<Props> = ({
           </div>
         )}
 
-        {modelError && isAiMode && (
+        {modelError && isAiMode && isYoloMode && (
           <div className="absolute bottom-3 inset-x-0 flex justify-center z-10">
             <span className="px-3 py-1 rounded-full bg-red-600 text-white text-xs">Error al cargar modelo IA</span>
           </div>
@@ -198,23 +251,31 @@ export const AiScannerContainer: React.FC<Props> = ({
       </div>
 
       <div className="flex items-center justify-between text-xs text-gray-500 px-1">
-        <span>
-          Detectados: <strong className="text-gray-900">{detections.length}</strong>
-        </span>
+        {isYoloMode && (
+          <span>
+            Detectados: <strong className="text-gray-900">{detections.length}</strong>
+          </span>
+        )}
 
-        {isAiMode && isProcessing && (
+        {isSamMode && (
+          <span>
+            Puntos activos: <strong className="text-gray-900">{samTapEntries.length}</strong>
+          </span>
+        )}
+
+        {isAiMode && isYoloMode && isProcessing && (
           <span className="flex items-center gap-1 text-blue-600 font-medium">
             <Loader2 className="w-3 h-3 animate-spin" />
             Identificando...
           </span>
         )}
 
-        {isAiMode && modelLoaded && !isProcessing && detections.length === 0 && (
+        {isAiMode && isYoloMode && modelLoaded && !isProcessing && detections.length === 0 && (
           <span className="text-amber-600">Apunta la camara a un producto</span>
         )}
       </div>
 
-      {useCase === 'inventory-count' && pendingDetections.length > 0 && (
+      {useCase === 'inventory-count' && isYoloMode && pendingDetections.length > 0 && (
         <div className="card p-4 space-y-2">
           <h3 className="text-sm font-semibold text-[var(--text-primary)]">Detecciones pendientes</h3>
           {pendingDetections.map((det) => {
@@ -247,5 +308,3 @@ export const AiScannerContainer: React.FC<Props> = ({
     </div>
   );
 };
-
-

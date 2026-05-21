@@ -10,8 +10,8 @@ import type { AxiosError } from 'axios';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 
 const categorySchema = z.object({
-  name: z.string().min(1, 'El nombre es requerido'),
-  description: z.string().optional(),
+  name: z.string().min(1, 'El nombre es requerido').max(30, 'Maximo 30 caracteres'),
+  description: z.string().max(40, 'Maximo 40 caracteres').optional(),
 });
 
 type CategoryFormData = z.infer<typeof categorySchema>;
@@ -205,6 +205,7 @@ export function CategoryPage() {
                     {...register('name')}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary-base)] focus:border-transparent outline-none transition-all"
                     placeholder="Ej. Accesorios"
+                    maxLength={30}
                   />
                   {errors.name && (
                     <p className="mt-1.5 text-sm font-medium text-red-500">{errors.name.message}</p>
@@ -221,6 +222,7 @@ export function CategoryPage() {
                 {...register('description')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--primary-base)] focus:border-transparent outline-none transition-all resize-none"
                 placeholder="Descripción de la categoría"
+                maxLength={40}
               />
             </div>
 

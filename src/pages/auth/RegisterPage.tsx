@@ -16,7 +16,7 @@ const registerSchema = z
       .string()
       .min(3, 'El usuario debe tener al menos 3 caracteres')
       .max(20, 'El usuario no puede exceder 20 caracteres'),
-    email: z.string().email('Ingrese un email valido'),
+    email: z.string().email('Ingrese un email valido').max(254, 'El email no puede exceder 254 caracteres'),
     password: z
       .string()
       .min(8, 'La contraseña debe tener al menos 8 caracteres')
@@ -157,6 +157,7 @@ export function RegisterPage() {
               id="email"
               type="email"
               autoComplete="email"
+              maxLength={254}
               {...register('email')}
               className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 outline-none focus:bg-white focus:ring-2 focus:ring-[#038E57]/20 focus:border-[#038E57] transition-all duration-200"
               placeholder="tu@email.com"

@@ -56,15 +56,28 @@ export const SegmentationOverlay: React.FC<Props> = ({ videoRef }) => {
         return;
       }
 
-      // Get active detections and check if any have segmentation ready
+      // Collect IDs with masks ready — from YOLO detections AND SAM tap entries
       const state = useAiScanStore.getState();
-      const activeDetections = state.detections.filter(
-        (d) => state.segmentationStatus[d.id] === 'ready'
-      );
+
+      const readyMaskIds: string[] = [];
+
+      // YOLO detections with segmentation ready
+      for (const d of state.detections) {
+        if (state.segmentationStatus[d.id] === 'ready') {
+          readyMaskIds.push(d.id);
+        }
+      }
+
+      // SAM tap entries with segmentation ready
+      for (const e of state.samTapEntries) {
+        if (state.segmentationStatus[e.id] === 'ready') {
+          readyMaskIds.push(e.id);
+        }
+      }
 
       displayCtx.clearRect(0, 0, displayCanvas.width, displayCanvas.height);
 
-      if (activeDetections.length > 0) {
+      if (readyMaskIds.length > 0) {
         // Clear offscreen canvas
         osCtx.clearRect(0, 0, 1024, 1024);
 
@@ -73,8 +86,8 @@ export const SegmentationOverlay: React.FC<Props> = ({ videoRef }) => {
         const u32View = new Uint32Array(pixelBuf);
 
         let hasAnyMasks = false;
-        for (const box of activeDetections) {
-          const mask = samMaskCache.getMask(box.id);
+        for (const id of readyMaskIds) {
+          const mask = samMaskCache.getMask(id);
           if (!mask) continue;
           hasAnyMasks = true;
 

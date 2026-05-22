@@ -87,12 +87,27 @@ export const useSamSegmentation = (
               const maskBase64 = await segmentWithAI(blob, coordX, coordY);
               
               if (maskBase64) {
+                // Decode PNG mask → flat binary array (1 = mask, 0 = background)
                 const rawBase64 = maskBase64.replace(/^data:image\/.*;base64,/, "");
-                const binaryString = atob(rawBase64);
-                const len = binaryString.length;
-                const maskData = new Uint8Array(len);
-                for (let i = 0; i < len; i++) {
-                    maskData[i] = binaryString.charCodeAt(i);
+                const dataUrl = `data:image/png;base64,${rawBase64}`;
+                const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+                  const image = new Image();
+                  image.onload = () => resolve(image);
+                  image.onerror = reject;
+                  image.src = dataUrl;
+                });
+                const decodeCanvas = document.createElement('canvas');
+                decodeCanvas.width = 1024;
+                decodeCanvas.height = 1024;
+                const decodeCtx = decodeCanvas.getContext('2d', { willReadFrequently: true })!;
+                decodeCtx.drawImage(img, 0, 0, 1024, 1024);
+                const imgData = decodeCtx.getImageData(0, 0, 1024, 1024);
+                const maskData = new Uint8Array(1024 * 1024);
+                for (let i = 0; i < maskData.length; i++) {
+                  const px = i * 4;
+                  if (imgData.data[px] > 128 || imgData.data[px + 1] > 128 || imgData.data[px + 2] > 128) {
+                    maskData[i] = 1;
+                  }
                 }
                 
                 samMaskCache.setMask(box.id, {

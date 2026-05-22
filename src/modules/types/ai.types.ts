@@ -10,6 +10,24 @@ export type ScanMode = 'barcode' | 'ai';
 
 export type AiUseCase = 'pos-sell' | 'inventory-count';
 
+/** Active AI model pipeline when in 'ai' scan mode */
+export type AiModelMode = 'yolo' | 'sam';
+
+/** A single draw-to-segment entry in SAM mode */
+export interface SamTapEntry {
+  id: string;
+  /** Box corners as ratios (0–1) of video dimensions — resolution-independent */
+  startX: number;
+  startY: number;
+  endX: number;
+  endY: number;
+  status: 'pending' | 'segmenting' | 'matching' | 'matched' | 'error';
+  matchedProduct?: MatchedProduct;
+  /** Average RGB at box center when segmented — for stale detection */
+  pixelSignature?: [number, number, number];
+  timestamp: number;
+}
+
 /**
  * Lifecycle status of an AI detection
  * RAW → PENDING → SUCCESS → ADDED

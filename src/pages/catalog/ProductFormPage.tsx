@@ -58,6 +58,14 @@ const formatFormPrice = (price?: string | null): string => {
   return Number.isNaN(parsed) ? '' : parsed.toFixed(2);
 };
 
+const blockInvalidChars = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  if (['e', 'E', '+'].includes(e.key)) e.preventDefault();
+};
+
+const blockInvalidIntegerChars = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  if (['e', 'E', '+', '.'].includes(e.key)) e.preventDefault();
+};
+
 async function normalizeToJpeg(file: File): Promise<File> {
   if (file.type === 'image/jpeg' || file.type === 'image/jpg') return file;
 
@@ -576,6 +584,7 @@ export function ProductFormPage() {
               type="number"
               step="0.01"
               {...register('costPrice')}
+              onKeyDown={blockInvalidChars}
               className="input-base tabular-data"
               placeholder="0.00"
             />
@@ -593,6 +602,7 @@ export function ProductFormPage() {
               type="number"
               step="0.01"
               {...register('salePrice')}
+              onKeyDown={blockInvalidChars}
               className="input-base tabular-data"
               placeholder="0.00"
             />
@@ -665,13 +675,14 @@ export function ProductFormPage() {
                 </span>
               </label>
               <input
-                id="minStockInfo"
-                type="number"
-                min="0"
-                {...register('minStockInfo')}
-                className="input-base tabular-data"
-                placeholder="0"
-              />
+              id="minStockInfo"
+              type="number"
+              min="0"
+              {...register('minStockInfo')}
+              onKeyDown={blockInvalidIntegerChars}
+              className="input-base tabular-data"
+              placeholder="0"
+            />
               <p className="mt-1 text-xs text-[var(--text-secondary)]">
                 Alerta cuando el stock sea mayor o igual a este valor
               </p>
@@ -685,13 +696,14 @@ export function ProductFormPage() {
                 </span>
               </label>
               <input
-                id="minStockWarning"
-                type="number"
-                min="0"
-                {...register('minStockWarning')}
-                className="input-base tabular-data"
-                placeholder="0"
-              />
+              id="minStockWarning"
+              type="number"
+              min="0"
+              {...register('minStockWarning')}
+              onKeyDown={blockInvalidIntegerChars}
+              className="input-base tabular-data"
+              placeholder="0"
+            />
               <p className="mt-1 text-xs text-[var(--text-secondary)]">Reordenar pronto</p>
             </div>
 
@@ -706,13 +718,14 @@ export function ProductFormPage() {
                 </span>
               </label>
               <input
-                id="minStockCritical"
-                type="number"
-                min="0"
-                {...register('minStockCritical')}
-                className="input-base tabular-data"
-                placeholder="0"
-              />
+              id="minStockCritical"
+              type="number"
+              min="0"
+              {...register('minStockCritical')}
+              onKeyDown={blockInvalidIntegerChars}
+              className="input-base tabular-data"
+              placeholder="0"
+            />
               <p className="mt-1 text-xs text-[var(--text-secondary)]">Reorden urgente</p>
               {errors.minStockCritical && (
                 <p className="mt-1.5 text-sm font-medium text-red-500">{errors.minStockCritical.message}</p>

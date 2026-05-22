@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Camera, ArrowLeft, X } from 'lucide-react';
 import { AiScannerContainer } from '../../components/pos/AiScannerContainer';
-import { StockMovementModal } from '../../components/inventory/StockMovementModal';
+import { StockMovementModal, type StockMovementFormValues } from '../../components/inventory/StockMovementModal';
 import { MovementHistoryModal } from '../../components/inventory/MovementHistoryModal';
 import { AlertConfigForm } from '../../components/inventory/AlertConfigForm';
 import { AiCountQueue, type CountQueueItem } from '../../components/inventory/AiCountQueue';
@@ -39,9 +39,6 @@ export function InventoryPage() {
   const [modalLoading, setModalLoading] = useState(false);
   const [movements, setMovements] = useState<InventoryMovement[]>([]);
 
-  const [quantity, setQuantity] = useState('');
-  const [reason, setReason] = useState('');
-  const [newStock, setNewStock] = useState('');
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
@@ -85,9 +82,6 @@ export function InventoryPage() {
   const openModal = async (type: ModalType, item: InventoryItem) => {
     setSelectedItem(item);
     setModalType(type);
-    setQuantity('');
-    setReason('');
-    setNewStock(item.currentStock.toString());
 
     if (type === 'history') {
       try {
@@ -143,14 +137,17 @@ export function InventoryPage() {
     setMovements([]);
   };
 
-  const handleEntry = async () => {
-    if (!selectedItem || !quantity || !reason) return;
+  const handleEntry = async (values: StockMovementFormValues) => {
+    if (!selectedItem) return;
+    const nextQuantity = values.quantity ?? '';
+    const nextReason = values.reason;
+    if (!nextQuantity || !nextReason) return;
 
     try {
       setModalLoading(true);
       await inventoryApi.recordStockEntry(selectedItem.productId, {
-        quantity: parseInt(quantity, 10),
-        reason,
+        quantity: parseInt(nextQuantity, 10),
+        reason: nextReason,
       });
       await loadInventory();
       closeModal();
@@ -161,14 +158,17 @@ export function InventoryPage() {
     }
   };
 
-  const handleExit = async () => {
-    if (!selectedItem || !quantity || !reason) return;
+  const handleExit = async (values: StockMovementFormValues) => {
+    if (!selectedItem) return;
+    const nextQuantity = values.quantity ?? '';
+    const nextReason = values.reason;
+    if (!nextQuantity || !nextReason) return;
 
     try {
       setModalLoading(true);
       await inventoryApi.recordStockExit(selectedItem.productId, {
-        quantity: parseInt(quantity, 10),
-        reason,
+        quantity: parseInt(nextQuantity, 10),
+        reason: nextReason,
       });
       await loadInventory();
       closeModal();
@@ -184,14 +184,17 @@ export function InventoryPage() {
     }
   };
 
-  const handleAdjustment = async () => {
-    if (!selectedItem || !newStock || !reason) return;
+  const handleAdjustment = async (values: StockMovementFormValues) => {
+    if (!selectedItem) return;
+    const nextNewStock = values.newStock ?? '';
+    const nextReason = values.reason;
+    if (!nextNewStock || !nextReason) return;
 
     try {
       setModalLoading(true);
       await inventoryApi.recordStockAdjustment(selectedItem.productId, {
-        newStock: parseInt(newStock, 10),
-        reason,
+        newStock: parseInt(nextNewStock, 10),
+        reason: nextReason,
       });
       await loadInventory();
       closeModal();
@@ -411,14 +414,8 @@ export function InventoryPage() {
         isOpen={modalType === 'entry' || modalType === 'exit' || modalType === 'adjustment'}
         type={modalType === 'history' ? null : modalType}
         item={selectedItem}
-        quantity={quantity}
-        reason={reason}
-        newStock={newStock}
         loading={modalLoading}
         onClose={closeModal}
-        onQuantityChange={setQuantity}
-        onReasonChange={setReason}
-        onNewStockChange={setNewStock}
         onSubmit={modalType === 'entry' ? handleEntry : modalType === 'exit' ? handleExit : handleAdjustment}
       />
       <MovementHistoryModal isOpen={modalType === 'history'} item={selectedItem} loading={modalLoading} movements={movements} onClose={closeModal} />

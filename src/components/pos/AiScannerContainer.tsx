@@ -35,7 +35,7 @@ export const AiScannerContainer: React.FC<Props> = ({
   const confirmedIds = useRef<Set<string>>(new Set());
   const rejectedProducts = useRef<Map<number, number>>(new Map());
 
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'warning' } | null>(null);
 
   const scanMode = useAiScanStore((s) => s.scanMode);
   const setAiUseCase = useAiScanStore((s) => s.setAiUseCase);
@@ -115,7 +115,7 @@ export const AiScannerContainer: React.FC<Props> = ({
         const match = det.matches[0];
         addToCart(match, 1);
         updateDetectionStatus(det.id, 'ADDED');
-        setToast(match.name);
+        setToast({ message: `${match.name} agregado al carrito`, type: 'success' });
         setTimeout(() => setToast(null), 3000);
       });
 
@@ -132,9 +132,14 @@ export const AiScannerContainer: React.FC<Props> = ({
       .forEach((entry) => {
         addedIds.current.add(entry.id);
         const product = entry.matchedProduct!;
-        addToCart(product, 1);
-        setToast(product.name);
-        setTimeout(() => setToast(null), 3000);
+        if (product.id && product.id > 0) {
+          addToCart(product, 1);
+          setToast({ message: `${product.name} agregado al carrito`, type: 'success' });
+          setTimeout(() => setToast(null), 3000);
+        } else {
+          setToast({ message: `No inventariado: ${product.name}`, type: 'warning' });
+          setTimeout(() => setToast(null), 3000);
+        }
       });
   }, [samTapEntries, addToCart, useCase, isSamMode]);
 
@@ -242,9 +247,9 @@ export const AiScannerContainer: React.FC<Props> = ({
 
         {toast && (
           <div className="absolute top-3 inset-x-0 flex justify-center z-20">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500 text-white text-sm font-semibold shadow-lg">
-              <CheckCircle className="w-4 h-4" />
-              {toast} agregado al carrito
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-white text-sm font-semibold shadow-lg ${toast.type === 'success' ? 'bg-emerald-500' : 'bg-amber-500'}`}>
+              {toast.type === 'success' ? <CheckCircle className="w-4 h-4" /> : <X className="w-4 h-4" />}
+              {toast.message}
             </div>
           </div>
         )}

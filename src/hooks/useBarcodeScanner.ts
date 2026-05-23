@@ -104,8 +104,23 @@ export function useBarcodeScanner({
     isStoppingRef.current = true;
     const stopTask = (async () => {
       try {
-        if (currentScanner.isScanning) {
-          await currentScanner.stop();
+        await currentScanner.stop();
+      } catch {
+        // noop
+      }
+
+      // FALLBACK: ensure camera hardware light turns off if html5-qrcode leaked it
+      try {
+        const readerEl = document.getElementById(readerId);
+        if (readerEl) {
+          const videoEls = readerEl.getElementsByTagName('video');
+          for (let i = 0; i < videoEls.length; i++) {
+            const stream = videoEls[i].srcObject as MediaStream;
+            if (stream && stream.getTracks) {
+              stream.getTracks().forEach(track => track.stop());
+              videoEls[i].srcObject = null;
+            }
+          }
         }
       } catch {
         // noop

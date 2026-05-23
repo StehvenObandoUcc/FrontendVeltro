@@ -9,6 +9,10 @@ type SamStatusResponse = {
   available?: boolean;
 };
 
+interface UseSamHealthCheckOptions {
+  enabled: boolean;
+}
+
 /**
  * Polls the backend SAM health-check endpoint at a fixed interval
  * and keeps `segmentationAvailable` in sync with the real service state.
@@ -16,8 +20,14 @@ type SamStatusResponse = {
  * - Runs immediately on mount, then every {@link POLLING_INTERVAL_MS}.
  * - On any network/parse error the status falls back to `false`.
  */
-export const useSamHealthCheck = () => {
+export const useSamHealthCheck = ({ enabled }: UseSamHealthCheckOptions) => {
   const setSegmentationAvailable = useAiScanStore((s) => s.setSegmentationAvailable);
+
+  useEffect(() => {
+    if (!enabled) {
+      setSegmentationAvailable(false);
+    }
+  }, [enabled, setSegmentationAvailable]);
 
   const fetchStatus = useCallback(async (signal: AbortSignal) => {
     try {
@@ -33,6 +43,8 @@ export const useSamHealthCheck = () => {
   }, [setSegmentationAvailable]);
 
   useEffect(() => {
+    if (!enabled) return;
+
     const controller = new AbortController();
 
     void fetchStatus(controller.signal);
@@ -45,5 +57,5 @@ export const useSamHealthCheck = () => {
       controller.abort();
       clearInterval(intervalId);
     };
-  }, [fetchStatus]);
+  }, [enabled, fetchStatus]);
 };

@@ -12,6 +12,7 @@ import { SamTapOverlay } from './SamTapOverlay';
 import { useSamHealthCheck } from '../../hooks/useSamHealthCheck';
 import { useSamTapSegmentation } from '../../hooks/useSamTapSegmentation';
 import { samMaskCache } from '../../workers/samMaskCache';
+import { FEATURES } from '../../config/features';
 
 interface ConfirmedProduct {
   productId: number;
@@ -79,7 +80,7 @@ export const AiScannerContainer: React.FC<Props> = ({
   useAiScanQueue(videoRef);
 
   // ── SAM health check (always active — determines if SAM pill is enabled) ──
-  useSamHealthCheck();
+  useSamHealthCheck({ enabled: FEATURES.ENABLE_SAM });
 
   // ── SAM tap pipeline (only in SAM mode) ────────────────────────────────
   useSamTapSegmentation(
@@ -94,6 +95,13 @@ export const AiScannerContainer: React.FC<Props> = ({
   }, [isYoloMode, setAiEnabled]);
 
   // ── Clear other mode's state on switch ─────────────────────────────────
+  useEffect(() => {
+    if (!FEATURES.ENABLE_SAM && activeAiModel === 'sam') {
+      const setActiveAiModel = useAiScanStore.getState().setActiveAiModel;
+      setActiveAiModel('yolo');
+    }
+  }, [activeAiModel]);
+
   useEffect(() => {
     if (isYoloMode) {
       clearSamTaps();

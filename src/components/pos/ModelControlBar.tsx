@@ -2,6 +2,7 @@ import React from 'react';
 import { Cpu, Layers } from 'lucide-react';
 import { useAiScanStore } from '../../stores/aiScanStore';
 import type { AiModelMode } from '../../modules/types/ai.types';
+import { FEATURES } from '../../config/features';
 
 export const ModelControlBar: React.FC = () => {
   const activeAiModel = useAiScanStore((s) => s.activeAiModel);
@@ -31,20 +32,22 @@ export const ModelControlBar: React.FC = () => {
         </button>
 
         {/* SAM pill */}
-        <button
-          onClick={() => handleSelect('sam')}
-          disabled={!segmentationAvailable}
-          className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold transition-all duration-300 ${
-            activeAiModel === 'sam'
-              ? 'bg-emerald-600 text-white shadow-[0_0_12px_rgba(16,185,129,0.5)]'
-              : segmentationAvailable
-                ? 'text-gray-400 hover:text-white hover:bg-white/10'
-                : 'text-gray-600 opacity-50 cursor-not-allowed'
-          }`}
-        >
-          <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          SAM
-        </button>
+        {FEATURES.ENABLE_SAM && (
+          <button
+            onClick={() => handleSelect('sam')}
+            disabled={!segmentationAvailable}
+            className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold transition-all duration-300 ${
+              activeAiModel === 'sam'
+                ? 'bg-emerald-600 text-white shadow-[0_0_12px_rgba(16,185,129,0.5)]'
+                : segmentationAvailable
+                  ? 'text-gray-400 hover:text-white hover:bg-white/10'
+                  : 'text-gray-600 opacity-50 cursor-not-allowed'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            SAM
+          </button>
+        )}
       </div>
     </div>
   );

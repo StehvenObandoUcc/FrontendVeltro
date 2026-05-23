@@ -12,6 +12,11 @@ export function useCameraStream({ videoRef, onStop }: UseCameraStreamOptions) {
   const streamRef = useRef<MediaStream | null>(null);
   const cameraSessionIdRef = useRef(0);
 
+  const onStopRef = useRef(onStop);
+  useEffect(() => {
+    onStopRef.current = onStop;
+  }, [onStop]);
+
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
@@ -22,8 +27,8 @@ export function useCameraStream({ videoRef, onStop }: UseCameraStreamOptions) {
     }
     setCameraActive(false);
     setIsCameraInitializing(false);
-    onStop?.();
-  }, [videoRef, onStop]);
+    onStopRef.current?.();
+  }, [videoRef]);
 
   const initCamera = useCallback(async (sessionId: number) => {
     try {
@@ -39,7 +44,6 @@ export function useCameraStream({ videoRef, onStop }: UseCameraStreamOptions) {
       const isPortrait = window.innerHeight > window.innerWidth;
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: 'environment',
           width: { ideal: isPortrait ? 720 : 1280 },
           height: { ideal: isPortrait ? 1280 : 720 },
         },

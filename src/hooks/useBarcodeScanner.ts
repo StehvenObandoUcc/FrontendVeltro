@@ -9,7 +9,7 @@ export type CameraFeedbackState =
   | 'not-found'
   | 'camera-error';
 
-const CAMERA_START_CONFIG = { facingMode: 'environment' };
+const CAMERA_START_CONFIG = {};
 const BARCODE_SCANNER_CONFIG = {
   fps: 10,
   qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
@@ -23,7 +23,7 @@ const BARCODE_SCANNER_CONFIG = {
   videoConstraints: {
     width: { ideal: 1280 },
     height: { ideal: 720 },
-    facingMode: 'environment',
+    facingMode: { ideal: 'environment' },
   },
 };
 

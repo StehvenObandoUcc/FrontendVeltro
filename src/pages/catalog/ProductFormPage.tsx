@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { productApi, categoryApi } from '../../api/catalog';
 import { inventoryApi } from '../../api/inventory';
 import { ProductScanner, type ScannedProductData } from '../../components/catalog';
+import { CameraCapture } from '../../components/common/CameraCapture';
 import type { Category } from '../../types';
 
 /**
@@ -131,6 +132,7 @@ export function ProductFormPage() {
   const [showScanner, setShowScanner] = useState(false);
   const [scanWarning, setScanWarning] = useState<string | null>(null);
   const [scanSuccess, setScanSuccess] = useState<string | null>(null);
+  const [showCamera, setShowCamera] = useState(false);
 
   const {
     register,
@@ -630,20 +632,47 @@ export function ProductFormPage() {
           <label htmlFor="productImage" className="block text-sm font-semibold text-[var(--text-primary)] mb-1.5">
             Fotos del Producto (Para busqueda por IA)
           </label>
-          <div className="flex items-center gap-4">
-            <input
-              id="productImage"
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleImageChange}
-              className="block w-full text-sm text-gray-500
-                file:mr-4 file:py-2 file:px-4
-                file:rounded-full file:border-0
-                file:text-sm file:font-semibold
-                file:bg-blue-50 file:text-blue-700
-                hover:file:bg-blue-100"
-            />
+          <div className="flex flex-col gap-4">
+            {!showCamera ? (
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <input
+                  id="productImage"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageChange}
+                  className="block w-full text-sm text-gray-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-full file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-blue-50 file:text-blue-700
+                    hover:file:bg-blue-100"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCamera(true)}
+                  className="px-4 py-2 bg-blue-50 text-blue-700 font-semibold text-sm rounded-full hover:bg-blue-100 transition-colors flex items-center gap-2 whitespace-nowrap"
+                >
+                  <Camera className="w-4 h-4" />
+                  Tomar Foto
+                </button>
+              </div>
+            ) : (
+              <div className="w-full max-w-md">
+                <CameraCapture 
+                  onCapture={(file) => {
+                    setImageFiles((prev) => [...prev, file]);
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                      setImagePreviews((prev) => [...prev, reader.result as string]);
+                    };
+                    reader.readAsDataURL(file);
+                    setShowCamera(false);
+                  }}
+                  onCancel={() => setShowCamera(false)}
+                />
+              </div>
+            )}
           </div>
           {imagePreviews.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-4">

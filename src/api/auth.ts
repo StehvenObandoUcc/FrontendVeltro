@@ -1,4 +1,5 @@
 import apiClient from './client';
+import { hashPassword } from '../utils/password';
 import type {
   ApiSuccessResponse,
   CreateWorkerResponse,
@@ -11,17 +12,29 @@ import type {
 
 export const authApi = {
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
-    const response = await apiClient.post<LoginResponse>('/auth/login', credentials);
+    const hashed = {
+      ...credentials,
+      password: await hashPassword(credentials.password),
+    };
+    const response = await apiClient.post<LoginResponse>('/auth/login', hashed);
     return response.data;
   },
 
   register: async (data: RegisterRequest): Promise<ApiSuccessResponse> => {
-    const response = await apiClient.post<ApiSuccessResponse>('/auth/register', data);
+    const hashed = {
+      ...data,
+      password: await hashPassword(data.password),
+    };
+    const response = await apiClient.post<ApiSuccessResponse>('/auth/register', hashed);
     return response.data;
   },
 
   createWorker: async (data: RegisterRequest): Promise<CreateWorkerResponse> => {
-    const response = await apiClient.post<CreateWorkerResponse>('/auth/workers', data);
+    const hashed = {
+      ...data,
+      password: await hashPassword(data.password),
+    };
+    const response = await apiClient.post<CreateWorkerResponse>('/auth/workers', hashed);
     return response.data;
   },
 
@@ -50,6 +63,13 @@ export const authApi = {
   },
 
   changePassword: async (currentPassword: string, newPassword: string): Promise<void> => {
-    await apiClient.put('/auth/change-password', { currentPassword, newPassword });
+    const [hashedCurrent, hashedNew] = await Promise.all([
+      hashPassword(currentPassword),
+      hashPassword(newPassword),
+    ]);
+    await apiClient.put('/auth/change-password', { 
+      currentPassword: hashedCurrent, 
+      newPassword: hashedNew 
+    });
   },
 };

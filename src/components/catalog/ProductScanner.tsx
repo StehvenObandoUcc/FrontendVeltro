@@ -97,13 +97,12 @@ export const ProductScanner: React.FC<ProductScannerProps> = ({ onResult, onClos
   const {
     cameraReady,
     cameraFeedback,
-    lastBarcode,
     error: cameraError,
     setError: setCameraError,
     setTransientFeedback,
   } = useBarcodeScanner({
     readerId: 'catalog-reader',
-    enabled: !aiLoading,
+    enabled: true, // Keep camera running during AI load to prevent html5-qrcode restart hangs
     onDecode: handleBarcodeScan,
     startDelayMs: 200,
     stopOnDecode: true,
@@ -132,15 +131,14 @@ export const ProductScanner: React.FC<ProductScannerProps> = ({ onResult, onClos
       });
   }, []);
 
-  // 3s AI fallback timer
+  // Show AI button immediately
   useEffect(() => {
     if (!cameraReady || !aiAvailable || scanning || aiLoading) {
       setShowAiButton(false);
       return;
     }
-    const timer = setTimeout(() => setShowAiButton(true), 3000);
-    return () => clearTimeout(timer);
-  }, [cameraReady, aiAvailable, scanning, aiLoading, lastBarcode]);
+    setShowAiButton(true);
+  }, [cameraReady, aiAvailable, scanning, aiLoading]);
 
   // Clear error after delay
   useEffect(() => {
@@ -198,10 +196,9 @@ export const ProductScanner: React.FC<ProductScannerProps> = ({ onResult, onClos
   /** User selects an AI suggestion */
   const handleSelectSuggestion = useCallback(
     async (suggestion: SuggestedProduct) => {
-      // Use best available barcode: catalog match first, then AI-suggested
-      const effectiveBarcode = suggestion.barcode || suggestion.suggestedBarcode;
-      // Use best available name: catalog match first, then AI-suggested
-      const effectiveName = suggestion.productName || suggestion.suggestedName || '';
+      // We want to use the pure AI suggestion for creating a new product, ignoring the DB match
+      const effectiveBarcode = suggestion.suggestedBarcode || undefined;
+      const effectiveName = suggestion.suggestedName || suggestion.productName || '';
 
       // Check if this product already exists by barcode
       let existsInDb = false;

@@ -25,8 +25,16 @@ export const samMaskCache = {
   getMask: (id: string) => maskCache.get(id),
 
   hasMask: (id: string) => maskCache.has(id),
-  
+
   deleteMask: (id: string) => {
+    maskCache.delete(id);
+    if (evictionTimeouts.has(id)) {
+      clearTimeout(evictionTimeouts.get(id)!);
+      evictionTimeouts.delete(id);
+    }
+  },
+
+  removeMask: (id: string) => {
     maskCache.delete(id);
     if (evictionTimeouts.has(id)) {
       clearTimeout(evictionTimeouts.get(id)!);

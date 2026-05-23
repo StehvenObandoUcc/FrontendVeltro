@@ -7,7 +7,7 @@
  */
 
 import { create } from 'zustand';
-import type { ScanMode, AiUseCase, YoloBox, DetectionStatus, MatchedProduct, TrackedBox } from '../modules/types/ai.types';
+import type { ScanMode, AiUseCase, AiModelMode, YoloBox, DetectionStatus, MatchedProduct, TrackedBox, SamTapEntry } from '../modules/types/ai.types';
 import { samMaskCache } from '../workers/samMaskCache';
 
 export type { TrackedBox } from '../modules/types/ai.types';
@@ -19,11 +19,13 @@ interface AiScanState {
   aiEnabled: boolean;
   isProcessing: boolean;
   selectedDetectionIds: string[];
+  activeAiModel: AiModelMode;
 
   // SAM 2 States
   segmentationStatus: Record<string, 'pending' | 'ready' | 'error'>;
   samGlobalError: boolean;
   segmentationAvailable: boolean;
+  samTapEntries: SamTapEntry[];
 
   // Data Store
   detections: YoloBox[];
@@ -35,11 +37,18 @@ interface AiScanState {
   setAiUseCase: (useCase: AiUseCase) => void;
   setAiEnabled: (enabled: boolean) => void;
   setIsProcessing: (processing: boolean) => void;
+  setActiveAiModel: (mode: AiModelMode) => void;
   
   // SAM 2 Actions
   setSegmentationStatus: (detectionId: string, status: 'pending' | 'ready' | 'error') => void;
   setSamGlobalError: (hasError: boolean) => void;
   setSegmentationAvailable: (available: boolean) => void;
+
+  // SAM Tap Actions
+  addSamTap: (entry: SamTapEntry) => void;
+  updateSamTap: (id: string, update: Partial<SamTapEntry>) => void;
+  removeSamTap: (id: string) => void;
+  clearSamTaps: () => void;
 
   // Atomic Detection Actions
   /**
@@ -74,18 +83,21 @@ export const useAiScanStore = create<AiScanState>((set) => ({
   aiUseCase: 'pos-sell',
   aiEnabled: false,
   isProcessing: false,
+  activeAiModel: 'yolo',
   detections: [],
   trackedBoxes: [],
   selectedDetectionIds: [],
   segmentationStatus: {},
   samGlobalError: false,
   segmentationAvailable: false,
+  samTapEntries: [],
 
   // Global Mode Actions
   setScanMode: (mode) => set({ scanMode: mode }),
   setAiUseCase: (useCase) => set({ aiUseCase: useCase }),
   setAiEnabled: (enabled) => set({ aiEnabled: enabled }),
   setIsProcessing: (processing) => set({ isProcessing: processing }),
+  setActiveAiModel: (mode) => set({ activeAiModel: mode }),
 
   // Atomic Detection Actions
   setTrackedBoxes: (boxes) => set({ trackedBoxes: boxes }),
@@ -149,6 +161,25 @@ export const useAiScanStore = create<AiScanState>((set) => ({
   setSamGlobalError: (hasError) => set({ samGlobalError: hasError }),
 
   setSegmentationAvailable: (available) => set({ segmentationAvailable: available }),
+
+  // SAM Tap Actions
+  addSamTap: (entry) => set((state) => ({
+    samTapEntries: state.samTapEntries.length >= 6
+      ? state.samTapEntries
+      : [...state.samTapEntries, entry],
+  })),
+
+  updateSamTap: (id, update) => set((state) => ({
+    samTapEntries: state.samTapEntries.map((e) =>
+      e.id === id ? { ...e, ...update } : e
+    ),
+  })),
+
+  removeSamTap: (id) => set((state) => ({
+    samTapEntries: state.samTapEntries.filter((e) => e.id !== id),
+  })),
+
+  clearSamTaps: () => set({ samTapEntries: [] }),
 
   // Selection Actions
   selectDetection: (id) => set((state) => ({

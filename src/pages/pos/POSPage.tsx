@@ -125,7 +125,7 @@ export const POSPage: React.FC = () => {
 
         {/* Cart Section (1/3 on desktop, compact on mobile) */}
         <div className="lg:col-span-1">
-          <div className="card overflow-hidden flex flex-col max-h-[70vh] lg:max-h-none lg:h-full">
+          <div className="card overflow-hidden flex flex-col max-h-[85vh] lg:max-h-none lg:h-full">
             <div className="bg-[var(--surface-tertiary)] border-b border-[var(--border-light)] px-4 sm:px-6 py-3 sm:py-4">
               <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)] flex items-center justify-between">
                 <span className="flex items-center gap-2"><ShoppingCart className="w-5 h-5" /> Carrito</span>

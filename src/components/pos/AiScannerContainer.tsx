@@ -48,6 +48,7 @@ export const AiScannerContainer: React.FC<Props> = ({
   const samGlobalError = useAiScanStore((s) => s.samGlobalError);
   const segmentationAvailable = useAiScanStore((s) => s.segmentationAvailable);
   const activeAiModel = useAiScanStore((s) => s.activeAiModel);
+  const setActiveAiModel = useAiScanStore((s) => s.setActiveAiModel);
   const clearSamTaps = useAiScanStore((s) => s.clearSamTaps);
   const samTapEntries = useAiScanStore((s) => s.samTapEntries);
 
@@ -97,10 +98,9 @@ export const AiScannerContainer: React.FC<Props> = ({
   // ── Clear other mode's state on switch ─────────────────────────────────
   useEffect(() => {
     if (!FEATURES.ENABLE_SAM && activeAiModel === 'sam') {
-      const setActiveAiModel = useAiScanStore.getState().setActiveAiModel;
       setActiveAiModel('yolo');
     }
-  }, [activeAiModel]);
+  }, [activeAiModel, setActiveAiModel]);
 
   useEffect(() => {
     if (isYoloMode) {

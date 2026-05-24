@@ -100,7 +100,7 @@ export const AiScannerContainer: React.FC<Props> = ({
     if (!FEATURES.ENABLE_SAM && activeAiModel === 'sam') {
       setActiveAiModel('yolo');
     }
-  }, [activeAiModel, setActiveAiModel]);
+  }, [FEATURES.ENABLE_SAM, activeAiModel, setActiveAiModel]);
 
   useEffect(() => {
     if (isYoloMode) {

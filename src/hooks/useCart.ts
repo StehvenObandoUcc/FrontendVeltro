@@ -4,7 +4,7 @@ import { useCartStore, type CartItem } from '../stores/cartStore';
 export const useCart = () => {
   const store = useCartStore();
 
-  const add = useCallback((product: any, quantity: number) => {
+  const add = useCallback((product: Parameters<typeof store.add>[0], quantity: number) => {
     if (quantity > 0) {
       store.add(product, quantity);
     }

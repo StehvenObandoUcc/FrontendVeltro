@@ -218,7 +218,7 @@ self.onmessage = async (e: MessageEvent) => {
               maskHeight: INPUT_SIZE,
             },
           },
-          [binaryMask.buffer] as any
+          [binaryMask.buffer] as Transferable[]
         );
       }
     } catch (err) {

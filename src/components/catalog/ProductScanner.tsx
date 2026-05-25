@@ -191,7 +191,7 @@ export const ProductScanner: React.FC<ProductScannerProps> = ({ onResult, onClos
       'image/jpeg',
       0.85
     );
-  }, []);
+  }, [setCameraError]);
 
   /** User selects an AI suggestion */
   const handleSelectSuggestion = useCallback(

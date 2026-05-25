@@ -146,7 +146,7 @@ export function useBarcodeScanner({
 
     stopPromiseRef.current = stopTask;
     return stopTask;
-  }, []);
+  }, [readerId]);
 
   const startScanner = useCallback(async () => {
     const readerEl = document.getElementById(readerId);

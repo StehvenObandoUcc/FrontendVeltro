@@ -139,7 +139,7 @@ export const ReceptionFlow: React.FC<ReceptionFlowProps> = ({
             <select
               id="payment-method"
               value={paymentMethod}
-              onChange={(e) => setPaymentMethod(e.target.value as any)}
+              onChange={(e) => setPaymentMethod(e.target.value as 'CASH' | 'CARD' | 'TRANSFER' | 'YAPE' | 'PLIN')}
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none bg-white text-gray-800"
             >
               <option value="CASH">Efectivo</option>

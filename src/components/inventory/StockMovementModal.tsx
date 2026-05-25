@@ -38,8 +38,6 @@ export function StockMovementModal({
   onClose,
   onSubmit,
 }: StockMovementModalProps) {
-  if (!isOpen || !type || !item) return null;
-
   const stockMovementSchema = useMemo(() => {
     return baseStockMovementSchema.superRefine((data, ctx) => {
       if (type === 'entry' || type === 'exit') {
@@ -93,7 +91,7 @@ export function StockMovementModal({
     defaultValues: {
       quantity: '',
       reason: '',
-      newStock: type === 'adjustment' ? item.currentStock.toString() : '',
+      newStock: type === 'adjustment' && item ? item.currentStock.toString() : '',
     },
   });
 
@@ -129,6 +127,8 @@ export function StockMovementModal({
   const isEntry = type === 'entry';
   const isExit = type === 'exit';
   const isAdjustment = type === 'adjustment';
+
+  if (!isOpen || !type || !item) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">

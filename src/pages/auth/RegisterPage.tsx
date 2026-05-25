@@ -4,6 +4,12 @@ import { ArrowLeft } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import {
+  usernameField,
+  emailField,
+  passwordField,
+  businessNameField,
+} from '../../utils/validationRules';
 import { useNavigate, Link } from 'react-router-dom';
 import type { AxiosError } from 'axios';
 import { authApi } from '../../api/auth';
@@ -12,22 +18,12 @@ import { PasswordInput } from '../../components/common/PasswordInput';
 
 const registerSchema = z
   .object({
-    username: z
-      .string()
-      .min(3, 'El usuario debe tener al menos 3 caracteres')
-      .max(20, 'El usuario no puede exceder 20 caracteres'),
-    email: z.string().email('Ingrese un email valido').max(254, 'El email no puede exceder 254 caracteres'),
-    password: z
-      .string()
-      .min(8, 'La contraseña debe tener al menos 8 caracteres')
-      .max(20, 'La contraseña no puede exceder 20 caracteres')
-      .refine((value) => !/\s/.test(value), 'La contraseña no puede contener espacios'),
+    username: usernameField(),
+    email: emailField(),
+    password: passwordField(),
     confirmPassword: z.string().min(1, 'Confirme su contraseña'),
     role: z.literal('ADMIN').default('ADMIN'),
-    businessName: z
-      .string()
-      .min(2, 'El nombre del negocio debe tener al menos 2 caracteres')
-      .max(50, 'El nombre del negocio no puede exceder 50 caracteres'),
+    businessName: businessNameField(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Las contraseñas no coinciden',

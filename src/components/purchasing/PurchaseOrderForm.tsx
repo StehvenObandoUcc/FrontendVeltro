@@ -23,12 +23,12 @@ const poItemSchema = z.object({
 
 const purchaseOrderSchema = z.object({
   supplierId: z.string().min(1, 'Supplier is required'),
-  notes: z.string().max(1000, 'Notes must not exceed 1000 characters').optional(),
+  notes: z.string().max(255, 'Las notas no pueden exceder 255 caracteres').optional(),
   expectedDeliveryDate: z.string().optional().refine((val) => {
     if (!val) return true;
     return new Date(val) > new Date();
   }, { message: 'La fecha de entrega debe ser en el futuro' }),
-  items: z.array(poItemSchema).min(1, 'At least one item is required'),
+  items: z.array(poItemSchema).min(1, 'Debe agregar al menos un artículo'),
 });
 
 type PurchaseOrderFormData = z.infer<typeof purchaseOrderSchema>;
@@ -227,6 +227,7 @@ export const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
           </label>
           <input
             type="text"
+            maxLength={255}
             {...register('notes')}
             placeholder="Notas adicionales para la orden..."
             className="block w-full px-3 py-2 rounded-md focus:outline-none"

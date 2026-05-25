@@ -2,22 +2,16 @@ import { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { usernameField, emailField, passwordField } from '../../utils/validationRules';
 import type { AxiosError } from 'axios';
 import { authApi } from '../../api/auth';
 import type { ApiError, UserRole, Worker } from '../../types';
 import { formatDate } from '../../utils/format';
 
 const workerSchema = z.object({
-  username: z
-    .string()
-    .min(3, 'El usuario debe tener al menos 3 caracteres')
-    .max(20, 'El usuario no puede exceder 20 caracteres'),
-  email: z.string().email('Ingrese un email válido'),
-  password: z
-    .string()
-    .min(8, 'La contraseña debe tener al menos 8 caracteres')
-    .max(20, 'La contraseña no puede exceder 20 caracteres')
-    .refine((value) => !/\s/.test(value), 'La contraseña no puede contener espacios'),
+  username: usernameField(),
+  email: emailField(),
+  password: passwordField(),
   confirmPassword: z.string().min(1, 'Confirme su contraseña'),
   role: z.enum(['WAREHOUSE', 'CASHIER'], {
     required_error: 'Seleccione un rol',
@@ -241,6 +235,7 @@ export function WorkersPage() {
                   id="worker-email"
                   type="email"
                   autoComplete="off"
+                  maxLength={254}
                   {...register('email')}
                   className="input-base w-full"
                   placeholder="usuario@email.com"

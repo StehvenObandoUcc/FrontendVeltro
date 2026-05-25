@@ -2,18 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { nameField, taxIdField, emailOptionalField, phoneField, addressField, notesField } from '../../utils/validationRules';
 import type { Supplier, CreateSupplierRequest } from '../../api/purchasing';
 import { purchasingApi } from '../../api/purchasing';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 
-// Validation schema matching backend CreateSupplierRequest
+// Validation schema — single source of truth from validationRules.ts
 const supplierSchema = z.object({
-  name: z.string().min(1, 'El nombre es requerido').max(200, 'Máximo 200 caracteres'),
-  taxId: z.string().min(1, 'El RUC/Tax ID es requerido').max(50, 'Máximo 50 caracteres'),
-  email: z.string().email('Email inválido').max(200).optional().or(z.literal('')),
-  phone: z.string().max(20, 'Máximo 20 caracteres').optional().or(z.literal('')),
-  address: z.string().max(500, 'Máximo 500 caracteres').optional().or(z.literal('')),
-  notes: z.string().max(500, 'Máximo 500 caracteres').optional().or(z.literal('')),
+  name: nameField('El nombre de empresa'),
+  taxId: taxIdField(),
+  email: emailOptionalField(),
+  phone: phoneField(),
+  address: addressField(),
+  notes: notesField(255),
 });
 
 type SupplierFormData = z.infer<typeof supplierSchema>;
@@ -193,9 +194,10 @@ export const SupplierPage: React.FC = () => {
                 </label>
                 <input
                   type="text"
+                  maxLength={100}
                   {...register('name')}
                   className="input-base"
-                  placeholder="Ej. Distribuidora ABC S.A.C."
+                  placeholder="Ej. Distribuidora ABC"
                 />
                 {errors.name && (
                   <p className="mt-1 text-sm text-red-500">{errors.name.message}</p>
@@ -208,9 +210,10 @@ export const SupplierPage: React.FC = () => {
                 </label>
                 <input
                   type="text"
+                  maxLength={20}
                   {...register('taxId')}
                   className="input-base font-mono"
-                  placeholder="Ej. 20123456789"
+                  placeholder="Ej. 900123456-7"
                   disabled={!!editingSupplier}
                 />
                 {errors.taxId && (
@@ -246,9 +249,10 @@ export const SupplierPage: React.FC = () => {
                 </label>
                 <input
                   type="text"
+                  maxLength={20}
                   {...register('phone')}
                   className="input-base"
-                  placeholder="+51 999 888 777"
+                  placeholder="+57 300 123 4567"
                 />
                 {errors.phone && (
                   <p className="mt-1 text-sm text-red-500">{errors.phone.message}</p>
@@ -262,9 +266,10 @@ export const SupplierPage: React.FC = () => {
               </label>
               <input
                 type="text"
+                maxLength={300}
                 {...register('address')}
                 className="input-base"
-                placeholder="Av. Principal 123, Lima"
+                placeholder="Cra 15 # 93-75, Bogotá"
               />
               {errors.address && (
                 <p className="mt-1 text-sm text-red-500">{errors.address.message}</p>
@@ -278,6 +283,7 @@ export const SupplierPage: React.FC = () => {
               <textarea
                 {...register('notes')}
                 rows={2}
+                maxLength={255}
                 className="input-base resize-none"
                 placeholder="Notas adicionales sobre el proveedor..."
               />

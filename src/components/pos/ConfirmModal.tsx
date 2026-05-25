@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { COLOMBIAN_BANKS } from '../../utils/validationRules';
 import { useCartStore } from '../../stores/cartStore';
 import type { CreateSaleRequest } from '../../api/pos';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
@@ -23,7 +24,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   const items = useCartStore((s) => s.items);
   const getTotal = useCartStore((s) => s.getTotal);
   const [paymentMethod, setPaymentMethod] = useState<
-    'CASH' | 'CARD' | 'YAPE' | 'PLIN' | 'TRANSFER' | 'MIXED'
+    'CASH' | 'CARD' | 'NEQUI' | 'DAVIPLATA' | 'TRANSFER' | 'MIXED'
   >('CASH');
   const [notes, setNotes] = useState('');
   const [amountReceived, setAmountReceived] = useState<string>('');
@@ -39,7 +40,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   // Mixed payment states
   const [mixedCashAmount, setMixedCashAmount] = useState('');
   const [mixedOtherAmount, setMixedOtherAmount] = useState('');
-  const [mixedMethod, setMixedMethod] = useState<'CARD' | 'TRANSFER' | 'YAPE' | 'PLIN'>('YAPE');
+  const [mixedMethod, setMixedMethod] = useState<'CARD' | 'TRANSFER' | 'NEQUI' | 'DAVIPLATA'>('NEQUI');
 
   useFocusTrap(modalRef, onClose, isOpen);
 
@@ -57,12 +58,12 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
       setAmountReceived('');
       setCardDigits('');
       setCardType('VISA');
-      setBankName('BCP');
+      setBankName('BANCOLOMBIA');
       setOperationCode('');
       setPhoneNumber('');
       setMixedCashAmount('');
       setMixedOtherAmount('');
-      setMixedMethod('YAPE');
+      setMixedMethod('NEQUI');
     }
   }, [isOpen]);
 
@@ -102,18 +103,18 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           return;
         }
         paymentDetailsStr = `Transferencia Bancaria: ${bankName} | Op: ${operationCode}`;
-      } else if (paymentMethod === 'YAPE') {
+      } else if (paymentMethod === 'NEQUI') {
         if (!operationCode) {
           setError('El código de operación es obligatorio');
           return;
         }
-        paymentDetailsStr = `Yape: ${phoneNumber ? 'Cel: ' + phoneNumber : ''} | Op: ${operationCode}`;
-      } else if (paymentMethod === 'PLIN') {
+        paymentDetailsStr = `Nequi: ${phoneNumber ? 'Cel: ' + phoneNumber : ''} | Op: ${operationCode}`;
+      } else if (paymentMethod === 'DAVIPLATA') {
         if (!operationCode) {
           setError('El código de operación es obligatorio');
           return;
         }
-        paymentDetailsStr = `Plin: ${phoneNumber ? 'Cel: ' + phoneNumber : ''} | Op: ${operationCode}`;
+        paymentDetailsStr = `Daviplata: ${phoneNumber ? 'Cel: ' + phoneNumber : ''} | Op: ${operationCode}`;
       } else if (paymentMethod === 'MIXED') {
         const cashVal = parseFloat(mixedCashAmount);
         const otherVal = parseFloat(mixedOtherAmount);
@@ -147,18 +148,18 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
             return;
           }
           mixedDetails = `Transferencia ${bankName} (Op: ${operationCode})`;
-        } else if (mixedMethod === 'YAPE') {
+        } else if (mixedMethod === 'NEQUI') {
           if (!operationCode) {
             setError('El código de operación es obligatorio');
             return;
           }
-          mixedDetails = `Yape${phoneNumber ? ' Cel: ' + phoneNumber : ''} (Op: ${operationCode})`;
-        } else if (mixedMethod === 'PLIN') {
+          mixedDetails = `Nequi${phoneNumber ? ' Cel: ' + phoneNumber : ''} (Op: ${operationCode})`;
+        } else if (mixedMethod === 'DAVIPLATA') {
           if (!operationCode) {
             setError('El código de operación es obligatorio');
             return;
           }
-          mixedDetails = `Plin${phoneNumber ? ' Cel: ' + phoneNumber : ''} (Op: ${operationCode})`;
+          mixedDetails = `Daviplata${phoneNumber ? ' Cel: ' + phoneNumber : ''} (Op: ${operationCode})`;
         }
         paymentDetailsStr = `Pago Mixto - Efectivo: ${formatCurrency(cashVal)} + ${mixedMethod}: ${formatCurrency(otherVal)} (${mixedDetails})`;
       }
@@ -261,10 +262,10 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
               title="Método de pago disponible"
             >
               <option value="CASH">Efectivo</option>
-              <option value="CARD">Tarjeta</option>
-              <option value="TRANSFER">Transferencia</option>
-              <option value="YAPE">Yape</option>
-              <option value="PLIN">Plin</option>
+              <option value="CARD">Tarjeta débito/crédito</option>
+              <option value="TRANSFER">Transferencia bancaria</option>
+              <option value="NEQUI">Nequi</option>
+              <option value="DAVIPLATA">Daviplata</option>
               <option value="MIXED">Mixto</option>
             </select>
           </div>
@@ -340,18 +341,16 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                   onChange={(e) => setBankName(e.target.value)}
                   className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none bg-white"
                 >
-                  <option value="BCP">Banco de Crédito (BCP)</option>
-                  <option value="BBVA">BBVA</option>
-                  <option value="INTERBANK">Interbank</option>
-                  <option value="SCOTIABANK">Scotiabank</option>
-                  <option value="BANCO_NACION">Banco de la Nación</option>
-                  <option value="OTROS">Otros</option>
+                {COLOMBIAN_BANKS.map((bank) => (
+                  <option key={bank.value} value={bank.value}>{bank.label}</option>
+                ))}
                 </select>
               </div>
               <div>
                 <label className="mb-1 block text-xs font-semibold text-gray-600">Código de Referencia / Operación</label>
                 <input
                   type="text"
+                  maxLength={50}
                   value={operationCode}
                   onChange={(e) => setOperationCode(e.target.value)}
                   placeholder="Ej: TXN-98765"
@@ -364,15 +363,15 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
 
           {(paymentMethod === 'YAPE' || paymentMethod === 'PLIN') && (
             <div className="space-y-3 border-l-4 border-pink-500 bg-pink-50/30 p-4 rounded-r-md text-left">
-              <h4 className="text-sm font-bold text-pink-800">Detalles de Billetera ({paymentMethod})</h4>
+              <h4 className="text-sm font-bold text-pink-800">Detalles de Billetera digital</h4>
               <div>
                 <label className="mb-1 block text-xs font-semibold text-gray-600">Número de Celular (opcional)</label>
                 <input
                   type="text"
-                  maxLength={9}
+                  maxLength={10}
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
-                  placeholder="Ej: 987654321"
+                  placeholder="Ej: 3001234567"
                   className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
                 />
               </div>
@@ -380,6 +379,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                 <label className="mb-1 block text-xs font-semibold text-gray-600">Código de Operación (obligatorio)</label>
                 <input
                   type="text"
+                  maxLength={50}
                   value={operationCode}
                   onChange={(e) => setOperationCode(e.target.value)}
                   placeholder="Ej: 123456"
@@ -419,8 +419,8 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                     onChange={(e) => setMixedMethod(e.target.value as 'CARD' | 'TRANSFER' | 'YAPE' | 'PLIN')}
                     className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none bg-white"
                   >
-                    <option value="YAPE">Yape</option>
-                    <option value="PLIN">Plin</option>
+              <option value="NEQUI">Nequi</option>
+                    <option value="DAVIPLATA">Daviplata</option>
                     <option value="CARD">Tarjeta</option>
                     <option value="TRANSFER">Transferencia</option>
                   </select>
@@ -475,16 +475,16 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                         onChange={(e) => setBankName(e.target.value)}
                         className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none bg-white"
                       >
-                        <option value="BCP">BCP</option>
-                        <option value="BBVA">BBVA</option>
-                        <option value="INTERBANK">Interbank</option>
-                        <option value="OTROS">Otros</option>
+                        {COLOMBIAN_BANKS.map((bank) => (
+                          <option key={bank.value} value={bank.value}>{bank.label}</option>
+                        ))}
                       </select>
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-semibold text-gray-600">Código de Referencia / Operación</label>
                       <input
                         type="text"
+                        maxLength={50}
                         value={operationCode}
                         onChange={(e) => setOperationCode(e.target.value)}
                         placeholder="Ej: Op-12345"
@@ -495,16 +495,16 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                   </div>
                 )}
 
-                {(mixedMethod === 'YAPE' || mixedMethod === 'PLIN') && (
+                  {(mixedMethod === 'NEQUI' || mixedMethod === 'DAVIPLATA') && (
                   <div className="space-y-3">
                     <div>
                       <label className="mb-1 block text-xs font-semibold text-gray-600">Número de Celular (opcional)</label>
                       <input
                         type="text"
-                        maxLength={9}
+                        maxLength={10}
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
-                        placeholder="Ej: 987654321"
+                        placeholder="Ej: 3001234567"
                         className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
                       />
                     </div>
@@ -537,6 +537,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Ej: Cliente solicitó embalaje especial"
+              maxLength={200}
               className="w-full resize-none rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
               rows={2}
               aria-label="Agregar notas opcionales para esta venta"

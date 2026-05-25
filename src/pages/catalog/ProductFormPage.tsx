@@ -18,8 +18,13 @@ import type { Category } from '../../types';
  */
 const productSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido').max(200, 'Maximo 200 caracteres'),
-  barcode: z.string().max(100, 'Maximo 100 caracteres').optional(),
-  sku: z.string().max(100, 'Maximo 100 caracteres').optional(),
+  barcode: z
+    .string()
+    .max(30, 'El código de barras no puede exceder 30 caracteres')
+    .regex(/^\d*$/, 'Solo se permiten dígitos')
+    .optional()
+    .or(z.literal('')),
+  sku: z.string().max(50, 'El SKU no puede exceder 50 caracteres').optional(),
   description: z.string().max(500, 'Maximo 500 caracteres').optional(),
   costPrice: z.string().min(1, 'El precio de costo es requerido'),
   salePrice: z.string().min(1, 'El precio de venta es requerido'),
@@ -541,7 +546,7 @@ export function ProductFormPage() {
               })}
               className="input-base font-mono text-sm"
               placeholder="Ej: 7750000000000"
-              maxLength={100}
+              maxLength={30}
             />
           </div>
 
@@ -557,7 +562,7 @@ export function ProductFormPage() {
               })}
               className="input-base font-mono text-sm"
               placeholder="Codigo interno"
-              maxLength={100}
+              maxLength={50}
             />
           </div>
         </div>

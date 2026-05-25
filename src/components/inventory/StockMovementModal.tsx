@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { movementReasonField } from '../../utils/validationRules';
 import type { InventoryItem } from '../../api/inventory';
 
 type StockMovementType = 'entry' | 'exit' | 'adjustment';
@@ -14,7 +15,7 @@ export type StockMovementFormValues = {
 
 const baseStockMovementSchema = z.object({
   quantity: z.string().optional(),
-  reason: z.string().min(1, 'Razon requerida').max(500, 'Maximo 500 caracteres'),
+  reason: movementReasonField(),
   newStock: z.string().optional(),
 });
 
@@ -182,7 +183,7 @@ export function StockMovementModal({
                   {...register('reason')}
                   className="input-base"
                   placeholder="Ej: Compra a proveedor"
-                  maxLength={500}
+                  maxLength={200}
                 />
                 {errors.reason && (
                   <p className="mt-1 text-xs text-red-500">{errors.reason.message}</p>
@@ -222,7 +223,7 @@ export function StockMovementModal({
                   {...register('reason')}
                   className="input-base"
                   placeholder="Ej: Merma, devolución"
-                  maxLength={500}
+                  maxLength={200}
                 />
                 {errors.reason && (
                   <p className="mt-1 text-xs text-red-500">{errors.reason.message}</p>
@@ -262,7 +263,7 @@ export function StockMovementModal({
                   {...register('reason')}
                   className="input-base"
                   placeholder="Ej: Conteo físico, corrección"
-                  maxLength={500}
+                  maxLength={200}
                 />
                 {errors.reason && (
                   <p className="mt-1 text-xs text-red-500">{errors.reason.message}</p>

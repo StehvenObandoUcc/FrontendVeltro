@@ -1,9 +1,33 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { inventoryApi, type Alert } from '../../api/inventory';
+import { inventoryApi, type Alert, type AlertType } from '../../api/inventory';
 import { useAlertStore } from '../../stores/alertStore';
 import { SeverityBadge } from './SeverityBadge';
 import { SEVERITY_STYLE_MAP } from '../../constants/alertSeverityStyles';
+
+// Guidance text and target route per alert type (B17 fix)
+const ALERT_GUIDANCE: Record<AlertType, { message: string; action: string; route: string }> = {
+  LOW_STOCK: {
+    message: 'Este producto tiene stock bajo. Crea una orden de compra para reabastecer antes de resolver la alerta.',
+    action: 'Ir a Compras',
+    route: '/app/purchasing',
+  },
+  OUT_OF_STOCK: {
+    message: 'Este producto está sin stock. Registra una entrada de inventario o una orden de compra urgente.',
+    action: 'Ir a Inventario',
+    route: '/app/inventory',
+  },
+  OVERSTOCK: {
+    message: 'Este producto tiene exceso de stock. Considera ajustar los umbrales o planificar una promoción.',
+    action: 'Ir a Inventario',
+    route: '/app/inventory',
+  },
+  STOCK_MOVEMENT: {
+    message: 'Movimiento de stock registrado. Puedes revisar el historial en inventario.',
+    action: 'Ver Inventario',
+    route: '/app/inventory',
+  },
+};
 
 // Alert type → target route, with defensive fallback
 const ALERT_RESOLVE_ROUTE: Record<string, string> = {
@@ -34,9 +58,36 @@ export const AlertList: React.FC<AlertListProps> = ({
 }) => {
   const [updatingRead, setUpdatingRead] = useState<number | null>(null);
   const [resolving, setResolving] = useState<number | null>(null);
+  const [guidanceAlert, setGuidanceAlert] = useState<Alert | null>(null);
   const markAsReadLocal = useAlertStore((state) => state.markAsReadLocal);
   const resolveAlertLocal = useAlertStore((state) => state.resolveAlertLocal);
   const navigate = useNavigate();
+
+  // Step 1: Show contextual guidance, don't resolve yet (B17)
+  const handleResolveClick = (alert: Alert) => {
+    setGuidanceAlert(alert);
+  };
+
+  // Step 2: User confirmed — now actually resolve and navigate
+  const handleConfirmResolve = async () => {
+    if (!guidanceAlert) return;
+    const alert = guidanceAlert;
+    setGuidanceAlert(null);
+    setResolving(alert.id);
+    try {
+      await inventoryApi.resolveAlert(alert.id);
+      resolveAlertLocal(alert.id);
+      if (onRefresh) {
+        await onRefresh();
+      }
+      const targetRoute = ALERT_RESOLVE_ROUTE[alert.type] ?? '/app/inventory';
+      navigate(targetRoute);
+    } catch (error) {
+      console.error('Failed to resolve alert:', error);
+    } finally {
+      setResolving(null);
+    }
+  };
 
   const handleMarkAsRead = async (alertId: number) => {
     setUpdatingRead(alertId);
@@ -50,25 +101,6 @@ export const AlertList: React.FC<AlertListProps> = ({
       console.error('Failed to mark alert as read:', error);
     } finally {
       setUpdatingRead(null);
-    }
-  };
-
-  const handleResolve = async (alert: Alert) => {
-    setResolving(alert.id);
-    try {
-      await inventoryApi.resolveAlert(alert.id);
-      resolveAlertLocal(alert.id);
-      if (onRefresh) {
-        await onRefresh();
-      }
-
-      // Navigate based on alert type, with fallback to /app/inventory
-      const targetRoute = ALERT_RESOLVE_ROUTE[alert.type] ?? '/app/inventory';
-      navigate(targetRoute);
-    } catch (error) {
-      console.error('Failed to resolve alert:', error);
-    } finally {
-      setResolving(null);
     }
   };
 
@@ -192,7 +224,7 @@ export const AlertList: React.FC<AlertListProps> = ({
 
                 {alert.severity !== 'INFO' && (
                   <button
-                    onClick={() => handleResolve(alert)}
+                    onClick={() => handleResolveClick(alert)}
                     disabled={resolving === alert.id || updatingRead === alert.id}
                     className="px-3 py-1 text-sm font-medium rounded transition"
                     style={{
@@ -274,6 +306,59 @@ export const AlertList: React.FC<AlertListProps> = ({
           </button>
         </div>
       )}
+
+      {/* Contextual guidance dialog before resolving (B17) */}
+      {guidanceAlert && (() => {
+        const guidance = ALERT_GUIDANCE[guidanceAlert.type] ?? {
+          message: 'Verifica la situación antes de resolver esta alerta.',
+          action: 'Ver Inventario',
+          route: '/app/inventory',
+        };
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold" style={{ color: '#1F2937' }}>Antes de resolver</h3>
+                  <p className="text-xs" style={{ color: '#6B7280' }}>{guidanceAlert.productName}</p>
+                </div>
+              </div>
+              <p className="text-sm mb-5" style={{ color: '#374151' }}>{guidance.message}</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setGuidanceAlert(null)}
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-medium border"
+                  style={{ borderColor: '#E5E7EB', color: '#374151' }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => {
+                    setGuidanceAlert(null);
+                    navigate(guidance.route);
+                  }}
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-medium"
+                  style={{ backgroundColor: '#F59E0B', color: '#fff' }}
+                >
+                  {guidance.action}
+                </button>
+                <button
+                  onClick={() => void handleConfirmResolve()}
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold"
+                  style={{ backgroundColor: '#038E57', color: '#fff' }}
+                >
+                  Resolver
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };

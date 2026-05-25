@@ -115,6 +115,15 @@ export const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
     setSubmitStepError(null);
     setSubmitSuccess(false);
 
+    // B20: Bloquear envío si algún ítem no tiene producto seleccionado
+    const emptyProductIndex = data.items.findIndex((item) => !item.productId || item.productId === '');
+    if (emptyProductIndex >= 0) {
+      setSubmitError(`El artículo ${emptyProductIndex + 1} no tiene producto seleccionado.`);
+      setSubmitStepError('Seleccione un producto para cada artículo antes de crear la orden.');
+      setIsSubmitting(false);
+      return;
+    }
+
     const invalidItemIndex = data.items.findIndex((item) => {
       const unitCost = parsePositiveNumber(item.unitCost);
       return !Number.isFinite(unitCost) || unitCost <= 0 || !Number.isInteger(item.quantity) || item.quantity <= 0;

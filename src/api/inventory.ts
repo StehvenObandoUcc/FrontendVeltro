@@ -4,7 +4,7 @@ import type { PageResponse } from '../types';
 export type { PageResponse };
 
 export type AlertSeverity = 'CRITICAL' | 'WARNING' | 'INFO';
-export type AlertType = 'OUT_OF_STOCK' | 'LOW_STOCK' | 'OVERSTOCK';
+export type AlertType = 'OUT_OF_STOCK' | 'LOW_STOCK' | 'OVERSTOCK' | 'STOCK_MOVEMENT';
 
 export interface Alert {
   id: number;

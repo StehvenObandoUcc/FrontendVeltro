@@ -123,6 +123,7 @@ export function ProductFormPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isProductInactive, setIsProductInactive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingSync, setPendingSync] = useState<{
     productId: number;
@@ -214,6 +215,11 @@ export function ProductFormPage() {
         minStockWarning: alertConfig?.minStock?.toString() ?? product.minStockWarning?.toString() ?? '0',
         minStockCritical: alertConfig?.criticalStock?.toString() ?? product.minStockCritical?.toString() ?? '0',
       });
+
+      // V01 — detectar si el producto está desactivado y bloquear edición
+      if (!product.active) {
+        setIsProductInactive(true);
+      }
     } catch (err) {
       setError('Error al cargar el producto');
       console.error(err);
@@ -481,6 +487,31 @@ export function ProductFormPage() {
               </button>
             )}
           </div>
+        </div>
+      )}
+
+      {/* V01 — Banner bloqueante para productos desactivados */}
+      {isProductInactive && (
+        <div className="p-4 rounded-xl mb-6 flex items-start gap-3"
+          style={{ backgroundColor: '#FEF3C7', border: '1px solid #F59E0B' }}>
+          <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#D97706' }} />
+          <div className="flex-1">
+            <p className="font-semibold text-sm" style={{ color: '#92400E' }}>
+              Producto desactivado
+            </p>
+            <p className="text-sm mt-1" style={{ color: '#92400E' }}>
+              Este producto está inactivo y no se puede editar hasta que sea reactivado.
+              Ve a la lista de productos inactivos para reactivarlo primero.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/app/catalog/products/inactive')}
+            className="flex-shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium"
+            style={{ backgroundColor: '#F59E0B', color: '#fff' }}
+          >
+            Ver inactivos
+          </button>
         </div>
       )}
 
@@ -818,7 +849,7 @@ export function ProductFormPage() {
           >
             Cancelar
           </button>
-          <button type="submit" disabled={isSaving} className="btn-primary">
+          <button type="submit" disabled={isSaving || isProductInactive} className="btn-primary" title={isProductInactive ? 'Reactiva el producto primero' : undefined}>
             {isSaving ? 'Guardando...' : isEditing ? 'Actualizar Producto' : 'Crear Producto'}
           </button>
         </div>

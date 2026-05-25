@@ -100,6 +100,7 @@ export const AiScannerContainer: React.FC<Props> = ({
     if (!FEATURES.ENABLE_SAM && activeAiModel === 'sam') {
       setActiveAiModel('yolo');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [FEATURES.ENABLE_SAM, activeAiModel, setActiveAiModel]);
 
   useEffect(() => {

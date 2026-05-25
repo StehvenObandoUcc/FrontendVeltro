@@ -89,9 +89,11 @@ export const DetectionOverlay: React.FC<DetectionOverlayProps> = ({ canvasRef })
 
         ctx.fillStyle = color;
         ctx.beginPath();
-        (ctx as CanvasRenderingContext2D & { roundRect?: (...args: unknown[]) => void }).roundRect?.(
-          box.x, ly, tw + 12, ph, 4,
-        ) ?? ctx.rect(box.x, ly, tw + 12, ph);
+        if (typeof (ctx as CanvasRenderingContext2D & { roundRect?: (...args: number[]) => void }).roundRect === 'function') {
+          (ctx as CanvasRenderingContext2D & { roundRect?: (...args: number[]) => void }).roundRect!(box.x, ly, tw + 12, ph, 4);
+        } else {
+          ctx.rect(box.x, ly, tw + 12, ph);
+        }
         ctx.fill();
 
         ctx.fillStyle = '#fff';

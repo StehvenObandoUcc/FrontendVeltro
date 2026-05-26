@@ -10,6 +10,14 @@ const IOU_THRESH         = 0.45;  // NMS threshold
 const MAX_DETS           = 20;
 const BOX_PADDING        = 12;
 const INPUT_SIZE         = 640;   // Fixed — yolo11s.onnx has static 640×640 input
+// EMA smoothing factor for tracked bounding box coordinates.
+// Applied ONLY when a new detection matches an existing track (i.e. there is a
+// previous position to interpolate against). New detections with no prior
+// history receive the raw YOLO coordinates unchanged.
+// Range: 0 < EMA_ALPHA < 1. Higher = faster response, more jitter.
+//        Lower = smoother, but adds visual lag on fast-moving objects.
+// 0.6 is a conservative starting point for a near-static POS scenario.
+const EMA_ALPHA          = 0.6;
 
 // Full COCO 80-class names (index = class id)
 const YOLO_CLASSES = [
@@ -200,12 +208,27 @@ self.onmessage = async (e: MessageEvent<YoloWorkerRequest>) => {
 
         if (bestTrack !== null) {
           matchedPrev.add(bestTrack.trackId);
+          // ── EMA smoothing ─────────────────────────────────────────────────
+          // Blend the incoming YOLO coordinates with the stored track position.
+          // The raw box (used above by computeIou) is unchanged so matching
+          // accuracy is not affected. Only the persisted track coordinates are
+          // smoothed, which determines the crop geometry in the next frame.
+          const prev = bestTrack.box;
+          const smoothedBox: YoloBox = {
+            ...box,
+            x:      box.x      * EMA_ALPHA + prev.x      * (1 - EMA_ALPHA),
+            y:      box.y      * EMA_ALPHA + prev.y      * (1 - EMA_ALPHA),
+            width:  box.width  * EMA_ALPHA + prev.width  * (1 - EMA_ALPHA),
+            height: box.height * EMA_ALPHA + prev.height * (1 - EMA_ALPHA),
+          };
           nextTracks.push({
             trackId:  bestTrack.trackId,
-            box,
+            box:      smoothedBox,
             lastSeen: nowTrack,
           });
         } else {
+          // New detection: no prior position to interpolate against.
+          // Use raw YOLO coordinates as-is.
           nextTracks.push({
             trackId:  crypto.randomUUID(),
             box,

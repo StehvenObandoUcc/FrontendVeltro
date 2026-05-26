@@ -42,10 +42,12 @@ export function useCameraStream({ videoRef, onStop }: UseCameraStreamOptions) {
       }
 
       const isPortrait = window.innerHeight > window.innerWidth;
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           width: { ideal: isPortrait ? 720 : 1280 },
           height: { ideal: isPortrait ? 1280 : 720 },
+          facingMode: isMobile ? { exact: 'environment' } : 'environment',
         },
       });
 

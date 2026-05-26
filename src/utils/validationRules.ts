@@ -68,7 +68,7 @@ export const phoneField = () =>
 
 /** Dirección física */
 export const addressField = () =>
-  z.string().max(300, 'La dirección no puede exceder 300 caracteres').optional().or(z.literal(''));
+  z.string().max(20, 'La dirección no puede exceder 20 caracteres').optional().or(z.literal(''));
 
 // ─── Identificación tributaria ────────────────────────────────────────────────
 

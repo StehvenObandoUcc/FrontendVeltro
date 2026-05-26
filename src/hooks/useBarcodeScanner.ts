@@ -23,7 +23,9 @@ const BARCODE_SCANNER_CONFIG = {
   videoConstraints: {
     width: { ideal: 1280 },
     height: { ideal: 720 },
-    facingMode: { ideal: 'environment' },
+    facingMode: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
+      ? { exact: 'environment' } 
+      : 'environment',
   },
 };
 
@@ -211,7 +213,9 @@ export function useBarcodeScanner({
           videoConstraints: {
             width: { ideal: isPortrait ? 720 : 1280 },
             height: { ideal: isPortrait ? 1280 : 720 },
-            facingMode: 'environment',
+            facingMode: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
+              ? { exact: 'environment' } 
+              : 'environment',
           },
         },
         qrCodeSuccessCallback,

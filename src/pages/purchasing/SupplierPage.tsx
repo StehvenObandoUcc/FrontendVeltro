@@ -267,7 +267,7 @@ export const SupplierPage: React.FC = () => {
               </label>
               <input
                 type="text"
-                maxLength={300}
+                maxLength={20}
                 {...register('address')}
                 className="input-base"
                 placeholder="Cra 15 # 93-75, Bogotá"

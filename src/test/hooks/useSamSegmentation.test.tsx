@@ -33,6 +33,24 @@ vi.stubGlobal('HTMLCanvasElement', class {
   }
 });
 
+vi.stubGlobal('Image', class {
+  _src: string = '';
+  onload: () => void = () => {};
+  onerror: () => void = () => {};
+  width: number = 1024;
+  height: number = 1024;
+
+  set src(val: string) {
+    this._src = val;
+    setTimeout(() => {
+      if (this.onload) this.onload();
+    }, 0);
+  }
+  get src() {
+    return this._src;
+  }
+});
+
 // Mock document.createElement to return our mock canvas
 const originalCreateElement = document.createElement;
 vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
@@ -50,6 +68,9 @@ describe('useSamSegmentation hook', () => {
     samMaskCache.clear();
     useAiScanStore.getState().resetAiState();
     useAiScanStore.setState({ samGlobalError: false });
+
+    // Mock performance.now to prevent throttling in tests
+    vi.spyOn(performance, 'now').mockReturnValue(999999);
 
     // Mock video element ref
     videoRef = {
@@ -91,9 +112,8 @@ describe('useSamSegmentation hook', () => {
       useAiScanStore.setState({ detections: [mockBox] });
     });
 
-    // Wait for the async toBlob and API call
-    await new Promise(process.nextTick);
-    await new Promise(process.nextTick);
+    // Wait for the async toBlob, API call, and Image onload to complete
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     expect(aiScannerApi.segmentWithAI).toHaveBeenCalled();
     expect(setMaskSpy).toHaveBeenCalledWith('box-123', expect.anything());

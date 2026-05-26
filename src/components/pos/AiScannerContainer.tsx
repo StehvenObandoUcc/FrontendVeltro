@@ -19,6 +19,17 @@ interface ConfirmedProduct {
   productName: string;
 }
 
+interface UncertainDetection {
+  detectionId: string;
+  product: MatchedProduct;
+  confidence: number;
+}
+
+import type { MatchedProduct } from '../../modules/types/ai.types';
+
+/** B07/B08/B16: auto-add only when confidence >= this threshold */
+const HIGH_CONFIDENCE_THRESHOLD = 0.70;
+
 interface Props {
   useCase?: 'pos-sell' | 'inventory-count';
   onDetectionConfirmed?: (product: ConfirmedProduct) => void;
@@ -37,6 +48,8 @@ export const AiScannerContainer: React.FC<Props> = ({
   const rejectedProducts = useRef<Map<number, number>>(new Map());
 
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'warning' } | null>(null);
+  // B07/B08/B16: queue of uncertain detections (confidence < HIGH_CONFIDENCE_THRESHOLD)
+  const [uncertainQueue, setUncertainQueue] = useState<UncertainDetection[]>([]);
 
   const scanMode = useAiScanStore((s) => s.scanMode);
   const setAiUseCase = useAiScanStore((s) => s.setAiUseCase);
@@ -122,10 +135,19 @@ export const AiScannerContainer: React.FC<Props> = ({
       .forEach((det) => {
         addedIds.current.add(det.id);
         const match = det.matches[0];
-        addToCart(match, 1);
-        updateDetectionStatus(det.id, 'ADDED');
-        setToast({ message: `${match.name} agregado al carrito`, type: 'success' });
-        setTimeout(() => setToast(null), 3000);
+        // B07/B08/B16: high-confidence → auto-add; low-confidence → ask user
+        if (det.confidence >= HIGH_CONFIDENCE_THRESHOLD) {
+          addToCart(match, 1);
+          updateDetectionStatus(det.id, 'ADDED');
+          setToast({ message: `${match.name} agregado al carrito`, type: 'success' });
+          setTimeout(() => setToast(null), 3000);
+        } else {
+          // Queue for manual confirmation
+          setUncertainQueue((prev) => {
+            if (prev.some((u) => u.detectionId === det.id)) return prev;
+            return [...prev, { detectionId: det.id, product: match, confidence: det.confidence }];
+          });
+        }
       });
 
     const live = new Set(detections.map((d) => d.id));
@@ -173,6 +195,22 @@ export const AiScannerContainer: React.FC<Props> = ({
     if (match) {
       rejectedProducts.current.set(match.id, Date.now() + REJECTION_TTL_MS);
     }
+  };
+
+  // B07/B08/B16: confirm uncertain AI detection → add to cart
+  const handleConfirmUncertain = (item: UncertainDetection) => {
+    addToCart(item.product, 1);
+    updateDetectionStatus(item.detectionId, 'ADDED');
+    setUncertainQueue((prev) => prev.filter((u) => u.detectionId !== item.detectionId));
+    setToast({ message: `${item.product.name} agregado al carrito`, type: 'success' });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  // B07/B08/B16: reject uncertain AI detection → mark as error + suppress
+  const handleRejectUncertain = (item: UncertainDetection) => {
+    updateDetectionStatus(item.detectionId, 'ERROR');
+    rejectedProducts.current.set(item.product.id, Date.now() + REJECTION_TTL_MS);
+    setUncertainQueue((prev) => prev.filter((u) => u.detectionId !== item.detectionId));
   };
 
   useEffect(() => {
@@ -314,6 +352,50 @@ export const AiScannerContainer: React.FC<Props> = ({
                 ) : (
                   <span className="badge badge-warning">Identificacion no disponible</span>
                 )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* B07/B08/B16: Uncertain detection queue — manual confirmation */}
+      {useCase === 'pos-sell' && uncertainQueue.length > 0 && (
+        <div className="card p-4 space-y-2" style={{ borderLeft: '3px solid #F59E0B' }}>
+          <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: '#92400E' }}>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Confirma las detecciones inciertas ({uncertainQueue.length})
+          </h3>
+          {uncertainQueue.map((item) => {
+            const pct = Math.round(item.confidence * 100);
+            const color = pct >= 60 ? '#D97706' : '#DC2626';
+            return (
+              <div key={item.detectionId} className="flex items-center justify-between gap-3 p-2 rounded-lg" style={{ backgroundColor: '#FEF3C7', border: '1px solid #FCD34D' }}>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate" style={{ color: '#1F2937' }}>
+                    {item.product.name}
+                  </p>
+                  <p className="text-xs font-semibold" style={{ color }}>
+                    Confianza IA: {pct}%
+                  </p>
+                </div>
+                <div className="flex gap-2 flex-shrink-0">
+                  <button
+                    onClick={() => handleConfirmUncertain(item)}
+                    className="px-3 py-1 rounded-lg text-xs font-semibold text-white"
+                    style={{ backgroundColor: '#038E57' }}
+                  >
+                    ✓ Sí, agregar
+                  </button>
+                  <button
+                    onClick={() => handleRejectUncertain(item)}
+                    className="px-3 py-1 rounded-lg text-xs font-medium"
+                    style={{ backgroundColor: '#F3F4F6', color: '#374151' }}
+                  >
+                    ✗ No es este
+                  </button>
+                </div>
               </div>
             );
           })}

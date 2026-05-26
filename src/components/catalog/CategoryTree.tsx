@@ -91,6 +91,11 @@ function CategoryNode({
           <span className={`text-sm ${isSelected ? 'font-medium' : ''}`} style={{ color: isSelected ? '#038E57' : '#1F2937' }}>
             {category.name}
           </span>
+          {category.description && (
+            <span className="ml-2 text-xs italic" style={{ color: '#9CA3AF' }} title={category.description}>
+              — {category.description}
+            </span>
+          )}
           {!category.active && (
             <span className="ml-2 px-1.5 py-0.5 text-xs rounded" style={{ backgroundColor: '#F3F4F6', color: '#6B7280' }} aria-label="Category is inactive">
               Inactivo

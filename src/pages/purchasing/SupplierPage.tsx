@@ -323,14 +323,20 @@ export const SupplierPage: React.FC = () => {
             No hay proveedores registrados
           </div>
         ) : (
-          <table className="w-full">
+          <table className="w-full table-fixed">
+            <colgroup>
+              <col style={{ width: '35%' }} />
+              <col style={{ width: '20%' }} />
+              <col style={{ width: '28%' }} />
+              <col style={{ width: '17%' }} />
+            </colgroup>
             <thead className="bg-[var(--surface-secondary)] border-b border-[var(--border-light)]">
               <tr>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-[var(--text-primary)]">
                   Empresa
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-[var(--text-primary)]">
-                  RUC
+                  RUC/NIT
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-[var(--text-primary)]">
                   Contacto
@@ -344,21 +350,21 @@ export const SupplierPage: React.FC = () => {
               {suppliers.map((supplier) => (
                 <tr key={supplier.id} className="hover:bg-[var(--surface-secondary)] transition-colors">
                   <td className="px-4 py-3">
-                    <div className="font-medium text-[var(--text-primary)]">
+                    <div className="font-medium text-[var(--text-primary)] truncate" title={supplier.name}>
                       {supplier.name}
                     </div>
                     {supplier.address && (
-                      <div className="text-sm text-[var(--text-secondary)] truncate max-w-xs">
+                      <div className="text-sm text-[var(--text-secondary)] truncate" title={supplier.address}>
                         {supplier.address}
                       </div>
                     )}
                   </td>
-                  <td className="px-4 py-3 font-mono text-sm text-[var(--text-secondary)]">
+                  <td className="px-4 py-3 font-mono text-sm text-[var(--text-secondary)] truncate">
                     {supplier.taxId}
                   </td>
                   <td className="px-4 py-3">
                     {supplier.email && (
-                      <div className="text-sm text-[var(--text-primary)]">{supplier.email}</div>
+                      <div className="text-sm text-[var(--text-primary)] truncate" title={supplier.email}>{supplier.email}</div>
                     )}
                     {supplier.phone && (
                       <div className="text-sm text-[var(--text-secondary)]">{supplier.phone}</div>

@@ -12,7 +12,7 @@ A continuación, presento una investigación profunda de las soluciones técnica
 
 El flujo ideal para Veltro se compone de una **Separación de Responsabilidades Visuales**:
 
-1.  **Detección Espacial (Local/Frontend):** `yolov8n.onnx` (que ya tienes) es excelente para decir *"Aquí hay un objeto"*. No nos importa qué es, solo nos importa **dónde está** (Bounding Box).
+1.  **Detección Espacial (Local/Frontend):** `yolov11.onnx` (que ya tienes) es excelente para decir *"Aquí hay un objeto"*. No nos importa qué es, solo nos importa **dónde está** (Bounding Box).
 2.  **Extracción de Características (Embedding):** El recorte (crop) de ese objeto se pasa por un modelo Visión-Lenguaje, específicamente **CLIP (Contrastive Language-Image Pretraining) de OpenAI**. CLIP no clasifica, simplemente convierte la imagen en un vector matemático de 512 dimensiones.
 3.  **Búsqueda Semántica (Backend/Vector DB):** Se compara ese vector contra la base de datos usando **Similitud del Coseno**. El vector más cercano corresponde al producto.
 

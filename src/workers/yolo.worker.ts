@@ -62,6 +62,22 @@ self.onmessage = async (e: MessageEvent<YoloWorkerRequest>) => {
       session = await ort.InferenceSession.create(MODEL_PATH, {
         executionProviders: ['webgl', 'wasm'],
       });
+      // ── Warmup: amortize JIT compilation cost on first real frame ────────────
+      // A forward pass with a zero tensor warms WebGL/WASM JIT caches so the
+      // first real detection does not pay the compilation penalty.
+      try {
+        const warmupData = new Float32Array(3 * INPUT_SIZE * INPUT_SIZE);
+        const warmupTensor = new ort.Tensor('float32', warmupData, [1, 3, INPUT_SIZE, INPUT_SIZE]);
+        const warmupFeed = { [session.inputNames[0]]: warmupTensor };
+        await session.run(warmupFeed);
+        console.log('[YOLO Worker] Warmup inference complete');
+      } catch (warmupErr) {
+        console.warn('[YOLO Worker] Warmup inference failed (non-fatal):', warmupErr);
+      }
+      if (import.meta.env.DEV) {
+        console.log('[YOLO Worker] Session created. Requested providers: webgl, wasm');
+        console.log(`[YOLO Worker] Warmup tensor: ${3 * INPUT_SIZE * INPUT_SIZE * 4} bytes`);
+      }
       self.postMessage({ type: 'INIT_SUCCESS' } as YoloWorkerResponse);
       return;
     }
@@ -90,11 +106,16 @@ self.onmessage = async (e: MessageEvent<YoloWorkerRequest>) => {
         floatData[i + 2 * px] = pixels[i * 4 + 2] / 255;
       }
 
-      // ── C. Run ONNX inference ─────────────────────────────────────
+      // ── C. Run ONNX inference ──────────────────────────────────────────
       const inputName  = session.inputNames[0];
       const outputName = session.outputNames[0];
       const feed    = { [inputName]: new ort.Tensor('float32', floatData, [1, 3, INPUT_SIZE, INPUT_SIZE]) };
+      const t0 = performance.now();
       const results = await session.run(feed);
+      const inferMs = performance.now() - t0;
+      if (import.meta.env.DEV) {
+        console.log(`[YOLO Worker] Inference: ${inferMs.toFixed(1)} ms`);
+      }
       const out     = results[outputName];
 
       if (!out) throw new Error(`Output "${outputName}" missing`);

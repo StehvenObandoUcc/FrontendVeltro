@@ -10,7 +10,7 @@
 ## 2. Estado Actual de YOLO en Veltro
 Al revisar el código del proyecto (específicamente en `Veltro-Solo-Frontend/frontend/src/hooks/ai/`), he encontrado que **YOLO ya está parcialmente implementado**:
 
-*   **Archivo `useObjectDetection.ts`:** Utiliza la librería `onnxruntime-web` para cargar un modelo llamado `yolov8n.onnx` (YOLO versión 8 Nano) y ejecutarlo directamente en el navegador del usuario.
+*   **Archivo `useObjectDetection.ts`:** Utiliza la librería `onnxruntime-web` para cargar un modelo llamado `yolov11.onnx` (YOLO versión 11) y ejecutarlo directamente en el navegador del usuario.
 *   **Funcionamiento Actual:** Este modelo dibuja las cajas (hitboxes) sobre los objetos que ve en la cámara.
 *   **El Cuello de Botella (`useVisionQueue.ts`):** Actualmente, YOLOv8n solo se usa para *encontrar* dónde hay un objeto genérico. Luego, el programa recorta ese pedacito de video y lo envía al backend (`/scanner/ai`), el cual parece comunicarse con **Gemini** para preguntarle: *"¿Qué producto es este?"*. Esto es **muy lento** (tiene un timeout de 120 segundos) y puede resultar costoso.
 

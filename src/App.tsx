@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthGuard, RoleGuard } from './components/auth';
 import { MainLayout, PageLoader } from './components/layout';
 import { UnauthorizedPage, NotFoundPage } from './pages/ErrorPages';
+import { startKeepAlive } from './utils/keepAlive';
 
 const LandingPage = lazy(() =>
   import('./pages/landing').then((m) => ({ default: m.LandingPage }))
@@ -66,6 +67,7 @@ const ProfilePage = lazy(() =>
 );
 
 function App() {
+  startKeepAlive();
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>

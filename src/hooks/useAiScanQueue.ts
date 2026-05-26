@@ -25,6 +25,8 @@ export const useAiScanQueue = (
 
   const cooldownRef        = useRef(0);
   const isBusyRef          = useRef(false);
+  const cropCanvasRef      = useRef<HTMLCanvasElement | null>(null);
+  const cropCtxRef         = useRef<CanvasRenderingContext2D | null>(null);
 
   useEffect(() => {
     if (!aiEnabled || isBusyRef.current) return;
@@ -68,10 +70,16 @@ export const useAiScanQueue = (
         const cropW = Math.max(w, MIN_CLIP_SIZE);
         const cropH = Math.max(h, MIN_CLIP_SIZE);
 
-        const crop = document.createElement('canvas');
+        // Reuse a persistent canvas instead of creating a new one per detection.
+        // Assigning .width/.height clears the bitmap (HTML spec) — correct behaviour.
+        if (!cropCanvasRef.current) {
+          cropCanvasRef.current = document.createElement('canvas');
+          cropCtxRef.current = cropCanvasRef.current.getContext('2d', { willReadFrequently: true })!;
+        }
+        const crop = cropCanvasRef.current;
+        const ctx = cropCtxRef.current!;
         crop.width  = cropW;
         crop.height = cropH;
-        const ctx = crop.getContext('2d')!;
 
         // Use imageSmoothingQuality 'high' to reduce blur on upscale
         ctx.imageSmoothingEnabled = true;

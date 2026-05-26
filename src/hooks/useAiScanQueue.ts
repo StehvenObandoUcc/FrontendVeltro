@@ -128,10 +128,19 @@ export const useAiScanQueue = (
           ctx.putImageData(imageData, 0, 0);
         }
 
+        // ── Encode crop to JPEG ──────────────────────────────────────────────
+        // Quality 0.75: CLIP operates on 224×224 normalised tensors, making it
+        // highly tolerant of JPEG compression. Going from 0.92 → 0.75 cuts
+        // payload size by ~25-35% with negligible impact on embedding quality.
+        // Do NOT switch to WebP: Java's ImageIO.read() does not support WebP
+        // natively and would require an additional backend dependency.
         const blob = await new Promise<Blob | null>((res) =>
-          crop.toBlob((b) => res(b), 'image/jpeg', 0.92)
+          crop.toBlob((b) => res(b), 'image/jpeg', 0.75)
         );
         if (!blob || blob.size === 0) throw new Error('Empty blob');
+        if (import.meta.env.DEV) {
+          console.log(`[Queue] Crop blob: ${(blob.size / 1024).toFixed(1)} KB (JPEG 0.75)`);
+        }
 
 
 

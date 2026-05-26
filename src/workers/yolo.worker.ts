@@ -1,5 +1,6 @@
 import * as ort from 'onnxruntime-web';
 import type { TrackedBox, YoloBox, YoloWorkerRequest, YoloWorkerResponse } from '../modules/types/ai.types';
+import { loadModelWithCache } from '../utils/modelCache';
 
 // ── Tuning constants ───────────────────────────────────────────────────────────
 const MODEL_PATH         = '/model/yolov11.onnx';
@@ -71,7 +72,13 @@ self.onmessage = async (e: MessageEvent<YoloWorkerRequest>) => {
       // and silently falls back to the next one if the current provider cannot
       // be initialized by the browser (e.g. no WebGPU support, old GPU driver).
       // 'webgpu' → 'webgl' → 'wasm' ensures best available hardware acceleration.
-      session = await ort.InferenceSession.create(MODEL_PATH, {
+      // ── Load model via IndexedDB cache ──────────────────────────────────
+      // loadModelWithCache returns an ArrayBuffer on hit (no network) or after
+      // the first download + store. Falls back to the URL string if IndexedDB
+      // is unavailable (Safari private mode, etc.), so ONNX creates the session
+      // via fetch as before. Both signatures are valid in onnxruntime-web 1.25.1.
+      const modelSource = await loadModelWithCache(MODEL_PATH);
+      session = await ort.InferenceSession.create(modelSource as ArrayBuffer, {
         executionProviders: ['webgpu', 'webgl', 'wasm'],
       });
       // ── Warmup: amortize JIT compilation cost on first real frame ────────────

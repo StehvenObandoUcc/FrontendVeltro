@@ -8,15 +8,50 @@ interface LatestSalesTableProps {
 }
 
 /**
- * LatestSalesTable - Display recent sales transactions
+ * LatestSalesTable - Display recent sales transactions with premium date and time formatting
  */
 export const LatestSalesTable: React.FC<LatestSalesTableProps> = ({
   sales,
   isLoading,
 }) => {
+  // Premium date and time formatter with relative terms (Hoy, Ayer) and Colombian time format
+  const formatSaleDateTime = (dateStr: string) => {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return 'N/A';
+
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+
+    const isSameDay = (d1: Date, d2: Date) =>
+      d1.getDate() === d2.getDate() &&
+      d1.getMonth() === d2.getMonth() &&
+      d1.getFullYear() === d2.getFullYear();
+
+    const timeStr = date.toLocaleTimeString('es-CO', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    });
+
+    if (isSameDay(date, today)) {
+      return `Hoy, ${timeStr}`;
+    } else if (isSameDay(date, yesterday)) {
+      return `Ayer, ${timeStr}`;
+    } else {
+      const dateFormatted = date.toLocaleDateString('es-CO', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
+      return `${dateFormatted} - ${timeStr}`;
+    }
+  };
+
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-64" aria-live="polite" aria-label="Loading sales data">
+      <div className="flex justify-center items-center h-64" aria-live="polite" aria-label="Cargando datos de ventas">
         <div
           className="animate-spin rounded-full h-8 w-8 border-2"
           style={{
@@ -31,18 +66,18 @@ export const LatestSalesTable: React.FC<LatestSalesTableProps> = ({
   if (sales.length === 0) {
     return (
       <div
-        className="text-center py-8"
+        className="text-center py-8 text-sm"
         style={{ color: '#6B7280' }}
-        aria-label="No sales recorded"
+        aria-label="No hay ventas registradas"
       >
-        No sales recorded yet today
+        No se han registrado ventas hoy
       </div>
     );
   }
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full" aria-label="Recent sales transactions">
+      <table className="w-full" aria-label="Transacciones de ventas recientes">
         <thead>
           <tr style={{ backgroundColor: '#F9F7F2' }}>
             <th
@@ -50,21 +85,21 @@ export const LatestSalesTable: React.FC<LatestSalesTableProps> = ({
               style={{ color: '#4B5563', borderBottom: '1px solid #E8E3DB' }}
               scope="col"
             >
-              Sale #
+              Venta #
             </th>
             <th
               className="px-4 py-3 text-left text-sm font-semibold"
               style={{ color: '#4B5563', borderBottom: '1px solid #E8E3DB' }}
               scope="col"
             >
-              Cashier
+              Cajero
             </th>
             <th
               className="px-4 py-3 text-right text-sm font-semibold"
               style={{ color: '#4B5563', borderBottom: '1px solid #E8E3DB' }}
               scope="col"
             >
-              Items
+              Artículos
             </th>
             <th
               className="px-4 py-3 text-right text-sm font-semibold"
@@ -78,7 +113,7 @@ export const LatestSalesTable: React.FC<LatestSalesTableProps> = ({
               style={{ color: '#4B5563', borderBottom: '1px solid #E8E3DB' }}
               scope="col"
             >
-              Time
+              Fecha y Hora
             </th>
           </tr>
         </thead>
@@ -107,7 +142,7 @@ export const LatestSalesTable: React.FC<LatestSalesTableProps> = ({
               <td
                 className="px-4 py-3 text-sm text-right"
                 style={{ color: '#6B7280' }}
-                aria-label={`${sale.itemCount} items`}
+                aria-label={`${sale.itemCount} artículos`}
               >
                 {sale.itemCount}
               </td>
@@ -122,10 +157,10 @@ export const LatestSalesTable: React.FC<LatestSalesTableProps> = ({
                 {formatCurrency(sale.total)}
               </td>
               <td
-                className="px-4 py-3 text-sm"
-                style={{ color: '#6B7280' }}
+                className="px-4 py-3 text-sm font-medium"
+                style={{ color: '#4B5563' }}
               >
-                {sale.completedAt ? new Date(sale.completedAt).toLocaleTimeString() : 'N/A'}
+                {sale.completedAt ? formatSaleDateTime(sale.completedAt) : 'N/A'}
               </td>
             </tr>
           ))}

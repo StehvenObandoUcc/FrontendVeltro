@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { purchasingApi } from '../../api/purchasing';
+import { COLOMBIAN_BANKS } from '../../utils/validationRules';
 
 interface ReceptionFlowProps {
   orderId: number;
@@ -21,11 +22,11 @@ export const ReceptionFlow: React.FC<ReceptionFlowProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   // Form states matching POS payment methods
-  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD' | 'TRANSFER' | 'YAPE' | 'PLIN'>('CASH');
+  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD' | 'TRANSFER' | 'NEQUI' | 'DAVIPLATA'>('CASH');
   const [notes, setNotes] = useState('');
   const [cardDigits, setCardDigits] = useState('');
   const [cardType, setCardType] = useState('VISA');
-  const [bankName, setBankName] = useState('BCP');
+  const [bankName, setBankName] = useState('BANCOLOMBIA');
   const [operationCode, setOperationCode] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
 
@@ -72,20 +73,25 @@ export const ReceptionFlow: React.FC<ReceptionFlowProps> = ({
           return;
         }
         paymentDetailsStr = `Transferencia Bancaria: ${bankName} | Op: ${operationCode}`;
-      } else if (paymentMethod === 'YAPE') {
+      } else if (paymentMethod === 'NEQUI') {
         if (!operationCode) {
           setError('El código de operación es obligatorio');
           setIsSubmitting(false);
           return;
         }
-        paymentDetailsStr = `Yape: ${phoneNumber ? 'Cel: ' + phoneNumber : ''} | Op: ${operationCode}`;
-      } else if (paymentMethod === 'PLIN') {
+        paymentDetailsStr = `Nequi: ${phoneNumber ? 'Cel: ' + phoneNumber : ''} | Op: ${operationCode}`;
+      } else if (paymentMethod === 'DAVIPLATA') {
         if (!operationCode) {
           setError('El código de operación es obligatorio');
           setIsSubmitting(false);
           return;
         }
-        paymentDetailsStr = `Plin: ${phoneNumber ? 'Cel: ' + phoneNumber : ''} | Op: ${operationCode}`;
+        if (operationCode.length !== 6 || isNaN(parseInt(operationCode))) {
+          setError('El código de aprobación de Daviplata debe tener exactamente 6 dígitos');
+          setIsSubmitting(false);
+          return;
+        }
+        paymentDetailsStr = `Daviplata: ${phoneNumber ? 'Cel: ' + phoneNumber : ''} | Op: ${operationCode}`;
       } else if (paymentMethod === 'CASH') {
         paymentDetailsStr = 'Efectivo';
       }
@@ -139,14 +145,14 @@ export const ReceptionFlow: React.FC<ReceptionFlowProps> = ({
             <select
               id="payment-method"
               value={paymentMethod}
-              onChange={(e) => setPaymentMethod(e.target.value as 'CASH' | 'CARD' | 'TRANSFER' | 'YAPE' | 'PLIN')}
+              onChange={(e) => setPaymentMethod(e.target.value as 'CASH' | 'CARD' | 'TRANSFER' | 'NEQUI' | 'DAVIPLATA')}
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none bg-white text-gray-800"
             >
               <option value="CASH">Efectivo</option>
               <option value="CARD">Tarjeta</option>
               <option value="TRANSFER">Transferencia Bancaria</option>
-              <option value="YAPE">Yape</option>
-              <option value="PLIN">Plin</option>
+              <option value="NEQUI">Nequi</option>
+              <option value="DAVIPLATA">Daviplata</option>
             </select>
           </div>
 
@@ -193,12 +199,9 @@ export const ReceptionFlow: React.FC<ReceptionFlowProps> = ({
                   onChange={(e) => setBankName(e.target.value)}
                   className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none bg-white text-gray-800"
                 >
-                  <option value="BCP">Banco de Crédito (BCP)</option>
-                  <option value="BBVA">BBVA</option>
-                  <option value="INTERBANK">Interbank</option>
-                  <option value="SCOTIABANK">Scotiabank</option>
-                  <option value="BANCO_NACION">Banco de la Nación</option>
-                  <option value="OTROS">Otros</option>
+                  {COLOMBIAN_BANKS.map((bank) => (
+                    <option key={bank.value} value={bank.value}>{bank.label}</option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -215,28 +218,58 @@ export const ReceptionFlow: React.FC<ReceptionFlowProps> = ({
             </div>
           )}
 
-          {(paymentMethod === 'YAPE' || paymentMethod === 'PLIN') && (
-            <div className="space-y-3 border-l-4 border-pink-500 bg-pink-50/30 p-4 rounded-r-md text-left">
-              <h4 className="text-sm font-bold text-pink-800">Detalles de Billetera ({paymentMethod})</h4>
+          {paymentMethod === 'NEQUI' && (
+            <div className="space-y-3 border-l-4 border-[#3F0E60] bg-[#3F0E60]/5 p-4 rounded-r-md text-left">
+              <h4 className="text-sm font-bold text-[#3F0E60]">Detalles de Pago Nequi</h4>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-gray-600">Número de Celular (opcional)</label>
+                <label className="mb-1 block text-xs font-semibold text-gray-600">Número de Celular Nequi (10 dígitos)</label>
                 <input
                   type="text"
-                  maxLength={9}
+                  maxLength={10}
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
-                  placeholder="Ej: 987654321"
-                  className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none text-gray-800"
+                  placeholder="Ej: 3001234567"
+                  className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-[#3F0E60] focus:ring-1 focus:ring-[#3F0E60]/30 focus:outline-none text-gray-800"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-gray-600">Código de Operación (obligatorio)</label>
+                <label className="mb-1 block text-xs font-semibold text-gray-600">Código de Referencia / Operación MTI (obligatorio)</label>
                 <input
                   type="text"
+                  maxLength={50}
                   value={operationCode}
                   onChange={(e) => setOperationCode(e.target.value)}
                   placeholder="Ej: 123456"
-                  className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none text-gray-800"
+                  className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-[#3F0E60] focus:ring-1 focus:ring-[#3F0E60]/30 focus:outline-none text-gray-800"
+                  required
+                />
+              </div>
+            </div>
+          )}
+
+          {paymentMethod === 'DAVIPLATA' && (
+            <div className="space-y-3 border-l-4 border-[#E21F26] bg-[#E21F26]/5 p-4 rounded-r-md text-left">
+              <h4 className="text-sm font-bold text-[#E21F26]">Detalles de Pago Daviplata</h4>
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-gray-600">Número de Celular Daviplata (10 dígitos)</label>
+                <input
+                  type="text"
+                  maxLength={10}
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
+                  placeholder="Ej: 3151234567"
+                  className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-[#E21F26] focus:ring-1 focus:ring-[#E21F26]/30 focus:outline-none text-gray-800"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-gray-600">Código de Aprobación de 6 dígitos (obligatorio)</label>
+                <input
+                  type="text"
+                  maxLength={6}
+                  value={operationCode}
+                  onChange={(e) => setOperationCode(e.target.value.replace(/\D/g, ''))}
+                  placeholder="Ej: 987654"
+                  className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-[#E21F26] focus:ring-1 focus:ring-[#E21F26]/30 focus:outline-none text-gray-800"
                   required
                 />
               </div>

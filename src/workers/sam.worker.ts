@@ -40,7 +40,7 @@ async function initModels() {
       });
     } catch (error) {
       console.error('[SAM Worker] Model missing or failed to load:', error);
-      postMessage({ type: 'CRITICAL_ERROR', error: 'Failed to load MobileSAM models' });
+      self.postMessage({ type: 'CRITICAL_ERROR', error: 'Failed to load MobileSAM models' });
       throw error;
     }
 
@@ -58,7 +58,7 @@ async function initModels() {
     console.log('[SAM Worker] MobileSAM models loaded successfully.');
   } catch (err) {
     console.error('[SAM Worker] Failed to load models:', err);
-    postMessage({ type: 'ERROR', error: String(err) });
+    self.postMessage({ type: 'ERROR', error: String(err) });
     throw err;
   } finally {
     isInitializing = false;
@@ -207,7 +207,7 @@ self.onmessage = async (e: MessageEvent) => {
         }
 
         // Send binary mask back to main thread using Transferable Objects
-        postMessage(
+        (self as any).postMessage(
           {
             type: 'MASK_READY',
             boxId: box.id,
@@ -218,12 +218,12 @@ self.onmessage = async (e: MessageEvent) => {
               maskHeight: INPUT_SIZE,
             },
           },
-          [binaryMask.buffer] as Transferable[]
+          [binaryMask.buffer]
         );
       }
     } catch (err) {
       console.error('[SAM Worker] Processing error:', err);
-      postMessage({ type: 'ERROR', error: String(err) });
+      self.postMessage({ type: 'ERROR', error: String(err) });
     }
   }
 };

@@ -254,7 +254,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
               value={paymentMethod}
               onChange={(e) =>
                 setPaymentMethod(
-                  e.target.value as 'CASH' | 'CARD' | 'YAPE' | 'PLIN' | 'TRANSFER' | 'MIXED'
+                  e.target.value as 'CASH' | 'CARD' | 'NEQUI' | 'DAVIPLATA' | 'TRANSFER' | 'MIXED'
                 )
               }
               className="w-full rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
@@ -361,29 +361,58 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
             </div>
           )}
 
-          {(paymentMethod === 'YAPE' || paymentMethod === 'PLIN') && (
-            <div className="space-y-3 border-l-4 border-pink-500 bg-pink-50/30 p-4 rounded-r-md text-left">
-              <h4 className="text-sm font-bold text-pink-800">Detalles de Billetera digital</h4>
+          {paymentMethod === 'NEQUI' && (
+            <div className="space-y-3 border-l-4 border-[#3F0E60] bg-[#3F0E60]/5 p-4 rounded-r-md text-left">
+              <h4 className="text-sm font-bold text-[#3F0E60]">Detalles de Pago Nequi</h4>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-gray-600">Número de Celular (opcional)</label>
+                <label className="mb-1 block text-xs font-semibold text-gray-600">Número de Celular Nequi (10 dígitos)</label>
                 <input
                   type="text"
                   maxLength={10}
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
                   placeholder="Ej: 3001234567"
-                  className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+                  className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-[#3F0E60] focus:ring-1 focus:ring-[#3F0E60]/30 focus:outline-none text-gray-800"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-gray-600">Código de Operación (obligatorio)</label>
+                <label className="mb-1 block text-xs font-semibold text-gray-600">Código de Referencia / Operación MTI (obligatorio)</label>
                 <input
                   type="text"
                   maxLength={50}
                   value={operationCode}
                   onChange={(e) => setOperationCode(e.target.value)}
                   placeholder="Ej: 123456"
-                  className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+                  className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-[#3F0E60] focus:ring-1 focus:ring-[#3F0E60]/30 focus:outline-none text-gray-800"
+                  required
+                />
+              </div>
+            </div>
+          )}
+
+          {paymentMethod === 'DAVIPLATA' && (
+            <div className="space-y-3 border-l-4 border-[#E21F26] bg-[#E21F26]/5 p-4 rounded-r-md text-left">
+              <h4 className="text-sm font-bold text-[#E21F26]">Detalles de Pago Daviplata</h4>
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-gray-600">Número de Celular Daviplata (10 dígitos)</label>
+                <input
+                  type="text"
+                  maxLength={10}
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
+                  placeholder="Ej: 3151234567"
+                  className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-[#E21F26] focus:ring-1 focus:ring-[#E21F26]/30 focus:outline-none text-gray-800"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-gray-600">Código de Aprobación de 6 dígitos (obligatorio)</label>
+                <input
+                  type="text"
+                  maxLength={6}
+                  value={operationCode}
+                  onChange={(e) => setOperationCode(e.target.value.replace(/\D/g, ''))}
+                  placeholder="Ej: 987654"
+                  className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-[#E21F26] focus:ring-1 focus:ring-[#E21F26]/30 focus:outline-none text-gray-800"
                   required
                 />
               </div>
@@ -416,8 +445,8 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                   <label className="mb-1 block text-xs font-semibold text-gray-600">Segundo método</label>
                   <select
                     value={mixedMethod}
-                    onChange={(e) => setMixedMethod(e.target.value as 'CARD' | 'TRANSFER' | 'YAPE' | 'PLIN')}
-                    className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none bg-white"
+                    onChange={(e) => setMixedMethod(e.target.value as 'CARD' | 'TRANSFER' | 'NEQUI' | 'DAVIPLATA')}
+                    className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none bg-white text-gray-800"
                   >
               <option value="NEQUI">Nequi</option>
                     <option value="DAVIPLATA">Daviplata</option>
@@ -495,27 +524,55 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                   </div>
                 )}
 
-                  {(mixedMethod === 'NEQUI' || mixedMethod === 'DAVIPLATA') && (
-                  <div className="space-y-3">
+                {mixedMethod === 'NEQUI' && (
+                  <div className="space-y-3 border-l-2 border-[#3F0E60] pl-3 text-left">
                     <div>
-                      <label className="mb-1 block text-xs font-semibold text-gray-600">Número de Celular (opcional)</label>
+                      <label className="mb-1 block text-xs font-semibold text-gray-600">Celular Nequi (10 dígitos)</label>
                       <input
                         type="text"
                         maxLength={10}
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
                         placeholder="Ej: 3001234567"
-                        className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+                        className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-[#3F0E60] focus:outline-none text-gray-800"
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-semibold text-gray-600">Código de Operación</label>
+                      <label className="mb-1 block text-xs font-semibold text-gray-600">Código de Operación MTI</label>
                       <input
                         type="text"
                         value={operationCode}
                         onChange={(e) => setOperationCode(e.target.value)}
                         placeholder="Ej: 123456"
-                        className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+                        className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-[#3F0E60] focus:outline-none text-gray-800"
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {mixedMethod === 'DAVIPLATA' && (
+                  <div className="space-y-3 border-l-2 border-[#E21F26] pl-3 text-left">
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold text-gray-600">Celular Daviplata (10 dígitos)</label>
+                      <input
+                        type="text"
+                        maxLength={10}
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
+                        placeholder="Ej: 3151234567"
+                        className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-[#E21F26] focus:outline-none text-gray-800"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold text-gray-600">Código de Aprobación (6 dígitos)</label>
+                      <input
+                        type="text"
+                        maxLength={6}
+                        value={operationCode}
+                        onChange={(e) => setOperationCode(e.target.value.replace(/\D/g, ''))}
+                        placeholder="Ej: 987654"
+                        className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-[#E21F26] focus:outline-none text-gray-800"
                         required
                       />
                     </div>

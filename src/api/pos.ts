@@ -12,7 +12,7 @@ export interface ModifyItemRequest {
 }
 
 export interface ConfirmSaleRequest {
-  paymentMethod: 'CASH' | 'CARD' | 'YAPE' | 'PLIN' | 'TRANSFER' | 'MIXED';
+  paymentMethod: 'CASH' | 'CARD' | 'YAPE' | 'PLIN' | 'NEQUI' | 'DAVIPLATA' | 'TRANSFER' | 'MIXED';
   amountReceived?: string;    // BigDecimal serializado como string
 }
 
@@ -21,7 +21,7 @@ export interface CreateSaleRequest {
     productId: number;
     quantity: number;
   }[];
-  paymentMethod: 'CASH' | 'CARD' | 'YAPE' | 'PLIN' | 'TRANSFER' | 'MIXED';
+  paymentMethod: 'CASH' | 'CARD' | 'YAPE' | 'PLIN' | 'NEQUI' | 'DAVIPLATA' | 'TRANSFER' | 'MIXED';
   amountReceived?: number;
   notes?: string;
 }
@@ -35,7 +35,7 @@ export interface SaleResponse {
   total: string;
   amountReceived: string | null;
   change: string | null;
-  paymentMethod: 'CASH' | 'CARD' | 'YAPE' | 'PLIN' | 'TRANSFER' | 'MIXED' | null;
+  paymentMethod: 'CASH' | 'CARD' | 'YAPE' | 'PLIN' | 'NEQUI' | 'DAVIPLATA' | 'TRANSFER' | 'MIXED' | null;
   completedAt: string | null;
   details: {
     id: number;

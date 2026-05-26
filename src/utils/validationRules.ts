@@ -36,14 +36,14 @@ export const usernameField = () =>
 
 /** Email para registro/login (RFC 5321 max = 254) */
 export const emailField = () =>
-  z.string().email('Ingrese un email válido').max(254, 'El email no puede exceder 254 caracteres');
+  z.string().email('Ingrese un email válido').max(30, 'El email no puede exceder 30 caracteres');
 
 /** Email opcional (proveedores, empleados, etc.) */
 export const emailOptionalField = () =>
   z
     .string()
     .email('Ingrese un email válido')
-    .max(254, 'El email no puede exceder 254 caracteres')
+    .max(30, 'El email no puede exceder 30 caracteres')
     .optional()
     .or(z.literal(''));
 

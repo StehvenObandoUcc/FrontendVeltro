@@ -235,7 +235,7 @@ export function WorkersPage() {
                   id="worker-email"
                   type="email"
                   autoComplete="off"
-                  maxLength={254}
+                  maxLength={30}
                   {...register('email')}
                   className="input-base w-full"
                   placeholder="usuario@email.com"

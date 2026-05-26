@@ -153,7 +153,7 @@ export function RegisterPage() {
               id="email"
               type="email"
               autoComplete="email"
-              maxLength={254}
+              maxLength={30}
               {...register('email')}
               className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 outline-none focus:bg-white focus:ring-2 focus:ring-[#038E57]/20 focus:border-[#038E57] transition-all duration-200"
               placeholder="tu@email.com"

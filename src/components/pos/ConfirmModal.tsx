@@ -87,6 +87,10 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           setError('El monto recibido debe ser mayor o igual al total de la venta');
           return;
         }
+        if (receivedVal > 999999999) {
+          setError('El monto recibido no puede exceder 999.999.999');
+          return;
+        }
       } else if (paymentMethod === 'CARD') {
         if (!cardDigits) {
           setError('Los últimos 4 dígitos de la tarjeta son obligatorios');
@@ -120,6 +124,10 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
         const otherVal = parseFloat(mixedOtherAmount);
         if (isNaN(cashVal) || cashVal < 0) {
           setError('El monto en efectivo debe ser un número no negativo');
+          return;
+        }
+        if (cashVal > 999999999) {
+          setError('El monto en efectivo no puede exceder 999.999.999');
           return;
         }
         if (isNaN(otherVal) || otherVal < 0) {
@@ -284,7 +292,12 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                 step="any"
                 min={total}
                 value={amountReceived}
-                onChange={(e) => setAmountReceived(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val.length <= 10) {
+                    setAmountReceived(val);
+                  }
+                }}
                 placeholder={`Ej: ${parseFloat(total).toFixed(0)}`}
                 className="w-full rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none text-sm"
                 aria-label="Ingrese el monto recibido en efectivo del cliente"
@@ -431,10 +444,13 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                     step="any"
                     value={mixedCashAmount}
                     onChange={(e) => {
-                      setMixedCashAmount(e.target.value);
-                      const cash = parseFloat(e.target.value) || 0;
-                      const rest = Math.max(0, parseFloat(total) - cash);
-                      setMixedOtherAmount(rest.toFixed(2));
+                      const val = e.target.value;
+                      if (val.length <= 10) {
+                        setMixedCashAmount(val);
+                        const cash = parseFloat(val) || 0;
+                        const rest = Math.max(0, parseFloat(total) - cash);
+                        setMixedOtherAmount(rest.toFixed(2));
+                      }
                     }}
                     placeholder="Monto"
                     className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"

@@ -234,6 +234,7 @@ export const SupplierPage: React.FC = () => {
                 </label>
                 <input
                   type="email"
+                  maxLength={30}
                   {...register('email')}
                   className="input-base"
                   placeholder="contacto@empresa.com"

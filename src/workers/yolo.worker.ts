@@ -59,8 +59,12 @@ self.onmessage = async (e: MessageEvent<YoloWorkerRequest>) => {
   try {
     if (req.type === 'INIT') {
       ort.env.wasm.numThreads = 1;
+      // executionProviders order: onnxruntime-web tries each entry left-to-right
+      // and silently falls back to the next one if the current provider cannot
+      // be initialized by the browser (e.g. no WebGPU support, old GPU driver).
+      // 'webgpu' → 'webgl' → 'wasm' ensures best available hardware acceleration.
       session = await ort.InferenceSession.create(MODEL_PATH, {
-        executionProviders: ['webgl', 'wasm'],
+        executionProviders: ['webgpu', 'webgl', 'wasm'],
       });
       // ── Warmup: amortize JIT compilation cost on first real frame ────────────
       // A forward pass with a zero tensor warms WebGL/WASM JIT caches so the
@@ -75,7 +79,7 @@ self.onmessage = async (e: MessageEvent<YoloWorkerRequest>) => {
         console.warn('[YOLO Worker] Warmup inference failed (non-fatal):', warmupErr);
       }
       if (import.meta.env.DEV) {
-        console.log('[YOLO Worker] Session created. Requested providers: webgl, wasm');
+        console.log('[YOLO Worker] Session created. Requested providers: webgpu, webgl, wasm');
         console.log(`[YOLO Worker] Warmup tensor: ${3 * INPUT_SIZE * INPUT_SIZE * 4} bytes`);
       }
       self.postMessage({ type: 'INIT_SUCCESS' } as YoloWorkerResponse);

@@ -44,6 +44,8 @@ const ALLOWED_CLASS_IDS = new Set([
   24,  // backpack
   26,  // handbag
   28,  // suitcase
+  29,  // teddy bear
+  30,  // sports ball  
 ]);
 
 // ── Internal IOU helper ────────────────────────────────────────────────────────
